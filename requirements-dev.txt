@@ -1,0 +1,3 @@
+-r requirements.txt
+pytest>=8
+pdfplumber>=0.11   # only for scripts/parse_nppa_*.py

@@ -1,0 +1,9 @@
+my_data/*
+!my_data/README.md
+!my_data/*.example.txt
+__pycache__/
+.pytest_cache/
+.env
+.venv/
+evals/ollama_*.md
+*.pyc

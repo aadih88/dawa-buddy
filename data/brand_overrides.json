@@ -1,0 +1,7 @@
+{
+ "_sources": "Compositions checked on 2026-10-27 against retailer/manufacturer pages: Zerodol-SP https://www.1mg.com/drugs/zerodol-sp-tablet-67307 ; Hifenac SP https://www.1mg.com/drugs/hifenac-sp-tablet-716192 ; Ecosprin Gold 10 https://www.1mg.com/drugs/ecosprin-gold-10-capsule-170269 ; Sinarest New https://www.centaurpharma.com/downloads/2022/entchestphysician/cold/Sinarest%20new%20tablets2023.pdf . Format: key -> form -> [[composition, modified_release]]. Add only brands verified against a source.",
+ "zerodol sp": {"tablet": [["aceclofenac:100mg;paracetamol:325mg;serratiopeptidase:15mg", 0]]},
+ "hifenac sp": {"tablet": [["aceclofenac:100mg;paracetamol:325mg;serratiopeptidase:15mg", 0]]},
+ "ecosprin gold 10": {"capsule": [["aspirin:75mg;atorvastatin:10mg;clopidogrel:75mg", 0]]},
+ "sinarest new": {"tablet": [["chlorpheniramine:2mg;paracetamol:500mg;phenylephrine:10mg", 0]]}
+}

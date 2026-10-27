@@ -1,0 +1,69 @@
+{
+ "_note": "Deliberately small, conservative demo rules for widely documented combinations. Not a substitute for a clinical interaction database.",
+ "pairs": [
+  {
+   "a": "warfarin",
+   "b": "aspirin",
+   "severity": "call_doctor",
+   "title": "Bleeding risk",
+   "detail": "Warfarin with aspirin raises the risk of serious bleeding. Do not stop either medicine yourself; ask the prescriber to confirm this combination is intended.",
+   "code": "warfarin_aspirin"
+  },
+  {
+   "a": "warfarin",
+   "b": "ibuprofen",
+   "severity": "call_doctor",
+   "title": "Bleeding risk",
+   "detail": "Painkillers like ibuprofen can increase bleeding on warfarin. Check with the prescriber before taking both.",
+   "code": "warfarin_nsaid"
+  },
+  {
+   "a": "warfarin",
+   "b": "diclofenac",
+   "severity": "call_doctor",
+   "title": "Bleeding risk",
+   "detail": "Painkillers like diclofenac can increase bleeding on warfarin. Check with the prescriber before taking both.",
+   "code": "warfarin_nsaid"
+  },
+  {
+   "a": "ibuprofen",
+   "b": "diclofenac",
+   "severity": "ask_pharmacist",
+   "title": "Two painkillers of the same type",
+   "detail": "Both are anti-inflammatory painkillers (NSAIDs). Taking two together raises stomach and kidney risk. Ask whether both are really needed.",
+   "code": "two_nsaids"
+  },
+  {
+   "a": "sildenafil",
+   "b": "isosorbide nitrate",
+   "severity": "call_doctor",
+   "title": "Dangerous blood pressure drop",
+   "detail": "Nitrates with sildenafil can cause a severe drop in blood pressure. Contact the prescriber before taking both.",
+   "code": "nitrate_sildenafil"
+  },
+  {
+   "a": "spironolactone",
+   "b": "enalapril",
+   "severity": "ask_pharmacist",
+   "title": "High potassium risk",
+   "detail": "This pair can raise blood potassium. It is sometimes intended, but needs blood tests. Ask the prescriber about monitoring.",
+   "code": "potassium"
+  },
+  {
+   "a": "spironolactone",
+   "b": "ramipril",
+   "severity": "ask_pharmacist",
+   "title": "High potassium risk",
+   "detail": "This pair can raise blood potassium. It is sometimes intended, but needs blood tests. Ask the prescriber about monitoring.",
+   "code": "potassium"
+  },
+  {
+   "a": "simvastatin",
+   "b": "clarithromycin",
+   "severity": "call_doctor",
+   "title": "Muscle damage risk",
+   "detail": "Clarithromycin can raise simvastatin levels and cause muscle damage. Ask the prescriber whether to pause the statin during the course.",
+   "code": "statin_macrolide"
+  }
+ ]
+}

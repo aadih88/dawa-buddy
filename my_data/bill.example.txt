@@ -1,0 +1,5 @@
+# description | qty | rate | amount | unit | pack
+TELMA 40 | 3 | 124.00 | 372.00 | strip | 10
+ATORVA 10 | 6 | 105.00 | 630.00 | strip | 10
+DOLO 650 | 10 | 2.10 | 21.00 | tab
+IV SET DISPOSABLE | 2 | 85.00 | 170.00

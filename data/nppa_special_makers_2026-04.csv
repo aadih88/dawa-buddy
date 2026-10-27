@@ -1,0 +1,81 @@
+set,serial,manufacturer,brand,notes
+rl,1,M/s Albert David Ltd.,Eurohead,
+rl,2,M/s Aculife Healthcare Pvt. Ltd.,Eurohead,
+rl,3,M/s B. Braun Medical (India) Pvt. Ltd.,Ecoflac Plus bottle with Eurohead,
+rl,4,M/s Fresenius Kabi India Pvt. Ltd.,Freeflex bags,
+rl,5,M/s Ostuka Pharmaceuticals India Pvt. Ltd.,Eurohead bottle,
+rl,6,M/s Denis Chem lab Ltd.,Eurohead Propylene Bottle,
+rl,7,M/s Amanta Healthcare Ltd.,FFS/BFS,
+rl,8,M/s Shree Krishna Keshav Laboratories Ltd.,Eurohead,
+rl,9,M/s Axa Parenterals Ltd.,Steridip with Eurohead,
+rl,10,M/s Rusoma Laboratories Pvt. Ltd.,Eurohead FFS Bottle,
+rl,11,M/s R. K. Laboratories Pvt. Ltd.,Eurohead Bottle,
+rl,12,M/s Realcade Lifescience Pvt. Ltd.,Non-glass with special features,
+rl,13,M/s Abaris Healthcare Pvt. Ltd,Non-glass with special features,b
+rl,14,M/s Higgs Healthcare,Non-glass with special features,c
+rl,15,M/s Rusoma Laboratories Pvt. Ltd.,Dewdrip,b
+rl,16,M/s Puerto life Sciences Private Limited,Eurohead bottle,d
+rl,17,M/s Sachin Parenteral Pvt. Ltd.,SAFE PORT,d
+rl,18,M/s Biosynergy Lifecare Pvt. Ltd.,BIOPORT,c
+rl,19,M/s Promea Therapeutics Pvt. Ltd.,PROCAP-RL,d
+rl,20,M/s Puniska Injectables Private Limited,Plastic Bottle withEuro head Cap,e
+rl,21,M/s Jedux Parenteral Private Limited,"JEDUX Double port with Euro head, JPORT plus",c
+rl,22,M/s Cartel Lifescience Pvt. Ltd.,Dual Port Cap,d
+rl,23,M/s BML Parenteral Drugs,Euro Head Cap,e
+rl,24,M/s Hindustan Polyfab,Euro Head /LDPE Bottles,d
+rl,25,M/s Pharma Implex Laboratories Pvt. Ltd.,Euro Cap/Head Bottles,c
+rl,26,M/s IV Tech Healthcare,Twin Port Euro Head Bottles,c
+rl,27,M/s Life Infusion Pharmaceuticals Pvt. Ltd.,Dual Port Plastic (PP) Bottles,c
+rl,28,M/s Safal Lifescience Private Limited (Manufacturer) and M/s One Drip Healthcare Private Limited (Marketer),DRIPEURO/ PE Bottles with Euro Head,d
+rl,29,M/s Virchow Biotech Pvt. Ltd.,Euro Head LVP bags (non PVC bags),d
+rl,30,M/s Klokter Life Sciences Pvt. Ltd. (Manufacturer) and M/s Zee Laboratories Limited (Marketer),Euro Head bottles,d
+six,1,M/s Otsuka Pharmaceutical India Private Ltd.,Eurohead bottle,b
+six,2,M/s Denis Chem Lab Ltd.,Eurohead Propylene Bottle,b
+six,3,M/s Rusoma Laboratories Pvt. Ltd.,Eurohead FFS Bottle,b
+six,4,M/s Sachin Parenteral Pvt. Ltd.,SAFE PORT,b
+six,5,M/s Biosynergy Lifecare Pvt. Ltd.,BIOPORT,b
+six,6,M/s Promea Therapeutics Pvt. Ltd.,"PROCAP-MT, PROCAP-D25",c
+six,7,M/s Aculife Healthcare Pvt. Ltd.,Euro head Plastic Bottle (FFS Technology),
+six,8,M/s Puniska Injectables Pvt. Ltd.,Plastic Bottle with Euro Head cap,d
+six,9,M/s Jedux Parenteral Pvt. Ltd.,"JEDUX Double port with Euro Head, JPORT Plus",e
+six,10,M/s Hindustan Polyfab,Euro Head /LDPE Bottles,f
+six,11,M/s Pharma Implex Laboratories Pvt. Ltd.,Euro Cap/Head Bottles,g
+six,12,M/s IV Tech Healthcare,Twin Port Euro Head Bottles,b
+six,13,M/s Life Infusion Pharmaceuticals Pvt. Ltd.,Dual Port Plastic (PP) Bottles,g
+eight,1,M/s B.Braun Medical (I) Pvt Ltd.,Ecoflac Plus bottle with Eurohead,
+eight,2,M/s Amanta Healthcare Ltd.,Steriport bottle,
+eight,3,M/s Aculife Healthcare Pvt Ltd.,Aculife bottle with Eurohead,
+eight,4,M/s Albert David Limited,Albert David bottle with Eurohead,
+eight,5,M/s Denis Chem Limited,Aquapulse with Eurohead,
+eight,6,M/s Claris Life Sciences Limited,Claris bottle with Eurohead,
+eight,7,M/s Fresenius Kabi India Pvt Limited,Freeflex bags,
+eight,8,M/s Otsuka Pharmaceutical India Private Ltd. (previously known as Claris Otsuka Private Limited),Unibag,
+eight,9,M/s Aishwarya Lifesciences,Lifusion Eurohead bottle,
+eight,10,M/s Baxter (India) Pvt. Ltd.,Viaflex bags,
+eight,11,M/s Otsuka Pharmaceutical India Private Ltd. (previously known as Claris Otsuka Private Limited),Eurohead bottle,
+eight,12,M/s Fresenius Kabi India Pvt Limited,Eurohead bottle,
+eight,13,M/s Axa Parenterals Ltd,Steri Drip bottle with Eurohead,
+eight,14,M/s Shree Krishna Keshav Laboratories Ltd,Easyport bottle with Eurohead,
+eight,15,M/s Rusoma Laboratories Pvt. Ltd.,Puradrip,
+eight,16,M/s R. K. Laboratories Pvt. Ltd.,Eurohead bottle,
+eight,17,M/s Eurolife Healthcare Pvt. Ltd.,Life port,
+eight,18,M/s Realcade Lifescience Pvt. Ltd.,Euro head bottle,
+eight,19,M/s Puniska Healthcare Pvt. Ltd,Non –PVC bag,b
+eight,20,M/s Abaris Healthcare Pvt. Ltd,Duo Port,
+eight,21,M/s Higgs Healthcare,Aqua Drip,c
+eight,22,M/s Rusoma Laboratories Pvt. Ltd.,Eurohead Bottles with Brand name “Dewdrip”,
+eight,23,M/s Puerto life Sciences Private Limited,Euro head bottle,d
+eight,24,M/s Sachin Parenteral Pvt. Ltd.,SAFE PORT,e
+eight,25,M/s Biosynergy Lifecare Pvt. Ltd.,BIOPORT,c
+eight,26,M/s Promea Therapeutics Pvt. Ltd.,LDPE Bottle/ Non-Glass container with special features Euro head Cap,d
+eight,27,M/s Puniska Injectables Private Limited,Plastic Bottle with Euro head Cap,
+eight,28,M/s Jedux Parenteral Private Limited,"JEDUX Double port with Eurohead, JPORT plus",c
+eight,29,M/s Cartel Lifescience Pvt. Ltd.,Dual Port Cap,d
+eight,30,M/s BML Parenteral Drugs,Euro Head Cap,e
+eight,31,M/s Hindustan Polyfab,Euro Head /LDPE Bottles,d
+eight,32,M/s Pharma Implex Laboratories Pvt. Ltd.,Euro Cap/Head Bottles,c
+eight,33,M/s IV Tech Healthcare,Twin Port Euro Head Bottles,c
+eight,34,M/s Safal Lifescience Private Limited (Manufacturer) and M/s One Drip Healthcare Private Limited (Marketer),DRIPEURO/ PE Bottles with Euro Head,d
+eight,35,M/s Life Infusion Pharmaceuticals Pvt. Ltd.,Dual Port Plastic (PP) Bottles,c
+eight,36,M/s Virchow Biotech Pvt. Ltd.,Euro Head LVP bags (non PVC bags),f
+eight,37,M/s Klokter Life Sciences Pvt. Ltd. (Manufacturer) and M/s Zee Laboratories Limited (Marketer),Euro Head bottles,g

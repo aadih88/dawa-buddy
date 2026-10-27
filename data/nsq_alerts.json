@@ -1,0 +1,7 @@
+{
+  "_note": "Local cache of regulator 'not of standard quality' / spurious-drug alerts. Entries below are FICTIONAL placeholders used by tests. Load real entries from CDSCO monthly alert lists, or use the live Tavily lookup.",
+  "source": "placeholder",
+  "alerts": [
+    {"drug": "examplecillin", "batch": "TEST-001", "manufacturer": "Example Pharma (fictional)", "month": "2026-01", "status": "not_of_standard_quality"}
+  ]
+}

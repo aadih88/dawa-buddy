@@ -1,0 +1,6 @@
+streamlit==1.65.0   # pinned: the widget restyling in dawa_buddy/ui.py targets this version's internals
+openai>=1.50
+pydantic>=2.6
+httpx>=0.27
+pandas
+Pillow>=10
