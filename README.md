@@ -4,6 +4,8 @@
 
 ![licence: MIT](https://img.shields.io/badge/licence-MIT-green) ![tests: 160 passing](https://img.shields.io/badge/tests-160%20passing-brightgreen)
 
+**Live demo: https://dawa-buddy.streamlit.app** (the two sample bills need no upload).
+
 Built for the [Nebius x NVIDIA Global AI Hackathon](https://nebiusglobalaihackathon.devpost.com/), **Best Apps and Agents** track.
 Runs on **Nebius Token Factory** with **NVIDIA Nemotron** models. Optional **Tavily** web search for identifying unknown brands.
 
