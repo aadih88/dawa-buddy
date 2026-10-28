@@ -560,3 +560,33 @@ def test_one_rule_decides_who_needs_identifying():
     assert not f(__import__("types").SimpleNamespace(basis="", ingredients="tamsulosin", tier=b.TIER_NO_BENCHMARK))   # identified, no price list: nothing to confirm
     assert not f(__import__("types").SimpleNamespace(basis="bag", ingredients="", tier=b.TIER_NO_BENCHMARK))          # an IV bag is not an unknown medicine
     assert f(__import__("types").SimpleNamespace(basis="", ingredients="bisoprolol", tier=b.TIER_NEEDS_CONFIRM))      # an AI guess still needs the strip
+
+
+def _badge(page, label):
+    m = re.search(rf"{re.escape(label)}<span class=\"db-count\">(\d+)</span>", page)
+    return int(m.group(1)) if m else None
+
+
+def test_the_identify_header_counts_only_what_is_pending_and_changes_when_all_is_confirmed(monkeypatch):
+    rows = [("TAB.CONCOR T 5MG/40", 26, 18.1, 15, 271.5), ("TAB.ROSEDAY GOLD 75MG/75MG/10MG", 30, 17.0, 10, 170.0)]
+    at = _bill_app(monkeypatch, rows)
+    page = html_blocks(at)
+    assert _badge(page, "Help us identify") == 2 and "Medicines you confirmed" not in page
+    _confirm(at, "bisoprolol 5 mg + telmisartan 40 mg")                                    # one of two confirmed: one still pending
+    page = html_blocks(at)
+    assert _badge(page, "Help us identify") == 1 and "Medicines you confirmed" not in page
+    assert sorted(e.label for e in at.expander if e.label.endswith("confirmed") or "needs your confirmation" in e.label)[0].endswith("confirmed")   # both rows still listed
+    _confirm(at, "rosuvastatin 10 mg + aspirin 75 mg + clopidogrel 75 mg")                 # the last one
+    page = html_blocks(at)
+    assert "Help us identify" not in page and _badge(page, "Medicines you confirmed") == 2   # no pending action, so no 'Help us' wording and no pending badge
+    assert "Nothing more to do here" in " ".join(c.value for c in at.caption)
+    assert len([e for e in at.expander if e.label.endswith("· confirmed")]) == 2          # still there to review or change
+    assert [b for b in at.button if b.label == "Change ingredients"]
+
+
+def test_changing_a_confirmed_answer_keeps_the_section_available(monkeypatch):
+    at = _identify_app(monkeypatch)
+    _confirm(at, "bisoprolol 5 mg + telmisartan 40 mg")
+    assert _badge(html_blocks(at), "Medicines you confirmed") == 1
+    [b for b in at.button if b.label == "Change ingredients"][0].click().run()
+    assert [e for e in at.text_input if "Ingredients" in e.label]                          # reopened for editing

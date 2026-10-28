@@ -571,9 +571,14 @@ def identify(fs, confirmed):
             todo.append(f)
     if not todo:
         return
-    st.markdown(ui.section_label("Help us identify", len(todo)), unsafe_allow_html=True)
-    st.caption("These medicines could not be matched from the bill alone. Open one and type the ingredients printed on the strip (under \"Each tablet contains\"). "
-               "We then compare the line with the government price lists and update the result above. Until you do, we make no price judgement.")
+    pending = sum(f.line.desc.lower() not in confirmed for f in todo)
+    if pending:        # the badge counts only what still needs the user: a number next to "Help us identify" means there is something to do
+        st.markdown(ui.section_label("Help us identify", pending), unsafe_allow_html=True)
+        st.caption("These medicines could not be matched from the bill alone. Open one and type the ingredients printed on the strip (under \"Each tablet contains\"). "
+                   "We then compare the line with the government price lists and update the result above. Until you do, we make no price judgement.")
+    else:              # nothing left to do, but the answers stay visible and changeable (a typo must not be permanent)
+        st.markdown(ui.section_label("Medicines you confirmed", len(todo)), unsafe_allow_html=True)
+        st.caption("Nothing more to do here. Open a row to review or change what you confirmed.")
     texts = st.session_state.setdefault("ident_text", {})          # what the user confirmed for each medicine, in their own words
     for f in todo:
         key = f.line.desc.lower()
