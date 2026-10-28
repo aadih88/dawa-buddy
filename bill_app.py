@@ -3,9 +3,11 @@
 Run:  streamlit run bill_app.py
 Hosting knob: DAWA_MAX_PHOTO_READS (photo reads per browser session, default 5) protects a public demo's model credits.
 """
+import hmac
 import html
 import os
 import re
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 import pandas as pd
@@ -99,7 +101,35 @@ def msg(kind: str, text: str) -> None:
 
 def reset():
     for k in list(st.session_state):
-        del st.session_state[k]
+        if k != "unlocked":                   # starting another bill must not ask for the access code again
+            del st.session_state[k]
+
+
+def access_gate() -> bool:
+    """Until the access code is entered, every model and web call is switched off for this visitor (the sample bills and all price checks still work).
+    No DAWA_ACCESS_CODE set (local use, development): no gate. This is what keeps a leaked link from spending the model credits."""
+    code = os.environ.get("DAWA_ACCESS_CODE", "")
+    unlocked = not code or bool(st.session_state.get("unlocked"))
+    llm.restrict(not unlocked)
+    return unlocked
+
+
+def unlock_box() -> None:
+    code = os.environ.get("DAWA_ACCESS_CODE", "")
+    if not code or st.session_state.get("unlocked"):
+        return
+    st.markdown(ui.message("grey", "Photo reading, AI explanations and web look-ups are switched on with an access code (given to the hackathon judges). "
+                                   "The sample bills and every price check work without it."), unsafe_allow_html=True)
+    with st.expander("I have an access code"):
+        with st.form("unlock", border=False):
+            entered = st.text_input("Access code", type="password")
+            go = st.form_submit_button("Unlock", type="primary")
+        if go and hmac.compare_digest(entered.strip().encode(), code.encode()):
+            st.session_state.unlocked = True
+            st.rerun()
+        elif go:
+            time.sleep(1.5)                   # a wrong guess costs time, so the code cannot be guessed quickly
+            st.caption("That code is not right.")
 
 
 # ---------------------------------------------------------------- screen 1: start
@@ -111,6 +141,7 @@ def start():
     pending = st.session_state.pop("start_msg", None)       # an error from the last read, shown once
     if pending:
         msg(*pending)
+    unlock_box()
     reading = st.session_state.get("reading", False)       # set by the button, so the next run shows every control disabled while the photo is read
     bill_img = rx_img = None
     if llm.vision_available():
@@ -767,7 +798,8 @@ def briefing():
         brief = got[1]
         L = {k: v.get(lang) or v["en"] for k, v in i18n.LABELS.items()}
         if brief.mode == "offline":
-            st.caption("Offline mode: explanations are limited.")
+            st.caption("AI text is switched off without the access code: the dose, safety notes and timetable below come from fixed templates and are complete."
+                       if llm.restricted() else "Offline mode: explanations are limited.")
         st.markdown(ui.callout(html.escape(i18n.explainer_note(lang, brief.explanations)), "info"), unsafe_allow_html=True)
         notes = []
         for sev, kind in (("call_doctor", "red"), ("ask_pharmacist", "amber"), ("info", "grey")):
@@ -810,6 +842,7 @@ def footer():
 
 # ---------------------------------------------------------------- main
 def main():
+    access_gate()
     stage = st.session_state.get("stage", "start")
     if stage == "start" or "df" not in st.session_state:
         start()

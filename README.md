@@ -5,12 +5,12 @@
 **Photograph a pharmacy or hospital bill. Dawa Buddy checks it line by line against India's legal price lists and the doctor's prescription, then tells you exactly what to ask, in English, Hindi or Kannada.**
 
 ![licence: MIT](https://img.shields.io/badge/licence-MIT-green)
-![tests: 242 passing](https://img.shields.io/badge/tests-242%20passing-brightgreen)
+![tests: 249 passing](https://img.shields.io/badge/tests-249%20passing-brightgreen)
 ![Nebius Token Factory](https://img.shields.io/badge/runs%20on-Nebius%20Token%20Factory-1f6feb)
 ![NVIDIA Nemotron](https://img.shields.io/badge/models-NVIDIA%20Nemotron-76b900)
 ![Tavily](https://img.shields.io/badge/web%20evidence-Tavily-7b61ff)
 
-**[Live demo](https://dawa-buddy.streamlit.app)** · **Demo video (3 min): link added at submission** · [Hackathon page](https://nebiusglobalaihackathon.devpost.com/) · Track: **Best Apps and Agents**
+**Demo:** the hosted app's URL and its access code are in the submission's testing instructions (the link is not published here, so that strangers cannot spend the model credits; see [section 13](#13-setup-run-and-deploy)) · **Demo video (3 min): link added at submission** · [Hackathon page](https://nebiusglobalaihackathon.devpost.com/) · Track: **Best Apps and Agents**
 
 > Dawa Buddy never accuses anyone. It reads your documents, compares them with public price lists and the prescription, and tells you **what to ask**.
 > It is information, not a finding of wrongdoing, and not medical advice.
@@ -22,15 +22,15 @@
 </p>
 
 ### Try it in 30 seconds (no key, no upload)
-1. Open **https://dawa-buddy.streamlit.app**, tap **Hospital pharmacy bill**, look over the numbers on the *Check the numbers* screen, and press **See the result**.
+1. Open the demo link from the submission (or run it locally in two minutes, [section 13](#13-setup-run-and-deploy)), tap **Hospital pharmacy bill**, look over the numbers on the *Check the numbers* screen, and press **See the result**. The sample bills and every price check work **without** the access code.
 2. The first card is an **IV set billed at ₹265 against an MRP of ₹11 printed on the pack**. That is the kind of mark-up a Supreme Court bench has been questioning this month (see [section 2](#2-the-problem-with-evidence)). The injections below it are above their **legal ceiling prices**.
-3. Open **Explain my medicines in plain language**, choose **हिन्दी** or **ಕನ್ನಡ**, and press *Explain*.
-4. Or upload your own bill photo (cover names and phone numbers first).
+3. Enter the access code from the testing instructions (*I have an access code*) to switch on photo reading, AI text and web look-ups. Then open **Explain my medicines in plain language**, choose **हिन्दी** or **ಕನ್ನಡ**, and press *Explain*. Without the code, the dose, safety notes and timetable still appear (they are fixed templates).
+4. With the code you can also upload your own bill photo (cover names and phone numbers first).
 
 ### What a judge should know in one minute
 | Criterion | Short answer | Where to look |
 |---|---|---|
-| **Technological implementation** | Nemotron **Super VL** reads photos, **Lightning** reads prescriptions, **Ultra / Super** write Hindi, all through one Token Factory endpoint. A deterministic rules engine decides every price verdict, so the model can never invent an accusation. 242 tests; 4 evaluation suites. | [§7](#7-architecture), [§8](#8-how-we-use-nebius-nvidia-nemotron-and-tavily), [§10](#10-validation-and-evaluation) |
+| **Technological implementation** | Nemotron **Super VL** reads photos, **Lightning** reads prescriptions, **Ultra / Super** write Hindi, all through one Token Factory endpoint. A deterministic rules engine decides every price verdict, so the model can never invent an accusation. 249 tests; 4 evaluation suites. | [§7](#7-architecture), [§8](#8-how-we-use-nebius-nvidia-nemotron-and-tavily), [§10](#10-validation-and-evaluation) |
 | **Design** | One question per screen, verdict first, a "What we checked" list so a clean bill reads as protection, phone-first, status always colour + icon + words, Hindi and Kannada typography. | [§5](#5-the-product-tour) |
 | **Potential impact** | The Indian government's own court affidavit says patients have "very low bargaining position" and "very limited" knowledge of prices. This tool puts the comparison in the patient's hands at the moment of paying. | [§2](#2-the-problem-with-evidence), [§4](#4-the-idea) |
 | **Quality of the idea** | A *receipt audit*, not a price lookup: it resolves each line to a medicine, strength and form, converts per-tablet, per-strip, per-vial, per-ml and per-piece prices correctly, and reconciles the bill with the prescription (including the wrong *variant* handed over). It is honest about what it cannot see. | [§4](#4-the-idea), [§9](#9-engineering-decisions-and-why) |
@@ -300,6 +300,7 @@ Everything model-related runs on **Nebius Token Factory** through its OpenAI-com
 | **Units are explicit; no silent conversion** | The commonest overcharge illusion is per-tablet versus per-strip. | Guess the unit. |
 | **Versioned CSV data with self-checking parsers** | The parser stops unless serial numbers run 1..N with no gap and every price is a number. This caught a merged-cell row (`Condoms 11.65`) the table reader had skipped. | Hand-copied numbers. |
 | **Streamlit** | Fast to iterate, free hosting, Python end to end; the widget restyling is pinned to one Streamlit version. | A separate web front end: more polish potential, much more to build and host in the time. |
+| **An access code that switches off all model and web calls, per visitor** | A hosted link can be found or leaked, and every photo read and AI explanation costs credits. Locked visitors still get the samples and every rules-based price check, so nothing is hidden; judges get everything with the code. A test fails if a locked visitor makes any model or web call. | Keeping the link secret and hoping; a Streamlit viewer allow-list (judges cannot be given a shared login). |
 | **No accounts, no storage** | Bills contain personal data. | Saving history. |
 | **Samples that need no key** | Anyone, including a judge, can see the product work in one tap. | Require an API key to try. |
 
@@ -313,7 +314,7 @@ All numbers below are reproducible with the commands in [section 13](#13-setup-r
 ### 10.1 Results
 | Check | Result | Caveat |
 |---|---|---|
-| Unit and integration tests | **242 pass** | Includes fake-server tests for the Ollama and Tavily paths and a test that inspects what is sent to Tavily. |
+| Unit and integration tests | **249 pass** | Includes fake-server tests for the Ollama and Tavily paths and a test that inspects what is sent to Tavily. |
 | Brand resolution, 108 real brand lines | **99 correct, 4 missed (safe), 0 wrong.** The curated map alone: 26 correct, 61 missed, 2 wrong (1 reached a price verdict). 14 of 14 supplements, invented and ambiguous names handled safely. | Expected answers were written from pharmaceutical knowledge, **not** copied from the table. A pharmacist should review them. |
 | Bill tier accuracy, 18 synthetic lines (tablets, liquids, injections) | **18 of 18** | Synthetic prices written by the author. |
 | Prescription extraction, 24 synthetic cases | Offline rules F1 **1.00**, live Nemotron F1 **1.00**; safety-flag F1 1.00 / 1.00; 0 invented medicines; median latency 1.33 s | **Saturated**: the rules were tuned on this style of text, so it does not show the model's value. The real-photo comparison does. |
@@ -323,12 +324,12 @@ All numbers below are reproducible with the commands in [section 13](#13-setup-r
 | NPPA price context for an unpriced combination (live, Tavily) | 10 distinct company rows from 4 NPPA documents for bisoprolol 5 mg + telmisartan 40 mg, parsed correctly against rows copied from the documents | One combination live. Only the "composition, unit, company, price" layout is parsed; anything else returns nothing, not a guess. |
 | Pharmacy-website lookup, real bill (live, Tavily) | **Pack sizes right for 6 of 6 products where the strip is known**; the **printed-MRP check became possible on 4 of 4 lines** with one button (2 of 4 before), while no line has a government price list entry (the page says so plainly); listed MRPs matched the printed MRP for Concor T and Shelcal. One brand (Pantop) had no two sites within 10% and correctly got no reference. | 6 products, one day. Listings change and sites disagree, so every result is a question. |
 | Online ingredient lookup, 4 real brands (live, Tavily) | Concor T 5/40 and Veltam 0.4: **two sites agree** after the fix (neither did before). Glycomet 500 SR: one clear answer, labelled as a suggestion. Roseday Gold: the pharmacy sites **genuinely disagree** and the app says so. 4 pages about similar-named products were ignored for each brand. | 4 brands, one day. Pages that state no composition (several Apollo and Netmeds pages) still add nothing. |
-| Live hosted app (28 Oct 2026) | Sample bill to verdict; a real 4.2 MB bill photo to the review screen in about 5 s | Manual check, one run. |
+| Live hosted app (28 Oct 2026, before the access code was added) | Sample bill to verdict; a real 4.2 MB bill photo to the review screen in about 5 s | Manual check, one run. |
 | **Not yet measured** | Handwriting, other bill layouts, real-user outcomes, native-speaker review, a physical phone | |
 
 ### 10.2 Reproduce
 ```bash
-pytest -q tests                                   # 242 tests
+pytest -q tests                                   # 249 tests
 python -m evals.run_bill_evals                    # 18 synthetic bill lines, tier accuracy
 python -m evals.run_brand_evals [--verbose]       # 108 brand lines: correct / missed / wrong
 python -m evals.run_evals --out evals/results.md  # 24 synthetic prescriptions, live model
@@ -392,7 +393,7 @@ Checked against the [official rules](https://nebiusglobalaihackathon.devpost.com
 | Uses at least one **NVIDIA open source model** | ✅ Nemotron 3.5 Super VL, Nemotron 3.5 Lightning, Nemotron 3 Super 120B, Nemotron 3 Ultra 550B | [§8](#8-how-we-use-nebius-nvidia-nemotron-and-tavily) |
 | One of the four **tracks** | ✅ Best Apps and Agents | Top of this page |
 | **Project description** (what, why, how) | ✅ | Sections 1, 4, 7 |
-| **Working demo URL** | ✅ https://dawa-buddy.streamlit.app | Top of this page |
+| **Working demo URL** | ✅ in the submission form and its testing instructions, with an access code (the rules allow a private demo if credentials are provided). The link is deliberately not in this repository. | Submission form |
 | **Demo video**, 3 minutes or less, public on YouTube | ⏳ link added at submission | Top of this page |
 | **Public repository** with an open source licence visible at the top | ✅ MIT, shown in the repository's About section | `LICENSE` |
 | **README** with setup instructions and run guidance | ✅ | [§13](#13-setup-run-and-deploy) |
@@ -401,7 +402,7 @@ Checked against the [official rules](https://nebiusglobalaihackathon.devpost.com
 | **Prior-work statement** | ✅ none: everything was built in the submission period | [§18](#18-prior-work-licence-acknowledgements) |
 | Third-party data and APIs used within their terms | ✅ public NPPA and PMBJP data, an MIT-licensed brand dataset, Tavily's API | `data/NOTICE.md` |
 | Original work, English materials, no copyrighted music in the video | ✅ | |
-| Project available **free and without restriction for testing** until judging ends | ✅ The sample bills are unlimited and need no key. Photo reading on the hosted demo is capped at a few reads per visitor session to protect credits; anyone can run it locally with their own key. The demo will stay up through the judging period. | [§13](#13-setup-run-and-deploy) |
+| Project available **free and without restriction for testing** until judging ends | ✅ Judges receive the URL and the access code in the testing instructions and get every feature, free. Without the code a visitor still gets the sample bills and every price check, but no model or web call (so a leaked link cannot drain the credits). Anyone can also run it locally with their own key. The demo will stay up through the judging period (to 15 Dec 2026). | [§13](#13-setup-run-and-deploy) |
 | **Best Use of Tavily**: a functional runtime call to the Tavily API | ✅ three runtime uses | [§8](#8-how-we-use-nebius-nvidia-nemotron-and-tavily) |
 
 ---
@@ -428,11 +429,12 @@ streamlit run bill_app.py
    ```toml
    NEBIUS_API_KEY = "..."
    TAVILY_API_KEY = "..."            # optional
-   DAWA_MAX_PHOTO_READS = "5"        # photo reads per visitor session: keeps a public link from using up model credits
+   DAWA_MAX_PHOTO_READS = "15"       # photo reads per unlocked visitor session
+   DAWA_ACCESS_CODE = "..."          # the code judges enter to switch on photo reading, AI text and web look-ups (leave unset for local use: no gate)
    ```
 3. Deploy. The first build installs `requirements.txt` (about two minutes); an idle app sleeps and wakes when someone visits.
 
-Streamlit exposes top-level secrets as environment variables, which is what the app reads. If the start screen shows only the sample buttons and no photo upload, the key is not reaching the app: check the secret's name. Memory is not a concern: loading the brand table and running an audit peaks at about 190 MB.
+**Access code.** When `DAWA_ACCESS_CODE` is set, every visitor starts *locked*: the app switches every model and web call off for that visitor (`llm.restrict`, per visitor thread), so only the sample bills and the rules-based price checks run, and no credits can be spent. Entering the code unlocks that visitor's session (a wrong guess costs 1.5 s). The hosted link is shared only with the judges, together with the code, in the submission's testing instructions. Streamlit exposes top-level secrets as environment variables, which is what the app reads. If the start screen shows only the sample buttons and no photo upload, the key is not reaching the app: check the secret's name. Memory is not a concern: loading the brand table and running an audit peaks at about 190 MB.
 
 **Command line (no browser)**
 ```bash
@@ -465,7 +467,7 @@ IV SET | 2 | 265.00 | 530.00 | each | | 11.00
 | `ollama` | Local model, no cloud (`OLLAMA_MODEL`, `DAWA_VISION_MODEL`) |
 | `offline` | Rules only, clearly labelled; no photo reading |
 
-Optional: `DAWA_TEXT_MODEL`, `DAWA_VISION_MODEL`, `NEBIUS_BASE_URL`, `TAVILY_API_KEY`, `DAWA_KN_MODEL_TEXT=1` (turns the experimental Kannada AI text back on, for testing only).
+Optional: `DAWA_ACCESS_CODE` (gate for a hosted demo), `DAWA_TEXT_MODEL`, `DAWA_VISION_MODEL`, `NEBIUS_BASE_URL`, `TAVILY_API_KEY`, `DAWA_KN_MODEL_TEXT=1` (turns the experimental Kannada AI text back on, for testing only).
 
 ## 14. Price data and how to refresh it
 | Data | Source | In the repo |
@@ -573,6 +575,6 @@ dawa_buddy/
 data/                       Price lists, brand table, overrides, NOTICE.md
 scripts/                    audit_bill, read_photos, check_nebius, NPPA PDF parsers, brand-table builder, review-pack builder
 evals/                      Gold sets and runners
-tests/                      242 tests
+tests/                      249 tests
 my_data/                    Your private bills and prescriptions (git-ignored)
 ```

@@ -5,7 +5,7 @@ deterministic rule-based fallbacks are used instead of the model. Offline mode
 is also the baseline the evals compare the model against.
 """
 from __future__ import annotations
-import json, os, re
+import json, os, re, threading
 from typing import Any, Optional
 
 BASE_URL = os.environ.get("NEBIUS_BASE_URL", "https://api.tokenfactory.nebius.com/v1/")
@@ -21,10 +21,22 @@ OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "nemotron-3-nano:4b")
 
 
+_session = threading.local()      # Streamlit runs each visitor's script in its own thread, so this is per visitor
+
+
+def restrict(on: bool) -> None:
+    """Switch every model and web call off for the current visitor (the app does this until the access code is entered), so a leaked link cannot spend credits."""
+    _session.on = bool(on)
+
+
+def restricted() -> bool:
+    return bool(getattr(_session, "on", False))
+
+
 def provider() -> str:
     """'ollama' (local), 'nebius' (Token Factory) or 'offline' (rules only).
-    DAWA_PROVIDER wins; otherwise Nebius if a key is set; otherwise offline."""
-    if os.environ.get("DAWA_OFFLINE") == "1":
+    DAWA_PROVIDER wins; otherwise Nebius if a key is set; otherwise offline. A restricted visitor is always offline."""
+    if restricted() or os.environ.get("DAWA_OFFLINE") == "1":
         return "offline"
     p = os.environ.get("DAWA_PROVIDER", "").lower()
     if p in ("ollama", "nebius", "offline"):

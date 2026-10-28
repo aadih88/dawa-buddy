@@ -8,6 +8,7 @@ no quantities, prices, patient or hospital details.
 from __future__ import annotations
 import os, re
 from collections import Counter
+from . import llm
 from dataclasses import dataclass, field
 from urllib.parse import urlparse
 from .brand_table import norm_salt, lookup
@@ -23,7 +24,7 @@ ACID_FIRST = {"clavulanic", "folic", "ascorbic", "tranexamic", "mefenamic", "val
 
 
 def available() -> bool:
-    return bool(os.environ.get("TAVILY_API_KEY"))
+    return bool(os.environ.get("TAVILY_API_KEY")) and not llm.restricted()
 
 
 def _salt_name(raw: str) -> str:

@@ -724,3 +724,99 @@ def test_a_vaccine_is_shown_apart_from_the_daily_timetable(monkeypatch):
     rows = [row for tbl in at.table for row in tbl.value.to_dict("records")]
     assert [r["Medicine"] for r in rows] == ["Glycomet"]                                         # the table holds only the daily routine
     assert rows[0]["How"] == "1 tablet (500 mg), after food"                                     # an amount, not a bare strength
+
+
+# ---------------------------------------------------------------- the access code: a leaked link must not be able to spend model credits
+def _gated(monkeypatch, code="judge-1234", stage="start", **state):
+    monkeypatch.delenv("DAWA_PROVIDER", raising=False)
+    monkeypatch.delenv("DAWA_OFFLINE", raising=False)
+    monkeypatch.setenv("NEBIUS_API_KEY", "key")
+    monkeypatch.setenv("TAVILY_API_KEY", "tav")
+    if code:
+        monkeypatch.setenv("DAWA_ACCESS_CODE", code)
+    else:
+        monkeypatch.delenv("DAWA_ACCESS_CODE", raising=False)
+    monkeypatch.setattr("time.sleep", lambda s: None)
+    at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
+    for k, v in state.items():
+        at.session_state[k] = v
+    if stage != "start":
+        at.session_state["stage"] = stage
+    at.run()
+    return at
+
+
+def _boom(*a, **k):
+    raise AssertionError("a model or web call was made without the access code")
+
+
+def test_without_a_configured_code_there_is_no_gate(monkeypatch):
+    at = _gated(monkeypatch, code=None)
+    assert "I have an access code" not in " ".join(e.label for e in at.expander)
+    assert "Read my bill" in [b.label for b in at.button]                                   # photo reading is on, as in local use
+
+
+def test_with_a_code_the_visitor_starts_locked_with_only_the_samples(monkeypatch):
+    at = _gated(monkeypatch)
+    labels = [b.label for b in at.button]
+    assert "Read my bill" not in labels and "Outpatient pharmacy bill" in labels and "Hospital pharmacy bill" in labels
+    assert "I have an access code" in [e.label for e in at.expander] and "access code" in html_blocks(at)
+
+
+def test_a_wrong_code_does_not_unlock_and_the_right_one_does(monkeypatch):
+    at = _gated(monkeypatch)
+    at.text_input[0].set_value("wrong"); [b for b in at.button if b.label == "Unlock"][0].click().run()
+    assert "That code is not right." in " ".join(c.value for c in at.caption) and "Read my bill" not in [b.label for b in at.button]
+    at.text_input[0].set_value("judge-1234"); [b for b in at.button if b.label == "Unlock"][0].click().run()
+    assert "Read my bill" in [b.label for b in at.button] and "I have an access code" not in [e.label for e in at.expander]
+
+
+def test_unlocking_survives_starting_another_bill(monkeypatch):
+    at = _gated(monkeypatch, unlocked=True)
+    at.session_state["df"] = __import__("dawa_buddy.samples", fromlist=["frame"]).frame("Outpatient pharmacy bill")
+    at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "results"
+    at.run()
+    [b for b in at.button if b.label == "Check another bill"][0].click().run()
+    assert "Read my bill" in [b.label for b in at.button] and at.session_state["unlocked"] is True
+
+
+def test_a_locked_visitor_cannot_make_any_model_or_web_call(monkeypatch):
+    from dawa_buddy import llm, webcheck, listings
+    for fn in ("chat", "chat_json", "chat_vision_json"):
+        if hasattr(llm, fn):
+            monkeypatch.setattr(llm, fn, _boom)
+    monkeypatch.setattr(listings, "search", _boom)
+    monkeypatch.setattr(webcheck, "lookup_brand", _boom)
+    monkeypatch.setattr(webcheck, "lookup_orders", _boom)
+    at = _gated(monkeypatch)
+    [b for b in at.button if b.key == "sample_Hospital pharmacy bill"][0].click().run()
+    [b for b in at.button if b.label == "See the result"][0].click().run()
+    at.run()
+    assert not at.exception
+    labels = [b.label for b in at.button]
+    assert not [l for l in labels if l.startswith("Look up")]                               # no web look-up buttons at all
+    [e for e in at.expander if e.label == "Explain my medicines in plain language"][0]
+    for lang in ("हिन्दी", "ಕನ್ನಡ"):
+        at.segmented_control[0].set_value(lang).run()
+        [b for b in at.button if b.label == "Explain"][0].click().run()
+        assert not at.exception
+        assert "AI text is switched off without the access code" in " ".join(c.value for c in at.caption)
+
+
+def test_an_unlocked_visitor_gets_everything_back(monkeypatch):
+    from dawa_buddy import llm
+    at = _gated(monkeypatch, unlocked=True)
+    assert llm.provider() == "nebius" and not llm.restricted()
+    assert "Read my bill" in [b.label for b in at.button]
+
+
+def test_restriction_is_per_visitor_not_global():
+    import threading
+    from dawa_buddy import llm
+    seen = {}
+    def other():
+        seen["other"] = llm.restricted()
+    llm.restrict(True)
+    t = threading.Thread(target=other); t.start(); t.join()
+    assert llm.restricted() is True and seen["other"] is False                            # another visitor's thread is unaffected
+    llm.restrict(False)
