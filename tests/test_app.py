@@ -530,9 +530,11 @@ def test_the_explainer_is_its_own_section_not_one_more_row_of_the_identify_list(
     assert "Understand your prescription" not in html_blocks(_bill_app(monkeypatch, REAL4))               # no prescription, no section
 
 
-def test_quiet_buttons_are_styled_with_colour_and_padding():
-    from dawa_buddy import ui
-    css = ui.css()
-    rule = css[css.index('button[data-testid="stBaseButton-tertiary"] {'):]
-    rule = rule[:rule.index("}")]
-    assert "background:var(--brand-tint)" in rule and "padding:0 20px" in rule and "min-height:44px" in rule
+def test_change_ingredients_has_the_same_style_as_confirm_ingredients(monkeypatch):
+    """Both are the primary button (solid teal, white text); neither borrows the tint of the 'confirmed' banner above."""
+    at = _identify_app(monkeypatch)
+    confirm = [b for b in at.button if b.label == "Confirm ingredients"][0]
+    assert confirm.proto.type == "primary"
+    _confirm(at, "bisoprolol 5 mg + telmisartan 40 mg")
+    change = [b for b in at.button if b.label == "Change ingredients"][0]
+    assert change.proto.type == "primary"

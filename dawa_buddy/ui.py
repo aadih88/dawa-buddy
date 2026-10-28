@@ -83,11 +83,6 @@ div.stButton > button[kind="primary"], div.stDownloadButton > button[kind="prima
   background:var(--brand); border:0; color:#fff; font-weight:650; min-height:54px; font-size:1.05rem;}}
 div.stButton > button[kind="primary"]:hover, div.stDownloadButton > button[kind="primary"]:hover {{background:var(--brand-dark); color:#fff;}}
 div.stButton > button:disabled {{opacity:.55;}}
-/* quiet actions ("Change ingredients", "Start over"): a tinted pill with room around the text, never bare text */
-button[data-testid="stBaseButton-tertiary"] {{background:var(--brand-tint) !important; color:var(--brand-dark) !important; border:0 !important; border-radius:12px !important;
-  padding:0 20px !important; min-height:44px !important; font-weight:650 !important; margin:6px 0 8px;}}
-button[data-testid="stBaseButton-tertiary"]:hover {{background:#D8EAE3 !important; color:var(--brand-dark) !important;}}
-button[data-testid="stBaseButton-tertiary"]:disabled {{opacity:.55;}}
 div.stButton > button p, div.stDownloadButton > button p {{font-weight:inherit;}}
 
 /* photo drop zone: camera and wording drawn by CSS around Streamlit's own button */

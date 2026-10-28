@@ -279,7 +279,7 @@ def review():
     if st.button("See the result", type="primary", width="stretch", disabled=checking):
         st.session_state.checking = True
         st.rerun()
-    if st.button("Start over", type="tertiary", width="stretch", disabled=checking):
+    if st.button("Start over", width="stretch", disabled=checking):
         reset(); st.rerun()
     if checking:
         with st.spinner("Checking prices..."):
@@ -596,7 +596,7 @@ def identify(fs, confirmed):
                 what = f"{f.ingredients} {f.strength}".strip() or confirmed[key]
                 st.markdown(f"<div class='db-outcome'><b>Compared as {html.escape(what)}.</b> {html.escape(RESULT[f.tier][1])}. "
                             f"{html.escape(first_sentence(f.note))}</div>", unsafe_allow_html=True)
-                if st.button("Change ingredients", key=f"chg_{key}", type="tertiary"):
+                if st.button("Change ingredients", key=f"chg_{key}", type="primary"):
                     st.session_state[f"edit_{key}"] = True
                     st.session_state.ident_open = key
                     st.rerun()
