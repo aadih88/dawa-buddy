@@ -363,6 +363,13 @@ def mini(f) -> str:
     return f"<div class='mini'><span class='l'>{html.escape(f.line.desc)}<br><span class='small'>{label}</span>{why}</span><span class='r'>{right}</span></div>"
 
 
+def needs_identifying(f) -> bool:
+    """The ONE rule for 'this medicine needs the user to say what it is': an AI or brand-table guess waiting for confirmation, or a line we could not match at all.
+    A medicine we did identify (say, from the brand table) but that no price list covers is not here: there is nothing for the user to confirm.
+    The checklist row, the 'Please confirm' cards and the 'Help us identify' list all use this, so they can never disagree."""
+    return f.basis != "bag" and (f.tier == b.TIER_NEEDS_CONFIRM or (f.tier == b.TIER_NO_BENCHMARK and not f.ingredients))
+
+
 def results(df, total):
     confirmed = st.session_state.setdefault("confirmed", {})
     rows = [vision.Row(**{k: (None if pd.isna(v) else v) for k, v in rec.items() if k in COLS}) for rec in df.to_dict("records")]
@@ -386,8 +393,7 @@ def results(df, total):
     n_ask += len(flagged_listings)
     n_viol_total = n_viol + len(wrong)
     st.markdown(ui.header(3, "Result"), unsafe_allow_html=True)
-    unidentified = [f.line.desc for f in {f.line.desc.lower(): f for f in fs if f.tier in (b.TIER_NEEDS_CONFIRM, b.TIER_NO_BENCHMARK)
-                                           and not f.ingredients and f.basis != "bag"}.values()]
+    unidentified = [f.line.desc for f in {f.line.desc.lower(): f for f in fs if needs_identifying(f)}.values()]
     verdict(n_viol_total, n_ask, s["possible_saving_above_ceiling"] + s["possible_saving_above_mrp"], s["possible_saving_generic"])
     st.markdown(ui.checks(check_rows(fs, flags, wrong, unidentified, s["possible_saving_generic"])), unsafe_allow_html=True)
 
@@ -560,7 +566,7 @@ def identify(fs, confirmed):
     todo, seen = [], set()           # one entry per distinct item: the same medicine can appear twice (two batches)
     for f in fs:
         key = f.line.desc.lower()
-        if key not in seen and (f.tier in (b.TIER_NEEDS_CONFIRM, b.TIER_NO_BENCHMARK) and f.basis != "bag" or key in confirmed):
+        if key not in seen and (needs_identifying(f) or key in confirmed):
             seen.add(key)
             todo.append(f)
     if not todo:

@@ -119,20 +119,6 @@ def test_nppa_price_context_card_appears_after_a_lookup_and_is_not_called_a_limi
     assert "Nothing above a legal limit, but a few questions" in page                       # the verdict counts this question too
 
 
-def test_the_same_item_billed_twice_does_not_break_the_page(monkeypatch):
-    """A real bill had one medicine on two lines (two batches): widget keys must not collide."""
-    monkeypatch.setenv("DAWA_PROVIDER", "offline")
-    import pandas as pd
-    from dawa_buddy import samples
-    df = samples.frame("Outpatient pharmacy bill")
-    df = pd.concat([df, df[df["description"].str.startswith("VELTAM")]], ignore_index=True)     # the Veltam line twice
-    at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
-    at.session_state["df"] = df
-    at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "results"
-    at.run()
-    assert not at.exception
-    rows = [e.label for e in at.expander if "needs your confirmation" in e.label]
-    assert rows == ["VELTAM 0.4MG TAB · needs your confirmation"]                                # Veltam once (two batches, one row); Shelcal is a supplement
 
 
 def test_a_model_guess_is_never_prefilled_into_the_confirm_box(monkeypatch):
@@ -506,13 +492,6 @@ def test_using_the_online_suggestion_also_replaces_the_box_and_hides_the_lookup(
     assert not [b for b in at.button if b.key and b.key.startswith("web_")]                                                      # nothing left to look up once confirmed
 
 
-def test_confirming_the_value_suggested_from_the_brand_table_is_one_press(monkeypatch):
-    """Veltam is in the brand table, so the box arrives pre-filled; the user presses Confirm if it matches the strip (before, they had to edit the text)."""
-    at = _bill_app(monkeypatch, [("VELTAM 0.4MG TAB", 15, 12.66, 15, 210.94)])
-    box = [e for e in at.text_input if "Ingredients" in e.label][0]
-    assert box.value == "tamsulosin 0.4 mg"
-    [b for b in at.button if b.label == "Confirm ingredients"][0].click().run()
-    assert "VELTAM 0.4MG TAB · confirmed" in [e.label for e in at.expander]
 
 
 def test_pressing_confirm_with_an_empty_box_asks_for_the_ingredients_and_confirms_nothing(monkeypatch):
@@ -538,3 +517,46 @@ def test_change_ingredients_has_the_same_style_as_confirm_ingredients(monkeypatc
     _confirm(at, "bisoprolol 5 mg + telmisartan 40 mg")
     change = [b for b in at.button if b.label == "Change ingredients"][0]
     assert change.proto.type == "primary"
+
+
+def test_the_same_item_billed_twice_does_not_break_the_page(monkeypatch):
+    """A real bill had one medicine on two lines (two batches): widget keys must not collide, and it gets one row."""
+    two = [("TAB.CONCOR T 5MG/40", 26, 18.1, 15, 271.5), ("TAB.CONCOR T 5MG/40", 10, 18.1, 15, 271.5), ("SHELCAL 500MG TAB", 30, 9.81, 15, 163.45)]
+    at = _bill_app(monkeypatch, two)
+    assert not at.exception
+    assert [e.label for e in at.expander if "needs your confirmation" in e.label] == ["TAB.CONCOR T 5MG/40 · needs your confirmation"]
+
+
+def test_a_medicine_we_identified_but_no_price_list_covers_is_not_asked_to_be_confirmed(monkeypatch):
+    """Veltam is tamsulosin (brand table) and nothing prices it: there is nothing for the user to confirm, so it must not appear in the identify list."""
+    at = _bill_app(monkeypatch, [("VELTAM 0.4MG TAB", 15, 12.66, 15, 210.94), ("TAB.CONCOR T 5MG/40", 26, 18.1, 15, 271.5)])
+    labels = [e.label for e in at.expander]
+    assert not [l for l in labels if l.startswith("VELTAM")]
+    assert [l for l in labels if l.startswith("TAB.CONCOR T")] == ["TAB.CONCOR T 5MG/40 · needs your confirmation"]
+    assert "Identified as tamsulosin 0.4 mg" in html_blocks(at)                      # still explained, in the 'not covered' list
+
+
+def test_the_checklist_row_and_the_identify_list_always_name_the_same_medicines(monkeypatch):
+    import re as _re
+    rows = [("TAB.CONCOR T 5MG/40", 26, 18.1, 15, 271.5), ("VELTAM 0.4MG TAB", 15, 12.66, 15, 210.94), ("TAB.ROSEDAY GOLD 75MG/75MG/10MG", 30, 17.0, 10, 170.0), ("SHELCAL 500MG TAB", 30, 9.81, 15, 163.45)]
+    at = _bill_app(monkeypatch, rows)
+    page = html_blocks(at)
+    row = _re.search(r"Medicines to confirm</b><span>\d+ medicines? not identified yet: ([^<]*?)\. Confirm them", page).group(1)
+    listed = sorted(e.label.split(" · ")[0] for e in at.expander if "needs your confirmation" in e.label)
+    assert sorted(row.split(", ")) == listed == ["TAB.CONCOR T 5MG/40", "TAB.ROSEDAY GOLD 75MG/75MG/10MG"]
+
+
+def test_one_rule_decides_who_needs_identifying():
+    import importlib.util, sys
+    from dawa_buddy import bill as b
+    src = (ROOT / "bill_app.py").read_text()
+    assert src.count("needs_identifying(f)") >= 3 and "def needs_identifying" in src
+    L = b.BillLine(raw="x", desc="X", qty=1, rate=1.0, amount=1.0, unit="tab", pack=10, mrp=None)
+    ask = lambda **kw: __import__("types").SimpleNamespace(basis="", ingredients="", **kw)
+    ns = {}
+    exec(src[src.index("def needs_identifying"):src.index("def results(")], {"b": b}, ns)
+    f = ns["needs_identifying"]
+    assert f(ask(tier=b.TIER_NEEDS_CONFIRM)) and f(ask(tier=b.TIER_NO_BENCHMARK))                     # a guess, or nothing matched
+    assert not f(__import__("types").SimpleNamespace(basis="", ingredients="tamsulosin", tier=b.TIER_NO_BENCHMARK))   # identified, no price list: nothing to confirm
+    assert not f(__import__("types").SimpleNamespace(basis="bag", ingredients="", tier=b.TIER_NO_BENCHMARK))          # an IV bag is not an unknown medicine
+    assert f(__import__("types").SimpleNamespace(basis="", ingredients="bisoprolol", tier=b.TIER_NEEDS_CONFIRM))      # an AI guess still needs the strip
