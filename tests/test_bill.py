@@ -303,3 +303,22 @@ def test_pack_size_is_only_suggested_when_the_brand_table_is_unambiguous():
     assert b.suggest_pack("VELTAM 0.4MG TAB") == 15 and b.suggest_pack("PANTOP 40 TAB") == 15
     assert b.suggest_pack("TELMA 40 TAB") is None          # sold in more than one pack size: never guess
     assert b.suggest_pack("SHELCAL 500MG TAB") is None     # not in the table
+
+
+def test_a_consumable_billed_far_above_its_printed_mrp_is_caught_per_piece():
+    """The Supreme Court heard a drip line with an MRP of 11 rupees sold for 270. A per-piece unit lets the printed MRP be compared with no pack size."""
+    from dawa_buddy import bill as b
+    line = b.BillLine(raw="IV SET", desc="IV INFUSION SET", qty=1, rate=270.0, amount=270.0, unit="each", pack=None, mrp=11.0)
+    f = b.audit_line(line)
+    assert f.tier == b.TIER_ABOVE_MRP and f.mrp_unit == 11.0 and f.possible_saving == 259.0
+    ok = b.audit_line(b.BillLine(raw="IV SET", desc="IV SET", qty=1, rate=11.0, amount=11.0, unit="each", pack=None, mrp=11.0))
+    assert ok.tier == b.TIER_NOT_MEDICINE and ok.mrp_pct == 100.0
+    no_unit = b.audit_line(b.BillLine(raw="IV SET", desc="IV SET", qty=1, rate=270.0, amount=270.0, unit=None, pack=None, mrp=11.0))
+    assert no_unit.tier != b.TIER_ABOVE_MRP                       # without a unit nothing is assumed: the note says the check could not be made
+
+
+def test_the_hospital_sample_shows_the_consumable_markup():
+    from dawa_buddy import bill as b, samples
+    lines, _ = b.parse_bill_ex(samples.SAMPLES["Hospital pharmacy bill"]["bill"])
+    iv = [b.audit_line(l) for l in lines if "IV SET" in l.desc][0]
+    assert iv.tier == b.TIER_ABOVE_MRP and iv.line.unit == "each"

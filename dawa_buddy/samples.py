@@ -27,14 +27,15 @@ Tab Shelcal-XT 0-1-0 to continue""",
     },
     "Hospital pharmacy bill": {
         "about": "Injections, IV fluids and consumables. Shows per-vial and per-ml injection ceilings, an IV saline bag priced against the "
-                 "ordinary ceiling and the higher 'special features' ceiling, and items no price list covers.",
+                 "ordinary ceiling and the higher 'special features' ceiling, an IV set billed at 24 times its printed MRP (the kind of mark-up the Supreme Court has been "
+                 "asking about), and items no price list covers.",
         "bill": """ACYCLOTAS 500MG INJ ACYCLOVIR | 13 | 568.14 | 7385.82 | vial | | 568.14
 AACEF 250 INJ | 4 | 90.00 | 360.00 | vial
 LASIX INJ | 5 | 25.00 | 125.00 | vial | 2
 NS EUROHEAD IV FLUIDS 0.9% 100ML NON-GLASS DENIS HOUSE | 13 | 45.22 | 587.86
 NS 0.9% 100ML | 2 | 45.22 | 90.44
 SYRINGE 10ML WITH NEEDLE | 13 | 43.99 | 571.87
-IV SET NOVOFUSION 30115 | 2 | 265.00 | 530.00""",
+IV SET NOVOFUSION 30115 | 2 | 265.00 | 530.00 | each | | 11.00""",
         "rx": """INJ.ACYCLOVIR 500MG IV 1-1-1 AFTER FOOD X 7 DAYS
 INJ.CEFTRIAXONE 250MG IV 1-0-1 X 2 DAYS
 INJ NS 100ML IV with each dose x 7 days""",

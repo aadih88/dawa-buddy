@@ -60,14 +60,15 @@ def default_units(df: pd.DataFrame) -> pd.DataFrame:
             return r["unit"]
         d = str(r["description"]).lower()
         return ("vial" if re.search(r"\binj", d) else "bottle" if re.search(r"\b(syp|syrup|susp|suspension|drops?)\b", d) else
-                "tube" if re.search(r"\b(cream|gel|oint|ointment|lotion)\b", d) else None)
+                "tube" if re.search(r"\b(cream|gel|oint|ointment|lotion)\b", d) else
+                "each" if b.NON_MEDICINE.search(d) else None)
     out = df.copy()
     out["unit"] = [None if pd.isna(guess(r)) else guess(r) for r in out.to_dict("records")]
     return out
 
 
 def billed_word(unit: str | None) -> str:
-    return {"tab": "tablet", "strip": "strip", "bottle": "bottle", "tube": "tube", "vial": "vial"}.get((unit or "").lower(), "unit")
+    return {"tab": "tablet", "strip": "strip", "bottle": "bottle", "tube": "tube", "vial": "vial", "each": "piece"}.get((unit or "").lower(), "unit")
 
 
 def first_sentence(text: str) -> str:
@@ -148,7 +149,7 @@ def read_photos(bill_img, rx_img):
 
 
 # ---------------------------------------------------------------- the lines: one card per line, readable on a phone
-UNIT_LABEL = {"tab": "per tablet", "strip": "per strip", "bottle": "per bottle", "tube": "per tube", "vial": "per vial"}
+UNIT_LABEL = {"tab": "per tablet", "strip": "per strip", "bottle": "per bottle", "tube": "per tube", "vial": "per vial", "each": "per piece"}
 PACK_LABEL = {"tab": "Tablets per strip (to compare with the MRP)", "strip": "Tablets per strip", "bottle": "ml in the bottle",
               "tube": "gm in the tube", "vial": "ml in the vial (optional)"}
 
@@ -180,7 +181,7 @@ def unit_options(r: dict) -> list[str]:
     """Only the ways this line can plausibly have been sold: five choices wrap on a phone. A tablet line is per tablet or per strip; a line already
     known to be a syrup, tube or vial adds that one; anything we cannot place keeps every choice."""
     known = r.get("unit") if r.get("unit") in UNIT_LABEL else None
-    if known in ("bottle", "tube", "vial"):
+    if known in ("bottle", "tube", "vial", "each"):
         return [known, "tab", "strip"]
     if known in ("tab", "strip") or re.search(r"\b(tab|tablet|cap|capsule)\b", str(r.get("description", "")).lower()):
         return ["tab", "strip"]
@@ -206,7 +207,7 @@ def lines_form(df: pd.DataFrame, scope: str) -> pd.DataFrame:
             if unit is None:
                 st.caption("How was this sold? Choose one so we can compare the price.")
             pack = None
-            if unit and (unit != "tab" or mrp):
+            if unit and unit != "each" and (unit != "tab" or mrp):
                 pack = st.number_input(PACK_LABEL[unit], min_value=0.0, step=1.0, key=f"{k}_pack",
                                        value=num(r["pack"]) if r.get("pack") is not None and not pd.isna(r.get("pack")) else 0.0,
                                        help="From the strip or box" + ("; suggested: check yours" if guesses.get(str(r["description"])) else ""))

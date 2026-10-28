@@ -57,7 +57,8 @@ def test_hospital_sample_asks_which_saline_pack_instead_of_accusing(app):
     assert "Please confirm what this is" in page and "special-features ceiling" in page and "Above the legal ceiling price" in page
     labels = [e.label for e in app.expander]
     assert not any(l.startswith("Help us identify") for l in labels)            # a bag is not an unknown medicine: no ingredient box
-    assert "Within the limits (2)" in labels and "Not covered by a price list (2)" in labels
+    assert "Within the limits (2)" in labels and "Not covered by a price list (1)" in labels      # the IV set moved up: it is billed far above its printed MRP
+    assert "Above the MRP printed on the pack" in page and "IV SET NOVOFUSION" in page
 
 
 def test_detail_sections_start_folded_away(app):

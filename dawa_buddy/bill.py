@@ -80,6 +80,7 @@ STRIP_UNITS = {"strip", "strips", "pack", "packs", "blister", "sheet"}
 BOTTLE_UNITS = {"bottle", "bottles", "btl", "ml"}      # content in ml
 TUBE_UNITS = {"tube", "tubes", "jar", "gm", "g"}       # content in gm
 VIAL_UNITS = {"vial", "vials", "amp", "amps", "ampoule", "ampoules"}   # one container; pack = ml it holds (optional)
+EACH_UNITS = {"each", "ea"}                             # one piece of a consumable or device: the printed MRP is per piece, no pack size needed
 
 
 def _num(x: str) -> bool:
@@ -268,6 +269,8 @@ def _mrp_on_billed_basis(line: BillLine) -> Optional[float]:
     if not line.mrp:
         return None
     u = (line.unit or "").lower()
+    if u in EACH_UNITS:
+        return line.mrp
     if u in TAB_UNITS:
         return line.mrp / line.pack if line.pack else None
     return line.mrp if u in STRIP_UNITS | BOTTLE_UNITS | TUBE_UNITS | VIAL_UNITS and u not in ("ml", "gm", "g") else None
