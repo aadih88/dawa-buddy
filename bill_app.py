@@ -199,55 +199,111 @@ def unit_options(r: dict) -> list[str]:
     return list(UNIT_LABEL)
 
 
+def refresh_lines(df: pd.DataFrame) -> None:
+    """Replace the bill lines (after a lookup or when moving on): new widget keys, and the per-line edit bookkeeping that belonged to the old ones is dropped."""
+    st.session_state.df = df
+    st.session_state.load_id = st.session_state.get("load_id", 0) + 1
+    for name in ("removed", "edits", "memo", "ver"):
+        st.session_state.pop(name, None)
+
+
+def calc_text(qty, rate, amount) -> str:
+    return f"{qty:g} × {rupees(rate)} = {rupees(amount)}"
+
+
+def needs_strip_size(unit, mrp, pack) -> bool:
+    """A printed MRP is per strip: comparing it with a per-tablet price needs tablets per strip. (A per-strip price needs it too.)"""
+    return (unit == "strip" and not pack) or (unit == "tab" and bool(mrp) and not pack)
+
+
 def lines_form(df: pd.DataFrame, scope: str) -> pd.DataFrame:
-    """One card per bill line: what we read (to compare with the paper), how it was sold, pack size, and a popover to fix any number."""
+    """One card per bill line: what we read (to compare with the paper), how it was sold, pack size, and a popover to fix a number.
+    Edits are STAGED in a small form and apply only on 'Save changes'; the total is always quantity x price; a removed line goes to 'Removed lines' and can be put back."""
     guesses = st.session_state.get("pack_guess", {})
+    removed = st.session_state.setdefault("removed", set())
+    edits, memo, ver = (st.session_state.setdefault(n, {}) for n in ("edits", "memo", "ver"))
+    trash = st.session_state.setdefault("trash", [])
     rows = []
     for i, r in enumerate(df.to_dict("records")):
         k = f"{scope}{st.session_state.get('load_id', 0)}_{i}"
-        if st.session_state.get(f"{k}_rm"):
+        if k in removed:
             continue
-        qty, rate = st.session_state.get(f"{k}_qty", num(r["qty"])), st.session_state.get(f"{k}_rate", num(r["rate"]))
-        amount, mrp = st.session_state.get(f"{k}_amt", num(r["amount"])), st.session_state.get(f"{k}_mrp", num(r["mrp"]))
-        name = st.session_state.get(f"{k}_name", str(r["description"]))
+        ed = edits.get(k, {})
+        name, qty, rate, mrp = ed.get("name", str(r["description"])), ed.get("qty", num(r["qty"])), ed.get("rate", num(r["rate"])), ed.get("mrp", num(r["mrp"]))
+        amount = ed.get("amount", num(r["amount"]))
+        mismatch = abs(qty * rate - amount) > max(0.51, 0.005 * amount)
         with st.container(border=True, key=f"card_{k}"):
-            st.markdown(ui.line_head(name, f"{qty:g} × {rupees(rate)} = {rupees(amount)}", f"MRP on pack {rupees(mrp)}" if mrp else "", bool(r.get("unsure"))),
-                        unsafe_allow_html=True)
-            unit = st.segmented_control("Sold", unit_options(r), format_func=UNIT_LABEL.get, key=f"{k}_unit", label_visibility="collapsed",
-                                        default=r["unit"] if r["unit"] in UNIT_LABEL else None)
+            st.markdown(ui.line_head(name, calc_text(qty, rate, amount), f"MRP on pack {rupees(mrp)}" if mrp else "", bool(r.get("unsure")), mismatch), unsafe_allow_html=True)
+            unit_default = memo.get(k, {}).get("unit", r["unit"] if r["unit"] in UNIT_LABEL else None)
+            unit = st.segmented_control("Sold", unit_options(r), format_func=UNIT_LABEL.get, key=f"{k}_unit", label_visibility="collapsed", default=unit_default)
             if unit is None:
-                st.caption("How was this sold? Choose one so we can compare the price.")
+                st.markdown(ui.need("How was this sold? Choose one so we can compare the price."), unsafe_allow_html=True)
             pack = None
             if unit and unit != "each" and (unit != "tab" or mrp):
-                pack = st.number_input(PACK_LABEL[unit], min_value=0.0, step=1.0, key=f"{k}_pack",
-                                       value=num(r["pack"]) if r.get("pack") is not None and not pd.isna(r.get("pack")) else 0.0,
+                pack_default = memo.get(k, {}).get("pack", num(r["pack"]) if r.get("pack") is not None and not pd.isna(r.get("pack")) else 0.0)
+                pack = st.number_input(PACK_LABEL[unit], min_value=0.0, step=1.0, key=f"{k}_pack", value=pack_default,
                                        help="From the strip or box" + ("; suggested: check yours" if guesses.get(str(r["description"])) else ""))
                 g = guesses.get(str(r["description"]))
                 if g and pack == g[0]:
                     st.caption(f"Suggested from {g[1]}. Check it on your strip.")
+                elif needs_strip_size(unit, mrp, pack):
+                    st.markdown(ui.need(f"Needed: the MRP of {rupees(mrp)} on the pack is for a whole strip. Enter the tablets per strip (printed on the strip or box) to check it."
+                                        if mrp else "Needed: the tablets per strip, to turn the strip price into a price per tablet."), unsafe_allow_html=True)
+            memo[k] = {"unit": unit, "pack": pack or 0.0}
             with st.popover("Fix a number", width="stretch"):
-                st.text_input("Item", value=str(r["description"]), key=f"{k}_name")
-                c1, c2, c3 = st.columns(3)
-                c1.number_input("Qty", min_value=0.0, value=num(r["qty"]), key=f"{k}_qty")
-                c2.number_input("Price each", min_value=0.0, value=num(r["rate"]), step=0.01, key=f"{k}_rate")
-                c3.number_input("Total", min_value=0.0, value=num(r["amount"]), step=0.01, key=f"{k}_amt")
-                st.number_input("MRP printed on the pack (optional)", min_value=0.0, value=num(r["mrp"]), step=0.01, key=f"{k}_mrp")
-                st.checkbox("Remove this line", key=f"{k}_rm")
+                v = ver.get(k, 0)
+                with st.form(f"fix_{k}_{v}", border=False):         # nothing changes until the user presses Save
+                    new_name = st.text_input("Item", value=name, key=f"{k}_fn{v}")
+                    c1, c2 = st.columns(2)
+                    new_qty = c1.number_input("Quantity", min_value=0.0, value=float(qty), key=f"{k}_fq{v}")
+                    new_rate = c2.number_input("Price each (₹)", min_value=0.0, value=float(rate), step=0.01, key=f"{k}_fr{v}")
+                    new_mrp = st.number_input("MRP printed on the pack (optional)", min_value=0.0, value=float(mrp), step=0.01, key=f"{k}_fm{v}")
+                    st.caption("The total is worked out as quantity × price.")
+                    saved = st.form_submit_button("Save changes", type="primary")
+                if saved:
+                    edits[k] = {"name": new_name.strip() or name, "qty": new_qty, "rate": new_rate, "mrp": new_mrp,
+                                "amount": round(new_qty * new_rate, 2) if (new_qty, new_rate) != (qty, rate) else amount}
+                    ver[k] = v + 1
+                    st.rerun()
+                if st.button("Remove this line", key=f"{k}_rm", help="It goes to “Removed lines” below, where you can put it back."):
+                    removed.add(k)
+                    trash.append({"k": k, "row": {"description": name, "qty": qty, "rate": rate, "amount": amount, "unit": unit, "pack": pack or None,
+                                                  "mrp": mrp or None, "unsure": bool(r.get("unsure"))}})
+                    st.rerun()
         rows.append({"description": name, "qty": qty, "rate": rate, "amount": amount, "unit": unit, "pack": (pack or None),
                      "mrp": (mrp or None), "unsure": bool(r.get("unsure"))})
+    if trash:
+        with st.expander(f"Removed lines ({len(trash)})"):
+            for j, t in enumerate(list(trash)):
+                c1, c2 = st.columns([3, 2], vertical_alignment="center")
+                c1.markdown(f"**{t['row']['description']}**  \n{calc_text(t['row']['qty'], t['row']['rate'], t['row']['amount'])}")
+                if c2.button("Put back", key=f"undo_{scope}_{j}_{t['k']}", width="stretch"):
+                    trash.pop(j)
+                    if t["k"] in removed:                  # still in the table, only hidden
+                        removed.discard(t["k"])
+                    else:                                  # the table was rebuilt since: add the row again
+                        st.session_state.df = pd.DataFrame(df.to_dict("records") + [t["row"]], columns=df.columns)
+                    st.rerun()
     return pd.DataFrame(rows, columns=COLS)
 
 
 def add_line():
     with st.popover("Add a line we missed", width="stretch"):
-        name = st.text_input("Item", key="new_name")
-        c1, c2, c3 = st.columns(3)
-        qty = c1.number_input("Qty", min_value=0.0, value=1.0, key="new_qty")
-        rate = c2.number_input("Price each", min_value=0.0, step=0.01, key="new_rate")
-        amount = c3.number_input("Total", min_value=0.0, step=0.01, key="new_amt")
-        if st.button("Add", key="new_add") and name.strip():
-            row = {"description": name.strip(), "qty": qty, "rate": rate, "amount": amount, "unit": None, "pack": None, "mrp": None, "unsure": False}
-            st.session_state.df = pd.concat([st.session_state.df, pd.DataFrame([row])], ignore_index=True)
+        v = st.session_state.get("add_ver", 0)
+        with st.form(f"add_{v}", border=False):
+            name = st.text_input("Item name, as printed", key=f"new_name{v}")
+            c1, c2 = st.columns(2)
+            qty = c1.number_input("Quantity", min_value=0.0, value=1.0, key=f"new_qty{v}")
+            rate = c2.number_input("Price each (₹)", min_value=0.0, step=0.01, key=f"new_rate{v}")
+            mrp = st.number_input("MRP printed on the pack (optional)", min_value=0.0, step=0.01, key=f"new_mrp{v}")
+            st.caption("The total is worked out as quantity × price. Choose how it was sold on its card afterwards.")
+            added = st.form_submit_button("Add this line", type="primary")
+        if added and (not name.strip() or qty <= 0 or rate <= 0):
+            st.caption("Give the item a name, a quantity and a price first.")
+        elif added:
+            row = {"description": name.strip(), "qty": qty, "rate": rate, "amount": round(qty * rate, 2), "unit": None, "pack": None, "mrp": mrp or None, "unsure": False}
+            st.session_state.df = pd.DataFrame(st.session_state.df.to_dict("records") + [row], columns=st.session_state.df.columns)
+            st.session_state.add_ver = v + 1
             st.rerun()
 
 
@@ -263,6 +319,29 @@ def dose_warning(text: str) -> bool:
     return bool(bad)
 
 
+def review_gaps(df: pd.DataFrame) -> tuple[list[str], list[str]]:
+    """One amber note at the top for the numbers a line still needs before it can be checked, with a button to find strip sizes online right where they are needed."""
+    blank = lambda v: None if v is None or (isinstance(v, float) and pd.isna(v)) else v          # a missing number reaches us as NaN, which is truthy
+    recs = [{**r, "unit": blank(r["unit"]), "pack": blank(r["pack"]), "mrp": blank(r["mrp"])} for r in df.to_dict("records")]
+    no_unit = [r["description"] for r in recs if not r["unit"]]
+    no_pack = [r for r in recs if needs_strip_size(r["unit"], r["mrp"], r["pack"])]
+    items = ([(d, "Choose how it was sold (per tablet, per strip…): we cannot compare the price without it.") for d in no_unit]
+             + [(r["description"], f"Enter the tablets per strip: the MRP of {rupees(r['mrp'])} on the pack is for a whole strip." if r["mrp"]
+                 else "Enter the tablets per strip, to turn the strip price into a price per tablet.") for r in no_pack])
+    if items:
+        n = len(items)
+        st.markdown(ui.note("amber", f"{n} line{'s need' if n > 1 else ' needs'} a number before we can check {'them' if n > 1 else 'it'}", items,
+                            foot="Until then the line gets no price judgement and its printed MRP cannot be checked."), unsafe_allow_html=True)
+    asked = st.session_state.get("listings", {})
+    todo = [r["description"] for r in no_pack if r["description"].lower() not in asked]
+    if todo and webcheck.available():
+        names = ", ".join(dict.fromkeys(todo))
+        if st.button(f"Find strip sizes online for {names}", key="find_strips", type="primary", width="stretch",
+                     help="Reads the strip size from pharmacy websites and fills it in as a suggestion. Check it against your strip before continuing."):
+            run_listing_lookup(df, list(dict.fromkeys(todo)))
+    return no_unit, [r["description"] for r in no_pack]
+
+
 def review():
     st.markdown(ui.header(2, "Step 2 of 3 · Check the numbers"), unsafe_allow_html=True)
     st.title("Check the numbers")
@@ -270,12 +349,19 @@ def review():
     if st.session_state.get("sample"):
         st.caption(f"Sample: {samples.SAMPLES[st.session_state.sample]['about']}")
     unclear = dose_warning(st.session_state.get("rx", ""))      # first: it is the thing most likely to be missed, so it must not sit below six cards
+    top = st.container()                                        # filled after the cards are drawn: the note depends on what the cards now say
     df = lines_form(st.session_state.df, "r")
     add_line()
     total = st.number_input("Total printed on the bill (optional)", value=float(st.session_state.get("total") or 0.0))
     with st.expander("Prescription lines", expanded=unclear):
         st.text_area("One medicine per line, as written", key="rx", height=130, label_visibility="collapsed")
+    with top:
+        no_unit, no_pack = review_gaps(df)
     checking = st.session_state.get("checking", False)
+    if no_unit or no_pack:
+        parts = ([f"{len(no_pack)} line{'s' if len(no_pack) > 1 else ''} will not be checked against {'their' if len(no_pack) > 1 else 'its'} printed MRP"] if no_pack else []) \
+              + ([f"{len(no_unit)} line{'s' if len(no_unit) > 1 else ''} will get no price judgement"] if no_unit else [])
+        st.caption(" and ".join(parts) + " until the numbers above are filled in. You can still continue.")
     if st.button("See the result", type="primary", width="stretch", disabled=checking):
         st.session_state.checking = True
         st.rerun()
@@ -283,7 +369,8 @@ def review():
         reset(); st.rerun()
     if checking:
         with st.spinner("Checking prices..."):
-            st.session_state.update(df=df, total=total, stage="results", load_id=st.session_state.get("load_id", 0) + 1, checking=False)
+            refresh_lines(df)
+            st.session_state.update(total=total, stage="results", checking=False)
             st.rerun()
 
 
@@ -398,7 +485,7 @@ def results(df, total):
     st.markdown(ui.checks(check_rows(fs, flags, wrong, unidentified, s["possible_saving_generic"])), unsafe_allow_html=True)
 
     needs_pack = [f for f in fs if f.line.mrp and f.mrp_unit is None and (f.line.unit or "").lower() in ("tab", "strip") and not f.line.pack]
-    if needs_pack:
+    if needs_pack and not (webcheck.available() and eligible_for_listing(fs)):
         st.caption(f"Tip: {len(needs_pack)} line{'s have' if len(needs_pack) > 1 else ' has'} a printed MRP but no tablets-per-strip, so the MRP could "
                    "not be checked. Add it under “Edit the numbers”.")
 
@@ -495,29 +582,37 @@ def eligible_for_listing(fs) -> list:
     return out
 
 
+def run_listing_lookup(df: pd.DataFrame, descs: list[str]) -> None:
+    """Read pharmacy websites for these bill lines, fill pack sizes in as SUGGESTIONS, and keep what the sites say for the result cards."""
+    with st.spinner("Searching pharmacy websites..."):
+        with ThreadPoolExecutor(max_workers=6) as ex:
+            found = list(ex.map(listings.search, descs))
+    book = st.session_state.setdefault("listings", {})
+    guesses = st.session_state.setdefault("pack_guess", {})
+    new = df.copy()
+    for d, lst in zip(descs, found):
+        book[d.lower()] = lst
+        if lst and lst.pack:
+            for i in new.index[new["description"] == d]:
+                if pd.isna(new.at[i, "pack"]) or not new.at[i, "pack"]:
+                    new.at[i, "pack"] = lst.pack
+                    guesses[d] = (lst.pack, "pharmacy websites (" + ", ".join(x.split(".")[0] for x in lst.pack_sites) + ")")
+    refresh_lines(new)
+    st.rerun()
+
+
 def online_check(fs, df) -> None:
-    """One button: look the lines up on pharmacy websites, fill pack sizes in as SUGGESTIONS, and keep what the sites say for the cards."""
+    """Tell the user what the look-up is for and which medicines it covers, then one button."""
     todo = eligible_for_listing(fs)
     if not todo or not webcheck.available():
         return
-    if st.button(f"Look up {len(todo)} line{'s' if len(todo) > 1 else ''} on pharmacy websites", width="stretch",
-                 help="Reads the strip size and the listed price from 1mg, PharmEasy, Truemeds and Netmeds so your MRP can be checked. A listing is a reference, never the legal limit."):
-        with st.spinner("Searching pharmacy websites..."):
-            with ThreadPoolExecutor(max_workers=6) as ex:
-                found = list(ex.map(lambda f: listings.search(f.line.desc), todo))
-        book = st.session_state.setdefault("listings", {})
-        guesses = st.session_state.setdefault("pack_guess", {})
-        new = df.copy()
-        for f, lst in zip(todo, found):
-            book[f.line.desc.lower()] = lst
-            if lst and lst.pack:
-                for i in new.index[new["description"] == f.line.desc]:
-                    if pd.isna(new.at[i, "pack"]) or not new.at[i, "pack"]:
-                        new.at[i, "pack"] = lst.pack
-                        guesses[f.line.desc] = (lst.pack, "pharmacy websites (" + ", ".join(x.split(".")[0] for x in lst.pack_sites) + ")")
-        st.session_state.df = new
-        st.session_state.load_id = st.session_state.get("load_id", 0) + 1
-        st.rerun()
+    names = ", ".join(html.escape(f.line.desc) for f in todo)
+    st.markdown(ui.callout(f"<b>Strip size and listed price</b> can be read from pharmacy websites for: {names}. "
+                           "That lets us check the MRP printed on your bill against what the sites list. A listing is a reference, never the legal limit.", "search"),
+                unsafe_allow_html=True)
+    if st.button(f"Look up {len(todo)} line{'s' if len(todo) > 1 else ''} on pharmacy websites", type="primary", width="stretch", key="listing_lookup",
+                 help="Reads the strip size and the listed price from 1mg, PharmEasy, Truemeds and Netmeds so your MRP can be checked."):
+        run_listing_lookup(df, [f.line.desc for f in todo])
 
 
 def listing_findings(fs) -> list[dict]:

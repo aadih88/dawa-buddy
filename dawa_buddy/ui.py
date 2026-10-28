@@ -177,6 +177,7 @@ div[class*="st-key-card_"] {{background:var(--card); border:1px solid var(--line
 .db-check {{display:flex; gap:12px; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--hair);}} .db-check:last-child {{border-bottom:0;}}
 .db-ckicon {{width:28px; height:28px; flex:none; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-top:1px;}}
 .db-check b {{display:block; font-size:.95rem; font-weight:650;}} .db-check span:not(.db-ckicon) {{display:block; margin-top:1px; font-size:.86rem; line-height:1.45; color:var(--muted);}}
+.db-need {{margin:4px 0 6px; border-radius:10px; padding:7px 11px; background:{S['amber']['bg']}; color:{S['amber']['deep']}; font-size:.86rem; line-height:1.4;}}
 .db-watch {{margin-top:8px; font-size:.9rem; line-height:1.5; color:var(--muted); overflow-wrap:anywhere;}} .db-watch b {{color:var(--ink);}}
 .db-note {{border-radius:16px; padding:13px 15px; margin:0 0 10px;}}
 .db-notehead {{display:flex; align-items:center; gap:7px; font-size:.82rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase;}}
@@ -304,11 +305,17 @@ def message(kind: str, text: str) -> str:
             f'<div>{esc(text)}</div></div>')
 
 
-def line_head(name: str, calc: str, mrp: str = "", unsure: bool = False) -> str:
-    """Top of a bill-line card on the review screen: the item as read, what we read for it (to compare with the paper), MRP and a re-check chip."""
-    chips = (chip("amber", "Please re-check this line", "help") if unsure else "") + (f'<span class="db-mrp">{esc(mrp)}</span>' if mrp else "")
+def line_head(name: str, calc: str, mrp: str = "", unsure: bool = False, mismatch: bool = False) -> str:
+    """Top of a bill-line card on the review screen: the item as read, what we read for it (to compare with the paper), MRP and re-check chips."""
+    chips = ((chip("amber", "Please re-check this line", "help") if unsure else "") + (chip("amber", "Quantity × price does not match the total", "help") if mismatch else "")
+             + (f'<span class="db-mrp">{esc(mrp)}</span>' if mrp else ""))
     return (f'<div class="db-name">{esc(name)}</div><div class="db-calc">{esc(calc)}</div>'
             f'{f"<div class=db-chips>{chips}</div>" if chips else ""}')
+
+
+def need(text: str) -> str:
+    """A small amber line under a field that must be filled for the line to be checked."""
+    return f'<div class="db-need">{esc(text)}</div>'
 
 
 def note(kind: str, heading: str, items: list[tuple[str, str]], foot: str = "") -> str:

@@ -157,8 +157,11 @@ def test_one_button_fills_pack_sizes_and_checks_the_mrp_against_pharmacy_listing
     at.session_state["df"] = _bill([("CONCOR T 5MG TAB", 30, 15.73, 471.82, "tab", None, 174.75)])      # MRP printed, strip size not
     at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "results"
     at.run()
-    assert "tablets-per-strip" in " ".join(c.value for c in at.caption)                             # the nudge, and no MRP check yet
-    [b for b in at.button if b.label.startswith("Look up 1 line on pharmacy websites")][0].click().run()
+    page = html_blocks(at)
+    assert "Strip size and listed price" in page and "CONCOR T 5MG TAB" in page                       # says what the look-up is for and which medicine it covers
+    btn = [b for b in at.button if b.label.startswith("Look up 1 line on pharmacy websites")][0]
+    assert btn.proto.type == "primary"                                                              # the same action colour as the other main buttons
+    btn.click().run()
     assert not at.exception
     assert at.session_state["df"].loc[0, "pack"] == 10                                              # filled in as a suggestion
     assert at.session_state["pack_guess"]["CONCOR T 5MG TAB"][0] == 10 and "pharmacy websites" in at.session_state["pack_guess"]["CONCOR T 5MG TAB"][1]
@@ -590,3 +593,112 @@ def test_changing_a_confirmed_answer_keeps_the_section_available(monkeypatch):
     assert _badge(html_blocks(at), "Medicines you confirmed") == 1
     [b for b in at.button if b.label == "Change ingredients"][0].click().run()
     assert [e for e in at.text_input if "Ingredients" in e.label]                          # reopened for editing
+
+
+# ---------------------------------------------------------------- the review screen: staged edits, undo, add, missing numbers
+def _review(monkeypatch, rows, **kw):
+    import pandas as pd
+    monkeypatch.setenv("DAWA_PROVIDER", "offline")
+    at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
+    at.session_state["df"] = pd.DataFrame([{"description": d, "qty": q, "rate": r, "amount": round(q * r, 2), "unit": u, "pack": pk, "mrp": m, "unsure": False} for d, q, r, u, pk, m in rows])
+    at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "review"
+    at.run()
+    return at
+
+
+ROWS2 = [("TELMA 40 TAB", 10, 12.4, "tab", 30, None), ("SHELCAL 500MG TAB", 30, 9.81, "tab", None, 163.45)]
+
+
+def test_fix_a_number_is_staged_until_save_changes_is_pressed(monkeypatch):
+    at = _review(monkeypatch, ROWS2)
+    assert "10 × ₹12.40 = ₹124" in html_blocks(at)
+    at.number_input(key="r0_0_fq0").set_value(20).run()                         # typed, not saved: nothing changes
+    assert "10 × ₹12.40 = ₹124" in html_blocks(at) and "20 × ₹12.40" not in html_blocks(at)
+    at = _review(monkeypatch, ROWS2)
+    at.number_input(key="r0_0_fq0").set_value(20)
+    [b for b in at.button if b.label == "Save changes"][0].click().run()          # typed and saved: the card changes and the total follows
+    assert "20 × ₹12.40 = ₹248" in html_blocks(at)
+
+
+def test_the_total_is_always_quantity_times_price_and_is_not_an_input(monkeypatch):
+    at = _review(monkeypatch, ROWS2)
+    labels = [n.label for n in at.number_input]
+    assert not [l for l in labels if l.startswith("Total") and "bill" not in l]    # no per-line Total field (the bill-level 'Total printed' stays)
+    at.number_input(key="r0_0_fr0").set_value(10.0)
+    [b for b in at.button if b.label == "Save changes"][0].click().run()
+    assert "10 × ₹10 = ₹100" in html_blocks(at)
+
+
+def test_a_line_whose_total_does_not_add_up_is_marked(monkeypatch):
+    import pandas as pd
+    at = _review(monkeypatch, ROWS2)
+    df = at.session_state["df"].copy(); df.loc[0, "amount"] = 999.0
+    at.session_state["df"] = df; at.run()
+    assert "Quantity × price does not match the total" in html_blocks(at)
+
+
+def test_a_removed_line_can_be_put_back(monkeypatch):
+    at = _review(monkeypatch, ROWS2)
+    [b for b in at.button if b.key == "r0_0_rm"][0].click().run()
+    page = html_blocks(at)
+    assert "TELMA 40 TAB" not in page.split("Removed lines")[0] if "Removed lines" in page else True
+    assert "Removed lines (1)" in [e.label for e in at.expander]
+    [b for b in at.button if b.label == "Put back"][0].click().run()
+    assert "Removed lines" not in " ".join(e.label for e in at.expander) and "TELMA 40 TAB" in html_blocks(at)
+
+
+def test_a_removed_line_is_not_in_the_result_but_can_still_be_restored_after_moving_on(monkeypatch):
+    at = _review(monkeypatch, ROWS2)
+    [b for b in at.button if b.key == "r0_0_rm"][0].click().run()
+    [b for b in at.button if b.label == "See the result"][0].click().run()
+    assert len(at.session_state["df"]) == 1                                         # the result is built without it
+    assert "Removed lines (1)" in [e.label for e in at.expander]                    # ... but it is still recoverable
+    [b for b in at.button if b.label == "Put back"][0].click().run()
+    assert len(at.session_state["df"]) == 2
+
+
+def test_add_a_line_is_a_form_with_a_primary_button_and_validates(monkeypatch):
+    at = _review(monkeypatch, ROWS2)
+    add = [b for b in at.button if b.label == "Add this line"][0]
+    assert add.proto.type == "primary"
+    add.click().run()                                                              # empty form
+    assert "Give the item a name, a quantity and a price first." in " ".join(c.value for c in at.caption) and len(at.session_state["df"]) == 2
+    at.text_input(key="new_name0").set_value("DOLO 650 TAB")
+    at.number_input(key="new_qty0").set_value(10)
+    at.number_input(key="new_rate0").set_value(2.1)
+    [b for b in at.button if b.label == "Add this line"][0].click().run()
+    assert len(at.session_state["df"]) == 3 and "10 × ₹2.10 = ₹21" in html_blocks(at)
+
+
+def test_lines_that_need_a_strip_size_are_named_at_the_top_and_flagged_on_the_card(monkeypatch):
+    at = _review(monkeypatch, ROWS2)
+    page = html_blocks(at)
+    assert "1 line needs a number before we can check it" in page and "SHELCAL 500MG TAB" in page.split("needs a number")[1]
+    assert "Needed: the MRP of ₹163.45 on the pack is for a whole strip" in page
+    assert "1 line will not be checked against its printed MRP" in " ".join(c.value for c in at.caption)
+    assert "TELMA 40 TAB" not in page.split("needs a number")[1].split("</div></div>")[0]          # Telma has its pack size: not listed
+
+
+def test_no_strip_size_note_when_everything_needed_is_filled_in(monkeypatch):
+    at = _review(monkeypatch, [("TELMA 40 TAB", 10, 12.4, "tab", 30, None)])
+    assert "needs a number" not in html_blocks(at) and "will not be checked" not in " ".join(c.value for c in at.caption)
+
+
+def test_find_strip_sizes_online_sits_on_the_review_screen_names_the_medicines_and_fills_them_in(monkeypatch):
+    monkeypatch.setenv("TAVILY_API_KEY", "test")
+    from dawa_buddy import listings
+    monkeypatch.setattr(listings, "search", lambda desc: _listing(163.45, 15))
+    at = _review(monkeypatch, ROWS2)
+    btn = [b for b in at.button if b.key == "find_strips"][0]
+    assert btn.proto.type == "primary" and "SHELCAL 500MG TAB" in btn.label
+    btn.click().run()
+    assert not at.exception and at.session_state["df"].loc[1, "pack"] == 15
+    assert "needs a number" not in html_blocks(at)                                              # the gap is closed; the suggestion is labelled for checking
+    assert "Suggested from pharmacy websites" in " ".join(c.value for c in at.caption)
+
+
+def test_results_lookup_callout_names_the_medicines_it_will_look_up(monkeypatch):
+    monkeypatch.setenv("TAVILY_API_KEY", "test")
+    at = _bill_app(monkeypatch, [("SHELCAL 500MG TAB", 30, 9.81, None, 163.45), ("CONCOR T 5MG TAB", 30, 15.73, None, 174.75)])
+    page = html_blocks(at)
+    assert "Strip size and listed price" in page and "SHELCAL 500MG TAB, CONCOR T 5MG TAB" in page
