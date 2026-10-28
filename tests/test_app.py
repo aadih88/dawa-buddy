@@ -60,7 +60,7 @@ def test_hospital_sample_asks_which_saline_pack_instead_of_accusing(app):
     page = html_blocks(app)
     assert "Please confirm what this is" in page and "special-features ceiling" in page and "Above the legal ceiling price" in page
     labels = [e.label for e in app.expander]
-    assert not any(l.startswith("Help us identify") for l in labels)            # a bag is not an unknown medicine: no ingredient box
+    assert not any("needs your confirmation" in l or l.endswith("· confirmed") for l in labels)       # a bag is not an unknown medicine: no ingredient row
     assert "Within the limits (2)" in labels and "Not covered by a price list (1)" in labels      # the IV set moved up: it is billed far above its printed MRP
     assert "Above the MRP printed on the pack" in page and "IV SET NOVOFUSION" in page
 
@@ -131,8 +131,8 @@ def test_the_same_item_billed_twice_does_not_break_the_page(monkeypatch):
     at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "results"
     at.run()
     assert not at.exception
-    assert sum(1 for e in at.expander if e.label.startswith("Help us identify")) == 1
-    assert "Help us identify 1 item" in [e.label for e in at.expander]                          # Veltam once; Shelcal is a supplement
+    rows = [e.label for e in at.expander if "needs your confirmation" in e.label]
+    assert rows == ["VELTAM 0.4MG TAB · needs your confirmation"]                                # Veltam once (two batches, one row); Shelcal is a supplement
 
 
 def test_a_model_guess_is_never_prefilled_into_the_confirm_box(monkeypatch):
@@ -329,9 +329,9 @@ def test_not_covered_items_say_why_and_how_they_were_judged(monkeypatch):
 
 def test_the_identify_box_stays_open_after_a_confirmation_so_the_outcome_is_visible(monkeypatch):
     at = _identify_app(monkeypatch)
-    assert not [e for e in at.expander if e.label.startswith("Help us identify")][0].proto.expanded
+    assert not [e for e in at.expander if e.label.startswith("TAB.CONCOR T 5MG")][0].proto.expanded
     [t for t in at.text_input if t.label.startswith("Ingredients")][0].set_value("bisoprolol 5 mg").run()
-    box = [e for e in at.expander if e.label.startswith("Help us identify")][0]
+    box = [e for e in at.expander if e.label.startswith("TAB.CONCOR T 5MG")][0]
     assert box.proto.expanded and "Compared as bisoprolol 5 mg" in " ".join(m.value for m in at.markdown)
 
 
@@ -397,3 +397,81 @@ def test_the_mrp_row_reads_correctly_with_one_other_line_and_lines_that_could_no
     assert "Charged above the printed MRP on 1 line of 7. 1 other line is within it. 5 had no MRP or pack size to compare." in page
     ok = html_blocks(_bill_app(monkeypatch, [("SHELCAL 500MG TAB", 30, 9.81, 15, 163.45), ("DOLO 650 TAB", 10, 2.1, None, None)]))
     assert "Charged at or below the printed MRP on 1 line of 2" in ok and "1 had no MRP or pack size to compare" in ok
+
+
+def _fake_web(monkeypatch):
+    """Tavily is not called: one clear answer comes back for any brand, so the buttons can be exercised."""
+    from dawa_buddy import webcheck
+    monkeypatch.setattr(webcheck, "available", lambda: True)
+    calls = []
+    def fake(desc, form="tablet"):
+        calls.append(desc)
+        return webcheck.Evidence(query="q", consensus=frozenset({("bisoprolol", "5mg"), ("telmisartan", "40mg")}), note="Two different sites agree. Check this against your strip.")
+    monkeypatch.setattr(webcheck, "lookup_brand", fake)
+    return calls
+
+
+def test_the_online_lookup_button_is_disabled_once_used_and_runs_only_once(monkeypatch):
+    calls = _fake_web(monkeypatch)
+    at = _identify_app(monkeypatch)
+    btn = [b for b in at.button if b.key and b.key.startswith("web_")][0]
+    assert not btn.disabled and btn.label == "Look up the ingredients online"
+    btn.click().run()
+    done = [b for b in at.button if b.key and b.key.startswith("web_")][0]
+    assert done.disabled and done.label == "Looked up online (see below)" and len(calls) == 1
+    at.run()                                                                         # any later interaction: still disabled, still one search
+    assert [b for b in at.button if b.key and b.key.startswith("web_")][0].disabled and len(calls) == 1
+
+
+def test_the_use_it_button_is_disabled_once_used_and_the_row_stays_open(monkeypatch):
+    _fake_web(monkeypatch)
+    at = _identify_app(monkeypatch)
+    [b for b in at.button if b.key and b.key.startswith("web_")][0].click().run()
+    use = [b for b in at.button if b.key and b.key.startswith("use_")][0]
+    assert not use.disabled and use.label.startswith("My strip says bisoprolol 5mg + telmisartan 40mg")
+    use.click().run()
+    used = [b for b in at.button if b.key and b.key.startswith("use_")][0]
+    assert used.disabled and used.label.startswith("Using: bisoprolol 5mg + telmisartan 40mg")
+    assert [e for e in at.expander if e.label.startswith("TAB.CONCOR T 5MG")][0].proto.expanded
+    assert "confirmed" in [e for e in at.expander if e.label.startswith("TAB.CONCOR T 5MG")][0].label
+
+
+def test_typing_something_else_after_using_a_suggestion_enables_the_button_again(monkeypatch):
+    _fake_web(monkeypatch)
+    at = _identify_app(monkeypatch)
+    [b for b in at.button if b.key and b.key.startswith("web_")][0].click().run()
+    [b for b in at.button if b.key and b.key.startswith("use_")][0].click().run()
+    [t for t in at.text_input if "Ingredients" in t.label][0].set_value("bisoprolol 5 mg").run()           # the user changed their mind
+    assert not [b for b in at.button if b.key and b.key.startswith("use_")][0].disabled
+
+
+def test_each_medicine_to_identify_is_its_own_collapsed_row_with_a_status(monkeypatch):
+    import pandas as pd
+    monkeypatch.setenv("DAWA_PROVIDER", "offline")
+    rows = [("TAB.CONCOR T 5MG/40", 26, 18.1, 15, 271.5), ("TAB.ROSEDAY GOLD 75MG/75MG/10MG", 30, 17.0, 10, 170.0), ("TAB.NEWBRANDX 10MG", 10, 5.0, 10, 60.0)]
+    at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
+    at.session_state["df"] = pd.DataFrame([{"description": d, "qty": q, "rate": r, "amount": round(q * r, 2), "unit": "tab", "pack": pk, "mrp": m, "unsure": False} for d, q, r, pk, m in rows])
+    at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "results"
+    at.run()
+    mine = [e for e in at.expander if "needs your confirmation" in e.label]
+    assert len(mine) == 3 and all(not e.proto.expanded for e in mine)                             # three short rows, none open: the section stays compact
+    assert not [e for e in at.expander if e.label.startswith("Help us identify")]                 # no outer box: expanders cannot nest, and the rows are the structure
+    [t for t in at.text_input if "Ingredients" in t.label][0].set_value("bisoprolol 5 mg + telmisartan 40 mg").run()
+    labels = [e.label for e in at.expander]
+    assert "TAB.CONCOR T 5MG/40 · confirmed" in labels and sum("needs your confirmation" in l for l in labels) == 2
+
+
+def test_the_government_orders_button_is_disabled_once_searched_for_the_same_text(monkeypatch):
+    from dawa_buddy import webcheck
+    monkeypatch.setattr(webcheck, "available", lambda: True)
+    calls = []
+    monkeypatch.setattr(webcheck, "lookup_orders", lambda text: calls.append(text) or ([], []))
+    at = _identify_app(monkeypatch)
+    [t for t in at.text_input if "Ingredients" in t.label][0].set_value("bisoprolol 5 mg + telmisartan 40 mg").run()
+    btn = [b for b in at.button if b.key and b.key.startswith("ord_")][0]
+    assert not btn.disabled and btn.label.startswith("See government price orders")
+    btn.click().run()
+    done = [b for b in at.button if b.key and b.key.startswith("ord_")][0]
+    assert done.disabled and done.label == "Searched: no price order found" and len(calls) == 1
+    [t for t in at.text_input if "Ingredients" in t.label][0].set_value("bisoprolol 5 mg + telmisartan 80 mg").run()     # different text: a new search makes sense
+    assert not [b for b in at.button if b.key and b.key.startswith("ord_")][0].disabled
