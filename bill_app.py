@@ -643,6 +643,7 @@ def briefing():
     text = st.session_state.get("rx", "")
     if not text.strip():
         return
+    st.markdown(ui.section_label("Understand your prescription"), unsafe_allow_html=True)      # its own section: otherwise it reads as one more row of the list above
     with st.expander("Explain my medicines in plain language"):
         dose_warning(text)
         lang = LANGS[st.segmented_control("Language", list(LANGS), default="English", label_visibility="collapsed") or "English"]

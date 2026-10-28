@@ -520,3 +520,19 @@ def test_pressing_confirm_with_an_empty_box_asks_for_the_ingredients_and_confirm
     [b for b in at.button if b.label == "Confirm ingredients"][0].click().run()
     assert "Type the ingredients printed on the strip first." in " ".join(c.value for c in at.caption)
     assert not at.session_state["confirmed"]
+
+
+def test_the_explainer_is_its_own_section_not_one_more_row_of_the_identify_list(monkeypatch):
+    at = _bill_app(monkeypatch, REAL4, rx="Tab Shelcal-XT 0-1-0 to continue")
+    page = html_blocks(at)
+    assert page.index("Help us identify") < page.index("Understand your prescription")
+    assert "Understand your prescription" in page and any(e.label == "Explain my medicines in plain language" for e in at.expander)
+    assert "Understand your prescription" not in html_blocks(_bill_app(monkeypatch, REAL4))               # no prescription, no section
+
+
+def test_quiet_buttons_are_styled_with_colour_and_padding():
+    from dawa_buddy import ui
+    css = ui.css()
+    rule = css[css.index('button[data-testid="stBaseButton-tertiary"] {'):]
+    rule = rule[:rule.index("}")]
+    assert "background:var(--brand-tint)" in rule and "padding:0 20px" in rule and "min-height:44px" in rule
