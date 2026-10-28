@@ -88,6 +88,33 @@ def _segments(line: str) -> list[str]:
     return [p.strip(" ,") for p in parts if p and p.strip(" ,")]
 
 
+# Words that follow a brand name but are not part of it (route, form, frequency, timing, numbers written out)
+_NOT_NAME = {"tab", "tablet", "tablets", "cap", "caps", "capsule", "capsules", "syp", "syrup", "inj", "injection", "drops", "cream", "gel", "ointment", "po", "iv", "im",
+             "sc", "sos", "prn", "stat", "od", "bd", "bid", "tds", "tid", "qid", "hs", "daily", "twice", "thrice", "once", "nightly", "after", "before", "with", "for", "x",
+             "in", "as", "to", "at", "per", "every", "morning", "night", "evening", "noon", "afternoon", "bedtime", "food", "meals", "meal", "and", "directed", "continue",
+             "days", "day", "week", "weeks", "month", "months", "empty", "stomach", "when", "if", "needed", "take", "give", "only", "mg", "ml", "mcg", "gm", "iu",
+             "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"}
+
+
+def complete_name(name: str, line: str) -> str:
+    """A brand name cut short ('Concor' for 'CONCOR T 5MG/40') becomes the full printed name. Only the one or two short words that follow it directly,
+    before a number, comma, route or frequency word, are added. A truncated name would otherwise raise a false wrong-variant warning (Concor is not Concor T)."""
+    words = re.findall(r"[A-Za-z0-9]+", name)
+    if not words:
+        return name
+    m = re.search(r"[\s\-\.]*".join(re.escape(w) for w in words), line, re.I)
+    if not m:
+        return name
+    tail, extra = line[m.end():], []
+    for _ in range(2):
+        t = re.match(r"\s+([A-Za-z]{1,9})(?=[\s,]|$)", tail)
+        if not t or t.group(1).lower() in _NOT_NAME:
+            break
+        extra.append(t.group(1))
+        tail = tail[t.end():]
+    return " ".join([name] + [w.title() for w in extra]) if extra else name
+
+
 def _parse_segment(seg: str) -> Medication | None:
     low = deabbrev(seg.lower())
     toks = re.findall(r"[a-z][a-z\-]*", low)
@@ -102,7 +129,8 @@ def _parse_segment(seg: str) -> Medication | None:
     freq, days, timing = freq_from_text(low), days_from_text(low), timing_from_text(low)
     if not (st or freq or days or drug in known):
         return None                       # e.g. 'Rx' or a stray header line
-    return Medication(name=drug.title(), generic=resolve_generic(drug), strength=f"{st.group(1)} {st.group(2)}" if st else None,
+    drug = drug.strip("-")
+    return Medication(name=complete_name(drug.title(), seg), generic=resolve_generic(drug), strength=f"{st.group(1)} {st.group(2)}" if st else None,
                       form=form, frequency=freq, duration_days=days, timing=timing, raw=seg)
 
 
@@ -165,7 +193,7 @@ def _clean_model_meds(data, line: str) -> list[Medication]:
                 continue                                  # not in the source text -> discard
             days = d.get("duration_days")
             days = int(days) if isinstance(days, (int, float)) and days > 0 else None
-            out.append(Medication(name=name.title(), generic=resolve_generic(name), strength=d.get("strength"),
+            out.append(Medication(name=complete_name(name.title(), line), generic=resolve_generic(name), strength=d.get("strength"),
                                   form=d.get("form"), frequency=canon_freq(d.get("frequency")),
                                   duration_days=days, timing=canon_timing(d.get("timing"), line), raw=line))
         except Exception:

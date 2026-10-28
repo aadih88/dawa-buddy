@@ -173,6 +173,10 @@ div[class*="st-key-card_"] {{background:var(--card); border:1px solid var(--line
 [data-testid="stSpinner"] {{color:var(--brand-dark); background:var(--brand-tint); border-radius:14px; padding:10px 14px; font-weight:550;}}
 [data-testid="stSpinner"] svg, [data-testid="stSpinner"] i {{color:var(--brand) !important; border-top-color:var(--brand) !important;}}
 .db-outcome {{margin:4px 0 10px; border-radius:12px; padding:9px 12px; background:var(--brand-tint); color:var(--brand-dark); font-size:.9rem; line-height:1.5;}}
+.db-checks {{background:var(--card); border:1px solid var(--line); border-radius:18px; padding:6px 14px; margin:0 0 12px;}}
+.db-check {{display:flex; gap:12px; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--hair);}} .db-check:last-child {{border-bottom:0;}}
+.db-ckicon {{width:28px; height:28px; flex:none; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-top:1px;}}
+.db-check b {{display:block; font-size:.95rem; font-weight:650;}} .db-check span:not(.db-ckicon) {{display:block; margin-top:1px; font-size:.86rem; line-height:1.45; color:var(--muted);}}
 .db-watch {{margin-top:8px; font-size:.9rem; line-height:1.5; color:var(--muted); overflow-wrap:anywhere;}} .db-watch b {{color:var(--ink);}}
 .db-note {{border-radius:16px; padding:13px 15px; margin:0 0 10px;}}
 .db-notehead {{display:flex; align-items:center; gap:7px; font-size:.82rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase;}}
@@ -218,13 +222,22 @@ def chip(kind: str, text: str, icon_name: str | None = None) -> str:
 
 
 def verdict(kind: str, title: str, body: str, stats: list[tuple[str, str, str]]) -> str:
-    """The headline answer. stats: (value, caption, kind) triples shown as three tiles."""
+    """The headline answer. stats: (value, caption, kind) tiles, shown only when there is something to say (a zero is not news)."""
     c = S[kind]
     tiles = "".join(f'<div class="db-stat"><b style="color:{S[k]["fg"]}">{esc(v)}</b><span style="color:{c["deep"]}">{esc(cap)}</span></div>' for v, cap, k in stats)
+    tiles = f'<div class="db-stats" style="grid-template-columns:repeat({len(stats)},minmax(0,1fr))">{tiles}</div>' if stats else ""
     return (f'<div class="db-verdict" style="background:{c["bg"]}"><div class="db-vhead">'
             f'<div class="db-vicon" style="background:{c["fg"]}">{icon(_KIND_ICON[kind], 24, "#fff", 2.2)}</div>'
             f'<h1 class="db-vtitle" style="color:{c["deep"]}">{esc(title)}</h1></div>'
-            f'<p class="db-vbody" style="color:{c["deep"]}">{esc(body)}</p><div class="db-stats">{tiles}</div></div>')
+            f'<p class="db-vbody" style="color:{c["deep"]}">{esc(body)}</p>{tiles}</div>')
+
+
+def checks(rows: list[tuple[str, str, str]]) -> str:
+    """'What we checked': one row per check: (kind, title, detail). A green tick says it was checked and is fine; grey says it does not apply here."""
+    out = "".join(
+        f'<div class="db-check"><span class="db-ckicon" style="background:{S[k]["bg"]}">{icon(_KIND_ICON[k], 15, S[k]["fg"], 2.6)}</span>'
+        f'<div><b>{esc(title)}</b><span>{esc(detail)}</span></div></div>' for k, title, detail in rows)
+    return f'<div class="db-checks">{out}</div>'
 
 
 def meter(paid: float, limit: float, kind: str, left: str, right: str) -> str:

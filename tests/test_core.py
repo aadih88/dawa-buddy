@@ -240,3 +240,40 @@ def test_unclear_dose_lines_keeps_the_line_the_offline_reader_would_drop():
     assert unclear_dose_lines("TAB SHELCAL-XT 0---0 TO CONTINUE") == ["TAB SHELCAL-XT 0---0 TO CONTINUE"]     # read_offline drops this line entirely
     assert unclear_dose_lines("INJ INFLUVAC 1 ML IM STAT\nTab Dolo 650 SOS\nFBS, PPBS, RFT, CBC AFTER 3 MONTH - REVIEW WITH REPORTS .\nRx") == []
     assert unclear_dose_lines("Tab Telma 40 1-0-0 x 30 days\nSYP. COUGH SYRUP 5ML") == ["SYP. COUGH SYRUP 5ML"]
+
+
+import pytest as _pytest
+
+
+@_pytest.mark.parametrize("name,line,want", [
+    ("Concor", "TAB.CONCOR T 5MG/40 PO, 1-0-0, AS DIRECTED@9AM X TO CONTINUE", "Concor T"),
+    ("Roseday", "TAB.ROSEDAY GOLD, 75MG/75MG/10MG, PO, 0-0-1, AFTER FOOD@10PM", "Roseday Gold"),
+    ("Cremaffin", "SYP. CREMAFFIN PLUS, 15mL, PO, 0-0-1", "Cremaffin Plus"),
+    ("Pan", "Tab Pan D 40 1-0-0 x 30 days", "Pan D"),                          # Pan D is not Pan
+    ("Influvac", "INJ INFLUVAC TETRA 1 ML IM STAT", "Influvac Tetra"),
+    ("Telma", "Tab Telma 40 1-0-0 x 30 days", "Telma"),                       # a number ends the name
+    ("Dolo", "Tab Dolo SOS", "Dolo"),                                          # a frequency word is not part of the name
+    ("Amlong", "Tab Amlong after food 1-0-0", "Amlong"),
+    ("Combiflam", "Tab Combiflam one tab at night", "Combiflam"),
+    ("Shelcal-Xt", "TAB SHELCAL-XT 0---1---0 TO CONTINUE", "Shelcal-Xt"),
+    ("Zzz", "Tab Dolo 650", "Zzz"),                                            # not in the line: unchanged
+])
+def test_a_truncated_brand_name_is_completed_from_the_printed_line(name, line, want):
+    from dawa_buddy.reader import complete_name
+    assert complete_name(name, line) == want
+
+
+def test_a_model_that_truncates_the_name_cannot_cause_a_false_variant_warning():
+    """The model returned 'Concor' for 'CONCOR T 5MG/40' in 1 of 3 live runs; that passed the grounding check and made a red wrong-variant card."""
+    from dawa_buddy.reader import _clean_model_meds, read_offline
+    line = "TAB.CONCOR T 5MG/40 PO, 1-0-0, AS DIRECTED@9AM X TO CONTINUE"
+    got = _clean_model_meds({"medications": [{"name": "Concor", "frequency": "1-0-0"}]}, line)
+    assert [m.name for m in got] == ["Concor T"]
+    assert [m.name for m in read_offline(line).medications] == ["Concor T"]       # the rules-only reader, too
+
+
+def test_the_real_prescription_names_are_complete_in_the_rules_only_reader():
+    from dawa_buddy.reader import read_offline
+    rx = read_offline("TAB.ROSEDAY GOLD, 75MG/75MG/10MG, PO, 0-0-1, AFTER FOOD@10PM X TO CONTINUE\nTAB.GLYCOMET-500 SR, 500MG, PO, 1-0-0, AFTER FOOD X TO CONTINUE\n"
+                      "TAB.CONCOR T 5MG/40 PO, 1-0-0, AS DIRECTED@9AM X TO CONTINUE\nSYP. CREMAFFIN PLUS, 15mL, PO, 0-0-1, AFTER FOOD SOS IN CASE OF CONSTIPATION.")
+    assert [m.name for m in rx.medications] == ["Roseday Gold", "Glycomet", "Concor T", "Cremaffin Plus"]

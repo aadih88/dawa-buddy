@@ -288,8 +288,8 @@ def review():
 
 
 # ---------------------------------------------------------------- screen 3: results
-def verdict(listed_share, mrp_share, unidentified, n_viol, n_ask, excess, generic):
-    """The headline answer: what to do first, in a sentence, with three numbers."""
+def verdict(n_viol, n_ask, excess, generic):
+    """The headline answer: what to do first, in a sentence. Tiles appear only when they carry news: a zero is not a result."""
     if n_viol:
         total = n_viol + n_ask          # the headline counts everything listed below it, so the two numbers always agree
         kind, head = "red", f"{total} thing{'s' if total > 1 else ''} to ask about"
@@ -300,15 +300,50 @@ def verdict(listed_share, mrp_share, unidentified, n_viol, n_ask, excess, generi
         body = f"{n_ask} line{'s need' if n_ask > 1 else ' needs'} a look or your confirmation."
     else:
         kind, head = "green", "Nothing above a legal limit"
-        body = "Everything we could check is within the price limits."
-    stats = [(rupees(excess) if excess else "₹0", "above legal limits", "red" if excess else "green"),
-             (rupees(generic) if generic else "₹0", "possible generic saving", "amber" if generic else "grey"),
-             (f"{listed_share:.0f}%", "of the bill compared with a price list", "green" if listed_share >= 80 else "amber" if listed_share >= 40 else "grey")]
+        body = "Every price we could check is within the limits. What we checked is listed below."
+    stats = ([(rupees(excess), "above legal limits", "red")] if excess else []) + \
+            ([(rupees(generic), "possible saving with a generic (ask your doctor)", "amber")] if generic else [])
     st.markdown(ui.verdict(kind, head, body, stats), unsafe_allow_html=True)
-    st.caption(f"Compared with a government price list: {listed_share:.0f}% of the bill (this needs the medicine to be identified). "
-               f"Compared with the printed MRP: {mrp_share:.0f}% (this applies to any product)."
-               + (f" Not identified yet: {', '.join(unidentified)}. Confirm them under “Help us identify”." if unidentified else
-                  " No government price list covers these medicines, so only the printed MRP could be checked: confirming ingredients will not change that." if listed_share < 1 else ""))
+
+
+def check_rows(fs, flags, wrong, unidentified, generic) -> list[tuple[str, str, str]]:
+    """'What we checked': what was verified and found fine, what was not and why. Each row says what was done, so a clean bill reads as protection."""
+    n = len(fs)
+    plural = lambda k, word: f"{k} {word}{'' if k == 1 else 's'}"
+    over = sum(f.tier == b.TIER_ABOVE_MRP for f in fs)
+    known = sum(f.mrp_pct is not None or f.tier == b.TIER_ABOVE_MRP for f in fs)
+    ok = known - over
+    rows = []
+    if over:
+        rest = n - over - ok
+        rows.append(("red", "Printed MRP", f"Charged above the printed MRP on {plural(over, 'line')} of {n}."
+                     + (f" {plural(ok, 'other line')} {'is' if ok == 1 else 'are'} within it." if ok else "")
+                     + (f" {rest} had no MRP or pack size to compare." if rest else "")))
+    elif ok:
+        rows.append(("green", "Printed MRP", f"Charged at or below the printed MRP on {'all ' + plural(n, 'line') if ok == n else plural(ok, 'line') + ' of ' + str(n)}. "
+                     "Selling above the printed MRP is not allowed for any product." + (f" {n - ok} had no MRP or pack size to compare." if ok < n else "")))
+    else:
+        rows.append(("grey", "Printed MRP", "Could not be compared: add the MRP printed on the pack and the tablets per strip (Edit the numbers)."))
+    capped = [f for f in fs if f.ceiling is not None]
+    above = sum(f.tier == b.TIER_ABOVE_CEILING for f in fs)
+    if above:
+        rows.append(("red", "Legal price ceiling (NPPA)", f"Above the ceiling on {above} of {plural(len(capped), 'price-controlled line')}."))
+    elif capped:
+        rows.append(("green", "Legal price ceiling (NPPA)", f"Within the ceiling on {'the' if len(capped) == 1 else 'all ' + str(len(capped))} price-controlled {'line' if len(capped) == 1 else 'lines'}."))
+    else:
+        rows.append(("grey", "Legal price ceiling (NPPA)", "Not applicable: none of these has a government ceiling. That is normal, since most branded medicines are not price-controlled."))
+    if not st.session_state.get("rx", "").strip():
+        rows.append(("grey", "Your prescription", "None added. Add one to check you were given the medicines the doctor wrote."))
+    elif not flags:
+        rows.append(("green", "Your prescription", "The bill matches your prescription: same products, no extras, no missing items."))
+    else:
+        rows.append(("red" if wrong else "amber", "Your prescription", f"{plural(len(flags), 'difference')} from the prescription, listed below."))
+    if generic:
+        k = sum(f.tier == b.TIER_GENERIC_GAP for f in fs)
+        rows.append(("amber", "Cheaper generics", f"A cheaper generic may exist for {plural(k, 'line')} (about {rupees(generic)}). Ask your doctor before switching."))
+    if unidentified:
+        rows.append(("amber", "Medicines to confirm", f"{plural(len(unidentified), 'medicine')} not identified yet: {', '.join(unidentified)}. Confirm them under “Help us identify”."))
+    return rows
 
 
 def mini(f) -> str:
@@ -334,9 +369,6 @@ def results(df, total):
     lines = vision.rows_to_lines(rows)
     fs = [b.audit_line(l, confirmed) for l in lines]
     tot = sum(f.line.amount for f in fs) or 1
-    # Two different things, never merged: a PRICE LIST needs the medicine identified (ceiling, generic reference); the printed MRP applies to any product.
-    list_checked = sum(f.line.amount for f in fs if f.tier in (b.TIER_ABOVE_CEILING, b.TIER_GENERIC_GAP, b.TIER_OK, b.TIER_DOCTOR_ONLY))
-    mrp_checked = sum(f.line.amount for f in fs if f.mrp_pct is not None or f.tier == b.TIER_ABOVE_MRP)
     s = b.summary(fs)
     group = lambda g: sorted([f for f in fs if RESULT[f.tier][2] == g], key=lambda f: list(RESULT).index(f.tier))
     attention, fine, unchecked = group("attention"), group("fine"), group("unchecked")
@@ -356,7 +388,8 @@ def results(df, total):
     st.markdown(ui.header(3, "Result"), unsafe_allow_html=True)
     unidentified = [f.line.desc for f in {f.line.desc.lower(): f for f in fs if f.tier in (b.TIER_NEEDS_CONFIRM, b.TIER_NO_BENCHMARK)
                                            and not f.ingredients and f.basis != "bag"}.values()]
-    verdict(100 * list_checked / tot, 100 * mrp_checked / tot, unidentified, n_viol_total, n_ask, s["possible_saving_above_ceiling"] + s["possible_saving_above_mrp"], s["possible_saving_generic"])
+    verdict(n_viol_total, n_ask, s["possible_saving_above_ceiling"] + s["possible_saving_above_mrp"], s["possible_saving_generic"])
+    st.markdown(ui.checks(check_rows(fs, flags, wrong, unidentified, s["possible_saving_generic"])), unsafe_allow_html=True)
 
     needs_pack = [f for f in fs if f.line.mrp and f.mrp_unit is None and (f.line.unit or "").lower() in ("tab", "strip") and not f.line.pack]
     if needs_pack:

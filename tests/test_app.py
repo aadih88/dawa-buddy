@@ -177,9 +177,7 @@ def test_one_button_fills_pack_sizes_and_checks_the_mrp_against_pharmacy_listing
     assert at.session_state["df"].loc[0, "pack"] == 10                                              # filled in as a suggestion
     assert at.session_state["pack_guess"]["CONCOR T 5MG TAB"][0] == 10 and "pharmacy websites" in at.session_state["pack_guess"]["CONCOR T 5MG TAB"][1]
     assert "consistent with this bill" in " ".join(c.value for c in at.caption)                       # printed 174.75 per 10 = listed
-    # the printed MRP now matches for the whole bill, but no price list covers the unidentified brand: the headline must not say 100%
-    assert re.search(r"0%</b><span[^>]*>of the bill compared with a price list", html_blocks(at))
-    assert "Compared with the printed MRP: 100%" in " ".join(c.value for c in at.caption)
+    assert "Charged at or below the printed MRP on all 1 line" in html_blocks(at)             # the MRP check is now possible, and the page says what it checked
 
 
 def test_a_bill_without_mrp_charging_above_the_listed_mrp_gets_a_question_not_a_violation(monkeypatch):
@@ -286,15 +284,6 @@ def test_help_text_in_identify_section_is_for_users_not_about_vendors(monkeypatc
     assert helps and not [h for h in helps if re.search(r"tavily|nppa\.gov|sends only", h, re.I)]
 
 
-def test_verdict_sentence_does_not_claim_a_legal_limit_was_exceeded_when_none_was(monkeypatch):
-    monkeypatch.setenv("DAWA_PROVIDER", "offline")
-    from dawa_buddy import samples
-    at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
-    at.session_state["df"] = samples.frame("Outpatient pharmacy bill").iloc[4:5].reset_index(drop=True)      # the Shelcal line only: a variant warning, no price limit
-    at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "Tab Shelcal-XT 0-1-0 to continue", 0.0, "results"
-    at.run()
-    page = html_blocks(at)
-    assert "Some lines are above a legal price limit" not in page and "above legal limits" in page
 
 
 def _identify_app(monkeypatch, desc="TAB.CONCOR T 5MG"):
@@ -336,9 +325,6 @@ def test_not_covered_items_say_why_and_how_they_were_judged(monkeypatch):
     assert "Charged 90% of the printed MRP" in page
 
 
-def test_the_checked_percentage_says_what_it_was_checked_against():
-    src = (ROOT / "bill_app.py").read_text()
-    assert "of the bill compared with a price list" in src and "Compared with the printed MRP" in src
 
 
 def test_the_identify_box_stays_open_after_a_confirmation_so_the_outcome_is_visible(monkeypatch):
@@ -349,43 +335,65 @@ def test_the_identify_box_stays_open_after_a_confirmation_so_the_outcome_is_visi
     assert box.proto.expanded and "Compared as bisoprolol 5 mg" in " ".join(m.value for m in at.markdown)
 
 
-def test_headline_never_says_100_percent_while_unidentified_medicines_have_no_price_list(monkeypatch):
-    """Pack sizes and MRPs were filled in, so the printed MRP matched for every line; four medicines are still unidentified."""
-    import pandas as pd
-    monkeypatch.setenv("DAWA_PROVIDER", "offline")
-    rows = [("TAB.ROSEDAY GOLD 75MG/75MG/10MG", 30, 17.0, 10, 170.0), ("TAB.CONCOR T 5MG/40", 26, 18.1, 15, 271.5), ("TAB.VELTAM 0.4", 15, 12.66, 15, 210.94)]
-    at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
-    at.session_state["df"] = pd.DataFrame([{"description": d, "qty": q, "rate": r, "amount": round(q * r, 2), "unit": "tab", "pack": pk, "mrp": m, "unsure": False} for d, q, r, pk, m in rows])
-    at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "results"
-    at.run()
-    page, caps = html_blocks(at), " ".join(c.value for c in at.caption)
-    assert re.search(r"0%</b><span[^>]*>of the bill compared with a price list", page) and "Compared with the printed MRP: 100%" in caps
-    assert "Help us identify" in " ".join(e.label for e in at.expander)
 
 
-def test_the_result_lists_what_is_not_identified_and_the_list_shrinks_as_you_confirm(monkeypatch):
+
+
+
+def _bill_app(monkeypatch, rows, rx=""):
     import pandas as pd
     monkeypatch.setenv("DAWA_PROVIDER", "offline")
-    rows = [("TAB.CONCOR T 5MG/40", 26, 18.1, 15, 271.5), ("TAB.ROSEDAY GOLD 75MG/75MG/10MG", 30, 17.0, 10, 170.0)]
     at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
     at.session_state["df"] = pd.DataFrame([{"description": d, "qty": q, "rate": r, "amount": round(q * r, 2), "unit": "tab", "pack": pk, "mrp": m, "unsure": False} for d, q, r, pk, m in rows])
-    at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "results"
+    at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = rx, 0.0, "results"
     at.run()
-    caps = " ".join(c.value for c in at.caption)
-    assert "Not identified yet: TAB.CONCOR T 5MG/40, TAB.ROSEDAY GOLD" in caps
+    return at
+
+
+REAL4 = [("SHELCAL 500MG TAB", 30, 9.81, 15, 163.45), ("VELTAM 0.4MG TAB", 15, 12.66, 15, 210.94), ("TAB.CONCOR T 5MG/40", 26, 18.1, 15, 271.5)]
+
+
+def test_a_clean_bill_reads_as_protection_not_as_zeros(monkeypatch):
+    """No tiles that say 0: tiles appear only when there is news. The page lists what was checked and found fine, and says when a check does not apply."""
+    page = re.sub(r"<style>.*?</style>", "", html_blocks(_bill_app(monkeypatch, REAL4)), flags=re.S)          # what the user sees, not the stylesheet
+    assert "Charged at or below the printed MRP on all 3 lines" in page and "Selling above the printed MRP is not allowed" in page
+    assert "Not applicable: none of these has a government ceiling" in page           # a neutral grey row, not an alarming 0%
+    assert "₹0" not in page and not re.search(r"(?<!\d)0%", page) and "possible saving" not in page    # no zero tiles, no 0%, no empty generic saving
+    assert 'class="db-stats"' not in page and 'class="db-check"' in page
+
+
+def test_tiles_appear_only_when_they_carry_news(monkeypatch):
+    at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
+    monkeypatch.setenv("DAWA_PROVIDER", "offline")
+    at.run(); click(at, "Hospital pharmacy bill")
+    page = html_blocks(at)
+    assert "above legal limits" in page                                                # the hospital sample really has amounts above limits
+    assert "possible saving with a generic" not in page                               # and no generic saving to show, so no tile
+
+
+def test_the_prescription_row_says_what_was_checked_in_each_case(monkeypatch):
+    none = html_blocks(_bill_app(monkeypatch, REAL4))
+    assert "None added. Add one to check you were given the medicines the doctor wrote." in none
+    same = html_blocks(_bill_app(monkeypatch, [("SHELCAL 500MG TAB", 30, 9.81, 15, 163.45)], rx="Tab Shelcal 500 1-0-0 x 30 days"))
+    assert "The bill matches your prescription" in same
+    diff = html_blocks(_bill_app(monkeypatch, [("SHELCAL 500MG TAB", 30, 9.81, 15, 163.45)], rx="Tab Shelcal-XT 0-1-0 to continue"))
+    assert "from the prescription, listed below" in diff and "Some lines are above a legal price limit" not in diff
+
+
+def test_medicines_to_confirm_are_listed_and_leave_the_list_as_you_confirm_them(monkeypatch):
+    at = _bill_app(monkeypatch, [("TAB.CONCOR T 5MG/40", 26, 18.1, 15, 271.5), ("TAB.ROSEDAY GOLD 75MG/75MG/10MG", 30, 17.0, 10, 170.0)])
+    page = html_blocks(at)
+    assert "Medicines to confirm" in page and "TAB.CONCOR T 5MG/40, TAB.ROSEDAY GOLD" in page
     [t for t in at.text_input if "Ingredients" in t.label][0].set_value("bisoprolol 5 mg + telmisartan 40 mg").run()
-    caps = " ".join(c.value for c in at.caption)
-    assert "Not identified yet: TAB.ROSEDAY GOLD" in caps and "CONCOR" not in caps.split("Not identified yet:")[1]
+    after = html_blocks(at).split("Medicines to confirm")[1].split("</div>")[0]
+    assert "TAB.ROSEDAY GOLD" in after and "CONCOR" not in after
 
 
-def test_when_no_price_list_covers_anything_the_page_says_so_instead_of_looking_stuck(monkeypatch):
-    """The real 4-line outpatient bill: a supplement, tamsulosin tablets and a combination. Nothing has a government price list."""
-    import pandas as pd
+def test_the_mrp_row_reads_correctly_with_one_other_line_and_lines_that_could_not_be_compared(monkeypatch):
     monkeypatch.setenv("DAWA_PROVIDER", "offline")
-    rows = [("SHELCAL 500MG TAB", 30, 9.81, 15, 163.45), ("VELTAM 0.4MG TAB", 15, 12.66, 15, 210.94)]
     at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
-    at.session_state["df"] = pd.DataFrame([{"description": d, "qty": q, "rate": r, "amount": round(q * r, 2), "unit": "tab", "pack": pk, "mrp": m, "unsure": False} for d, q, r, pk, m in rows])
-    at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "results"
-    at.run()
-    caps = " ".join(c.value for c in at.caption)
-    assert "No government price list covers these medicines" in caps and "Not identified yet" not in caps
+    at.run(); click(at, "Hospital pharmacy bill")
+    page = html_blocks(at)
+    assert "Charged above the printed MRP on 1 line of 7. 1 other line is within it. 5 had no MRP or pack size to compare." in page
+    ok = html_blocks(_bill_app(monkeypatch, [("SHELCAL 500MG TAB", 30, 9.81, 15, 163.45), ("DOLO 650 TAB", 10, 2.1, None, None)]))
+    assert "Charged at or below the printed MRP on 1 line of 2" in ok and "1 had no MRP or pack size to compare" in ok
