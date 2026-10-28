@@ -99,3 +99,46 @@ def test_the_table_wins_over_ai_kannada_when_the_opt_in_is_on(monkeypatch):
     rx = Prescription(medications=[med("Dolo 650", "paracetamol")])
     out = explainer.with_doses([MedExplanation(name="Dolo", purpose="ಯಾವುದೋ ಪಠ್ಯ", watch_for="ಯಾವುದೋ ಪಠ್ಯ")], rx, "kn")
     assert out[0].fixed and out[0].purpose == medinfo.info(rx.medications[0], "kn")[0]
+
+
+# ---------------------------------------------------------------- real prescription: why a medicine came back in English
+def _line(text):
+    from dawa_buddy.reader import read_offline
+    return read_offline(text).medications[0]
+
+
+def test_roseday_gold_is_a_verified_three_ingredient_brand_and_gets_the_fixed_kannada_text():
+    from dawa_buddy import brand_table
+    hit = brand_table.lookup("Roseday Gold", "capsule")
+    assert hit.salts == "aspirin+clopidogrel+rosuvastatin" and [v for v, _ in hit.strengths] == [75.0, 75.0, 10.0]
+    m = _line("TAB.ROSEDAY GOLD, 75MG/75MG/10MG, PO, 0-0-1, AFTER FOOD@10PM X TO CONTINUE")            # the prescription says TAB; the product is a capsule
+    assert medinfo._parts_for(m) == ["aspirin", "clopidogrel", "rosuvastatin"]
+    purpose, watch = medinfo.info(m, "kn")
+    assert script_counts(purpose + watch, "kn")[1] == 0
+    en = medinfo.info(m, "en")[1]
+    assert "Black stools, vomiting blood or unusual bleeding" in en and "Muscle pain or weakness" in en   # the warnings of ALL three ingredients, not two
+
+
+def test_a_brand_table_that_dropped_an_ingredient_never_describes_part_of_a_product(monkeypatch):
+    """The brand table keeps at most two actives. A line that prints three strengths means one is missing: say nothing rather than describe two."""
+    import types
+    from dawa_buddy import brand_table
+    monkeypatch.setattr(brand_table, "lookup", lambda name, form="tablet": types.SimpleNamespace(salts="aspirin+rosuvastatin", strengths=[(75.0, "mg"), (10.0, "mg")]))
+    assert medinfo._parts_for(types.SimpleNamespace(name="Zzz", generic=None, strength="75 mg", raw="TAB ZZZ 75MG/75MG/10MG 0-0-1")) == []
+    assert medinfo._parts_for(types.SimpleNamespace(name="Zzz", generic=None, strength="75 mg", raw="TAB ZZZ 75MG/10MG 0-0-1")) == ["aspirin", "rosuvastatin"]
+
+
+def test_printed_strengths_are_counted_per_product():
+    assert medinfo.printed_actives("TAB.ROSEDAY GOLD, 75MG/75MG/10MG, PO") == 3
+    assert medinfo.printed_actives("TAB.CONCOR T 5MG/40 PO, 1-0-0") == 2
+    assert medinfo.printed_actives("Tab Telma 40 1-0-0 x 30 days") == 0 and medinfo.printed_actives("TAB VELTAM 0.4MG") == 0
+
+
+def test_a_brand_the_table_keys_with_its_strength_is_found_by_name_and_strength():
+    m = _line("TAB.VELTAM 0.4, 0.4MG, PO, 0-0-1, AFTER FOOD@10PM X TO CONTINUE")
+    assert medinfo._parts_for(m) == ["tamsulosin"] and medinfo.info(m, "kn") is not None
+
+
+def test_bisoprolol_has_fixed_text():
+    p, w = medinfo.info(Medication(name="Concor", generic="bisoprolol"), "en")
+    assert "blood pressure" in p and "Do not stop it suddenly" in w

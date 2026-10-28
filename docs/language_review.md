@@ -441,7 +441,7 @@ Shown to a Kannada reader for the ingredients below instead of AI text. Each lin
 | Do not take more than written: too much can cause nausea and weakness. | ಬರೆದಿರುವುದಕ್ಕಿಂತ ಹೆಚ್ಚು ತೆಗೆದುಕೊಳ್ಳಬೇಡಿ: ಹೆಚ್ಚಾದರೆ ವಾಕರಿಕೆ ಮತ್ತು ದೌರ್ಬಲ್ಯ ಉಂಟಾಗಬಹುದು. | |
 | Low mood or bad dreams: tell your doctor. | ಮನಸ್ಸು ಖಿನ್ನವಾದರೆ ಅಥವಾ ಕೆಟ್ಟ ಕನಸು ಬಂದರೆ ವೈದ್ಯರಿಗೆ ತಿಳಿಸಿ. | |
 
-### D5. Which ingredient gets which pieces (175 ingredients). Please check the medical meaning, not only the Kannada.
+### D5. Which ingredient gets which pieces (176 ingredients). Please check the medical meaning, not only the Kannada.
 
 | Ingredient | Purpose | Side effects | Warnings |
 |---|---|---|---|
@@ -539,6 +539,7 @@ Shown to a Kannada reader for the ingredients below instead of AI text. Each lin
 | propranolol | to control blood pressure and some heart problems | tiredness, dizziness, a slow heartbeat | If wheezing or breathing trouble gets worse, tell your doctor. / Do not stop it suddenly without asking your doctor. |
 | nebivolol | to control blood pressure and some heart problems | tiredness, dizziness, a slow heartbeat | If wheezing or breathing trouble gets worse, tell your doctor. / Do not stop it suddenly without asking your doctor. |
 | carvedilol | to control blood pressure and some heart problems | tiredness, dizziness, a slow heartbeat | If wheezing or breathing trouble gets worse, tell your doctor. / Do not stop it suddenly without asking your doctor. |
+| bisoprolol | to control blood pressure and some heart problems | tiredness, dizziness, a slow heartbeat | If wheezing or breathing trouble gets worse, tell your doctor. / Do not stop it suddenly without asking your doctor. |
 | diltiazem | to control blood pressure and some heart problems | headache, dizziness, swollen feet, a slow heartbeat | Do not stop it suddenly without asking your doctor. |
 | torasemide | to remove extra water from the body through urine | passing urine more often, dizziness, muscle cramps | Drink plenty of water. |
 | atorvastatin | to lower cholesterol | muscle pain, an upset stomach, headache | Muscle pain or weakness with no clear reason: tell your doctor. / Yellow eyes or skin, or dark urine: tell your doctor. / Tell your doctor if you are pregnant or planning a pregnancy. |

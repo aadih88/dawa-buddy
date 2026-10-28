@@ -288,7 +288,7 @@ MEDS: dict[str, tuple[str, list[str], list[str]]] = {
     "telmisartan": _ARB, "losartan": _ARB, "olmesartan": _ARB,
     "ramipril": ("bp", ["dry_cough", "dizzy", "tired"], ["stand_slowly", "pregnancy", "allergy", "dont_stop"]),
     "enalapril": ("bp", ["dry_cough", "dizzy", "tired"], ["stand_slowly", "pregnancy", "allergy", "dont_stop"]),
-    "metoprolol": _BETA, "atenolol": _BETA, "propranolol": _BETA, "nebivolol": _BETA, "carvedilol": _BETA,
+    "metoprolol": _BETA, "atenolol": _BETA, "propranolol": _BETA, "nebivolol": _BETA, "carvedilol": _BETA, "bisoprolol": _BETA,
     "diltiazem": ("bp_heart", ["headache", "dizzy", "ankle_swelling", "slow_heart"], ["dont_stop"]),
     "torasemide": ("water", ["frequent_urine", "dizzy", "cramps"], ["water"]),
     "atorvastatin": _STATIN, "rosuvastatin": _STATIN,
@@ -394,17 +394,30 @@ def parts_of(generic: str | None) -> list[str]:
     return out
 
 
+def printed_actives(raw: str | None) -> int:
+    """How many strengths the prescription line prints for one product: '75MG/75MG/10MG' is three, '5MG/40' two, '500MG' one."""
+    best = 0
+    for m in re.finditer(r"\d+(?:\.\d+)?\s*(?:mg|mcg|g|iu)?(?:\s*/\s*\d+(?:\.\d+)?\s*(?:mg|mcg|g|iu)?)*", raw or "", re.I):
+        best = max(best, len(re.findall(r"\d+(?:\.\d+)?", m.group(0))) if "/" in m.group(0) else 0)
+    return best
+
+
 def _parts_for(med) -> list[str]:
     parts = parts_of(getattr(med, "generic", None))
     if parts and all(p in MEDS for p in parts):
         return parts
     try:                                   # the brand table knows the ingredients of a brand the reader did not resolve
         from . import brand_table
-        form = "liquid" if re.search(r"\b(syp|syrup|susp|suspension)\b", str(med.name).lower()) else "tablet"
-        hit = brand_table.lookup(med.name, form)
-        found = parts_of(hit.salts) if hit else []
-        if found and all(p in MEDS for p in found):
-            return found
+        forms = ["liquid"] if re.search(r"\b(syp|syrup|susp|suspension)\b", str(med.name).lower()) else ["tablet", "capsule"]   # a prescription says TAB even for a capsule
+        strength = re.search(r"\d+(?:\.\d+)?", str(getattr(med, "strength", "") or ""))
+        names = [med.name] + ([f"{med.name} {strength.group(0)}"] if strength else [])        # the table keys some brands with their strength: 'veltam 0.4'
+        for form, name in ((f, n) for f in forms for n in names):
+            hit = brand_table.lookup(name, form)
+            found = parts_of(hit.salts) if hit else []
+            if found and printed_actives(getattr(med, "raw", "")) > len(found):
+                return []                  # the line prints more strengths than the table has ingredients: the table dropped one, so describe nothing rather than part of a product
+            if found and all(p in MEDS for p in found):
+                return found
     except Exception:
         pass
     return []
