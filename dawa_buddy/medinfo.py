@@ -290,7 +290,7 @@ MEDS: dict[str, tuple[str, list[str], list[str]]] = {
     "enalapril": ("bp", ["dry_cough", "dizzy", "tired"], ["stand_slowly", "pregnancy", "allergy", "dont_stop"]),
     "metoprolol": _BETA, "atenolol": _BETA, "propranolol": _BETA, "nebivolol": _BETA, "carvedilol": _BETA, "bisoprolol": _BETA,
     "diltiazem": ("bp_heart", ["headache", "dizzy", "ankle_swelling", "slow_heart"], ["dont_stop"]),
-    "torasemide": ("water", ["frequent_urine", "dizzy", "cramps"], ["water"]),
+    "torasemide": ("water", ["frequent_urine", "dizzy", "cramps"], []),
     "atorvastatin": _STATIN, "rosuvastatin": _STATIN,
     "clopidogrel": ("clots", ["stomach_pain", "heartburn"], ["bleed", "dont_stop", "ask_new"]),
     "aspirin": ("clots", ["heartburn", "stomach"], ["bleed", "ask_new"]),
