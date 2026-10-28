@@ -288,7 +288,7 @@ def review():
 
 
 # ---------------------------------------------------------------- screen 3: results
-def verdict(listed_share, mrp_share, n_viol, n_ask, excess, generic):
+def verdict(listed_share, mrp_share, unidentified, n_viol, n_ask, excess, generic):
     """The headline answer: what to do first, in a sentence, with three numbers."""
     if n_viol:
         total = n_viol + n_ask          # the headline counts everything listed below it, so the two numbers always agree
@@ -306,7 +306,9 @@ def verdict(listed_share, mrp_share, n_viol, n_ask, excess, generic):
              (f"{listed_share:.0f}%", "of the bill compared with a price list", "green" if listed_share >= 80 else "amber" if listed_share >= 40 else "grey")]
     st.markdown(ui.verdict(kind, head, body, stats), unsafe_allow_html=True)
     st.caption(f"Compared with a government price list: {listed_share:.0f}% of the bill (this needs the medicine to be identified). "
-               f"Compared with the printed MRP: {mrp_share:.0f}% (this applies to any product).")
+               f"Compared with the printed MRP: {mrp_share:.0f}% (this applies to any product)."
+               + (f" Not identified yet: {', '.join(unidentified)}. Confirm them under “Help us identify”." if unidentified else
+                  " No government price list covers these medicines, so only the printed MRP could be checked: confirming ingredients will not change that." if listed_share < 1 else ""))
 
 
 def mini(f) -> str:
@@ -352,7 +354,9 @@ def results(df, total):
     n_ask += len(flagged_listings)
     n_viol_total = n_viol + len(wrong)
     st.markdown(ui.header(3, "Result"), unsafe_allow_html=True)
-    verdict(100 * list_checked / tot, 100 * mrp_checked / tot, n_viol_total, n_ask, s["possible_saving_above_ceiling"] + s["possible_saving_above_mrp"], s["possible_saving_generic"])
+    unidentified = [f.line.desc for f in {f.line.desc.lower(): f for f in fs if f.tier in (b.TIER_NEEDS_CONFIRM, b.TIER_NO_BENCHMARK)
+                                           and not f.ingredients and f.basis != "bag"}.values()]
+    verdict(100 * list_checked / tot, 100 * mrp_checked / tot, unidentified, n_viol_total, n_ask, s["possible_saving_above_ceiling"] + s["possible_saving_above_mrp"], s["possible_saving_generic"])
 
     needs_pack = [f for f in fs if f.line.mrp and f.mrp_unit is None and (f.line.unit or "").lower() in ("tab", "strip") and not f.line.pack]
     if needs_pack:

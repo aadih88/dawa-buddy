@@ -361,3 +361,31 @@ def test_headline_never_says_100_percent_while_unidentified_medicines_have_no_pr
     page, caps = html_blocks(at), " ".join(c.value for c in at.caption)
     assert re.search(r"0%</b><span[^>]*>of the bill compared with a price list", page) and "Compared with the printed MRP: 100%" in caps
     assert "Help us identify" in " ".join(e.label for e in at.expander)
+
+
+def test_the_result_lists_what_is_not_identified_and_the_list_shrinks_as_you_confirm(monkeypatch):
+    import pandas as pd
+    monkeypatch.setenv("DAWA_PROVIDER", "offline")
+    rows = [("TAB.CONCOR T 5MG/40", 26, 18.1, 15, 271.5), ("TAB.ROSEDAY GOLD 75MG/75MG/10MG", 30, 17.0, 10, 170.0)]
+    at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
+    at.session_state["df"] = pd.DataFrame([{"description": d, "qty": q, "rate": r, "amount": round(q * r, 2), "unit": "tab", "pack": pk, "mrp": m, "unsure": False} for d, q, r, pk, m in rows])
+    at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "results"
+    at.run()
+    caps = " ".join(c.value for c in at.caption)
+    assert "Not identified yet: TAB.CONCOR T 5MG/40, TAB.ROSEDAY GOLD" in caps
+    [t for t in at.text_input if "Ingredients" in t.label][0].set_value("bisoprolol 5 mg + telmisartan 40 mg").run()
+    caps = " ".join(c.value for c in at.caption)
+    assert "Not identified yet: TAB.ROSEDAY GOLD" in caps and "CONCOR" not in caps.split("Not identified yet:")[1]
+
+
+def test_when_no_price_list_covers_anything_the_page_says_so_instead_of_looking_stuck(monkeypatch):
+    """The real 4-line outpatient bill: a supplement, tamsulosin tablets and a combination. Nothing has a government price list."""
+    import pandas as pd
+    monkeypatch.setenv("DAWA_PROVIDER", "offline")
+    rows = [("SHELCAL 500MG TAB", 30, 9.81, 15, 163.45), ("VELTAM 0.4MG TAB", 15, 12.66, 15, 210.94)]
+    at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
+    at.session_state["df"] = pd.DataFrame([{"description": d, "qty": q, "rate": r, "amount": round(q * r, 2), "unit": "tab", "pack": pk, "mrp": m, "unsure": False} for d, q, r, pk, m in rows])
+    at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "results"
+    at.run()
+    caps = " ".join(c.value for c in at.caption)
+    assert "No government price list covers these medicines" in caps and "Not identified yet" not in caps

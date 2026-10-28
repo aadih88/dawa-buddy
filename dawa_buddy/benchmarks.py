@@ -22,7 +22,7 @@ FORM_WORDS = [("tablet", "tablet"), ("capsule", "capsule"), ("injection", "injec
               ("suspension", "liquid"), ("solution", "liquid"), ("drops", "drops"), ("gel", "topical"),
               ("cream", "topical"), ("ointment", "topical"), ("lotion", "topical"), ("inhaler", "inhaler")]
 STOP = {"tablets", "tablet", "capsules", "capsule", "ip", "bp", "usp", "and", "per", "with", "of", "for",
-        "oral", "injection", "syrup", "suspension", "solution", "prolonged-release", "sustained", "release",
+        "oral", "injection", "syrup", "suspension", "solution", "prolonged-release", "prolonged", "sustained", "release",
         "extended", "modified", "film", "coated", "enteric", "dispersible", "chewable", "w/v", "w/w", "i", "v"}
 
 

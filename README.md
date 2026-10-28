@@ -5,7 +5,7 @@
 **Photograph a pharmacy or hospital bill. Dawa Buddy checks it line by line against India's legal price lists and the doctor's prescription, then tells you exactly what to ask, in English, Hindi or Kannada.**
 
 ![licence: MIT](https://img.shields.io/badge/licence-MIT-green)
-![tests: 185 passing](https://img.shields.io/badge/tests-185%20passing-brightgreen)
+![tests: 188 passing](https://img.shields.io/badge/tests-188%20passing-brightgreen)
 ![Nebius Token Factory](https://img.shields.io/badge/runs%20on-Nebius%20Token%20Factory-1f6feb)
 ![NVIDIA Nemotron](https://img.shields.io/badge/models-NVIDIA%20Nemotron-76b900)
 ![Tavily](https://img.shields.io/badge/web%20evidence-Tavily-7b61ff)
@@ -30,7 +30,7 @@
 ### What a judge should know in one minute
 | Criterion | Short answer | Where to look |
 |---|---|---|
-| **Technological implementation** | Nemotron **Super VL** reads photos, **Lightning** reads prescriptions, **Ultra / Super** write Hindi, all through one Token Factory endpoint. A deterministic rules engine decides every price verdict, so the model can never invent an accusation. 185 tests; 4 evaluation suites. | [§7](#7-architecture), [§8](#8-how-we-use-nebius-nvidia-nemotron-and-tavily), [§10](#10-validation-and-evaluation) |
+| **Technological implementation** | Nemotron **Super VL** reads photos, **Lightning** reads prescriptions, **Ultra / Super** write Hindi, all through one Token Factory endpoint. A deterministic rules engine decides every price verdict, so the model can never invent an accusation. 188 tests; 4 evaluation suites. | [§7](#7-architecture), [§8](#8-how-we-use-nebius-nvidia-nemotron-and-tavily), [§10](#10-validation-and-evaluation) |
 | **Design** | One question per screen, verdict first, phone-first, status always colour + icon + words, Hindi and Kannada typography. | [§5](#5-the-product-tour) |
 | **Potential impact** | The Indian government's own court affidavit says patients have "very low bargaining position" and "very limited" knowledge of prices. This tool puts the comparison in the patient's hands at the moment of paying. | [§2](#2-the-problem-with-evidence), [§4](#4-the-idea) |
 | **Quality of the idea** | A *receipt audit*, not a price lookup: it resolves each line to a medicine, strength and form, converts per-tablet, per-strip, per-vial, per-ml and per-piece prices correctly, and reconciles the bill with the prescription (including the wrong *variant* handed over). It is honest about what it cannot see. | [§4](#4-the-idea), [§9](#9-engineering-decisions-and-why) |
@@ -313,7 +313,7 @@ All numbers below are reproducible with the commands in [section 13](#13-setup-r
 ### 10.1 Results
 | Check | Result | Caveat |
 |---|---|---|
-| Unit and integration tests | **185 pass** | Includes fake-server tests for the Ollama and Tavily paths and a test that inspects what is sent to Tavily. |
+| Unit and integration tests | **188 pass** | Includes fake-server tests for the Ollama and Tavily paths and a test that inspects what is sent to Tavily. |
 | Brand resolution, 108 real brand lines | **99 correct, 4 missed (safe), 0 wrong.** The curated map alone: 26 correct, 61 missed, 2 wrong (1 reached a price verdict). 14 of 14 supplements, invented and ambiguous names handled safely. | Expected answers were written from pharmaceutical knowledge, **not** copied from the table. A pharmacist should review them. |
 | Bill tier accuracy, 18 synthetic lines (tablets, liquids, injections) | **18 of 18** | Synthetic prices written by the author. |
 | Prescription extraction, 24 synthetic cases | Offline rules F1 **1.00**, live Nemotron F1 **1.00**; safety-flag F1 1.00 / 1.00; 0 invented medicines; median latency 1.33 s | **Saturated**: the rules were tuned on this style of text, so it does not show the model's value. The real-photo comparison does. |
@@ -328,7 +328,7 @@ All numbers below are reproducible with the commands in [section 13](#13-setup-r
 
 ### 10.2 Reproduce
 ```bash
-pytest -q tests                                   # 185 tests
+pytest -q tests                                   # 188 tests
 python -m evals.run_bill_evals                    # 18 synthetic bill lines, tier accuracy
 python -m evals.run_brand_evals [--verbose]       # 108 brand lines: correct / missed / wrong
 python -m evals.run_evals --out evals/results.md  # 24 synthetic prescriptions, live model
@@ -353,6 +353,8 @@ Synthetic tests passed long before real documents did. These are the failures re
 | After the user typed an ingredient, the cards and verdict stayed stale until the next click, so the *Help us identify* box looked like it did nothing. | The page now refreshes in the same step, the box stays open and says what the confirmation did ("Compared as … No price list covers this"). |
 | The online ingredient lookup almost never reached agreement. The cause was extraction, not the web: it read only the short search snippet with one rigid pattern, and the search mixed in neighbouring products. | Read each page's *Composition* paragraph; ignore pages about a different product or strength; show a single clear answer as a labelled suggestion. |
 | The result card said "100% of the bill checked" while medicines were still unidentified and "not covered by a price list". It had merged two different things: a match with the *printed MRP* (which needs no identification) and a comparison with a *government price list* (which does). | Two numbers, never merged. The headline tile is the stricter one ("of the bill compared with a price list"); beneath it, "compared with the printed MRP: N%". On a real bill that reads 0% and 34%, and 0% and 100% after the pharmacy look-up. Every not-covered line also says why and how it was judged. |
+| Jan Aushadhi writes "Prolonged **release**" with a space; the name parser only ignored the hyphenated form, so "prolonged" was read as an *ingredient* and metformin SR never matched its own 500 mg price (₹1.08 a tablet; a bill charging ₹3.60 got no comparison). Found while debugging why a real bill showed 0%. | "prolonged" is ignored like "sustained" and "extended"; a regression test pins it. Evals unchanged (18/18; 99 correct, 4 safe misses, 0 wrong). |
+| The result page gave no sign of progress as ingredients were confirmed, and no reason when the price-list figure stayed at 0%. | It lists what is not identified yet (the list shrinks as you confirm), shows what each confirmation did, and when no list covers any medicine says so plainly. |
 | The Supreme Court's headline example (a ₹11 consumable billed at ₹270) was caught only if the user chose a unit; consumables had no "per piece" option. | Added **per piece** with a direct MRP comparison, plus a test and the hospital sample line. Found by reading the court coverage against the app, on 28 October. |
 
 ## 11. How it meets the requirements
@@ -561,6 +563,6 @@ dawa_buddy/
 data/                       Price lists, brand table, overrides, NOTICE.md
 scripts/                    audit_bill, read_photos, check_nebius, NPPA PDF parsers, brand-table builder, review-pack builder
 evals/                      Gold sets and runners
-tests/                      185 tests
+tests/                      188 tests
 my_data/                    Your private bills and prescriptions (git-ignored)
 ```

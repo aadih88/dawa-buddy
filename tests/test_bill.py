@@ -322,3 +322,11 @@ def test_the_hospital_sample_shows_the_consumable_markup():
     lines, _ = b.parse_bill_ex(samples.SAMPLES["Hospital pharmacy bill"]["bill"])
     iv = [b.audit_line(l) for l in lines if "IV SET" in l.desc][0]
     assert iv.tier == b.TIER_ABOVE_MRP and iv.line.unit == "each"
+
+
+def test_prolonged_release_with_a_space_is_not_read_as_an_ingredient():
+    """Jan Aushadhi writes 'Prolonged release' with a space; 'prolonged' was read as an ingredient so metformin SR never matched its own entry."""
+    from dawa_buddy import benchmarks, bill as b
+    assert benchmarks.parse_ingredients("Metformin Hydrochloride Prolonged release Tablets IP 500 mg") == frozenset({"metformin"})
+    f = b.audit_line(b.BillLine(raw="g", desc="TAB.GLYCOMET-500 SR", qty=60, rate=3.6, amount=216.0, unit="tab", pack=20, mrp=72.0))
+    assert f.tier == b.TIER_GENERIC_GAP and "1.08" in f.note              # the 500 mg prolonged-release generic is 10.79 for 10 tablets
