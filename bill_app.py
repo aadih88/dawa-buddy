@@ -397,26 +397,31 @@ def check_rows(fs, flags, wrong, unidentified, generic) -> list[tuple[str, str, 
     """'What we checked': what was verified and found fine, what was not and why. Each row says what was done, so a clean bill reads as protection."""
     n = len(fs)
     plural = lambda k, word: f"{k} {word}{'' if k == 1 else 's'}"
-    over = sum(f.tier == b.TIER_ABOVE_MRP for f in fs)
+    over_fs = [f for f in fs if f.tier == b.TIER_ABOVE_MRP]
+    over = len(over_fs)
     known = sum(f.mrp_pct is not None or f.tier == b.TIER_ABOVE_MRP for f in fs)
     ok = known - over
+    rest = n - known
+    gap = f"{plural(rest, 'line')} could not be compared because the MRP or the strip size is missing." if rest else ""
+    named = lambda items: "; ".join(items[:3]) + (f"; and {len(items) - 3} more" if len(items) > 3 else "")
     rows = []
-    if over:
-        rest = n - over - ok
-        rows.append(("red", "Printed MRP", f"Charged above the printed MRP on {plural(over, 'line')} of {n}."
-                     + (f" {plural(ok, 'other line')} {'is' if ok == 1 else 'are'} within it." if ok else "")
-                     + (f" {rest} had no MRP or pack size to compare." if rest else "")))
+    if over:     # name the line and both prices, so the reader can see what is wrong without opening anything
+        what = named([f"{f.line.desc}: charged {rupees(f.line.rate)} per {billed_word(f.line.unit)}, the pack says {rupees(f.mrp_unit)}" for f in over_fs])
+        rows.append(("red", "Printed MRP", f"{plural(over, 'line')} {'is' if over == 1 else 'are'} priced above the MRP printed on the pack. {what}."
+                     + (f" {plural(ok, 'other line')} {'is' if ok == 1 else 'are'} priced at or below {'its' if ok == 1 else 'their'} MRP." if ok else "")
+                     + (f" {gap}" if gap else "")))
     elif ok:
-        rows.append(("green", "Printed MRP", f"Charged at or below the printed MRP on {'all ' + plural(n, 'line') if ok == n else plural(ok, 'line') + ' of ' + str(n)}. "
-                     "Selling above the printed MRP is not allowed for any product." + (f" {n - ok} had no MRP or pack size to compare." if ok < n else "")))
+        rows.append(("green", "Printed MRP", ("All " + plural(n, "line") + " are" if ok == n and n > 1 else "This line is" if ok == n else f"{ok} of {n} lines are")
+                     + " priced at or below the MRP printed on the pack. Selling above the printed MRP is not allowed for any product." + (f" {gap}" if gap else "")))
     else:
         rows.append(("grey", "Printed MRP", "Could not be compared: add the MRP printed on the pack and the tablets per strip (Edit the numbers)."))
     capped = [f for f in fs if f.ceiling is not None]
-    above = sum(f.tier == b.TIER_ABOVE_CEILING for f in fs)
-    if above:
-        rows.append(("red", "Legal price ceiling (NPPA)", f"Above the ceiling on {above} of {plural(len(capped), 'price-controlled line')}."))
+    above_fs = [f for f in fs if f.tier == b.TIER_ABOVE_CEILING]
+    if above_fs:
+        what = named([f"{f.line.desc}: charged {rupees(f.unit_price)} per {PER.get(f.basis, 'unit')}, the legal limit is {rupees(f.ceiling)}" for f in above_fs])
+        rows.append(("red", "Legal price ceiling (NPPA)", f"{len(above_fs)} of {plural(len(capped), 'price-controlled line')} {'is' if len(above_fs) == 1 else 'are'} above the legal ceiling price. {what}."))
     elif capped:
-        rows.append(("green", "Legal price ceiling (NPPA)", f"Within the ceiling on {'the' if len(capped) == 1 else 'all ' + str(len(capped))} price-controlled {'line' if len(capped) == 1 else 'lines'}."))
+        rows.append(("green", "Legal price ceiling (NPPA)", ("The price-controlled line is" if len(capped) == 1 else f"All {len(capped)} price-controlled lines are") + " within the legal ceiling price."))
     else:
         rows.append(("grey", "Legal price ceiling (NPPA)", "Not applicable: none of these has a government ceiling. That is normal, since most branded medicines are not price-controlled."))
     if not st.session_state.get("rx", "").strip():

@@ -166,7 +166,7 @@ def test_one_button_fills_pack_sizes_and_checks_the_mrp_against_pharmacy_listing
     assert at.session_state["df"].loc[0, "pack"] == 10                                              # filled in as a suggestion
     assert at.session_state["pack_guess"]["CONCOR T 5MG TAB"][0] == 10 and "pharmacy websites" in at.session_state["pack_guess"]["CONCOR T 5MG TAB"][1]
     assert "consistent with this bill" in " ".join(c.value for c in at.caption)                       # printed 174.75 per 10 = listed
-    assert "Charged at or below the printed MRP on all 1 line" in html_blocks(at)             # the MRP check is now possible, and the page says what it checked
+    assert "This line is priced at or below the MRP printed on the pack" in html_blocks(at)             # the MRP check is now possible, and the page says what it checked
 
 
 def test_a_bill_without_mrp_charging_above_the_listed_mrp_gets_a_question_not_a_violation(monkeypatch):
@@ -351,7 +351,7 @@ REAL4 = [("SHELCAL 500MG TAB", 30, 9.81, 15, 163.45), ("VELTAM 0.4MG TAB", 15, 1
 def test_a_clean_bill_reads_as_protection_not_as_zeros(monkeypatch):
     """No tiles that say 0: tiles appear only when there is news. The page lists what was checked and found fine, and says when a check does not apply."""
     page = re.sub(r"<style>.*?</style>", "", html_blocks(_bill_app(monkeypatch, REAL4)), flags=re.S)          # what the user sees, not the stylesheet
-    assert "Charged at or below the printed MRP on all 3 lines" in page and "Selling above the printed MRP is not allowed" in page
+    assert "All 3 lines are priced at or below the MRP printed on the pack" in page and "Selling above the printed MRP is not allowed" in page
     assert "Not applicable: none of these has a government ceiling" in page           # a neutral grey row, not an alarming 0%
     assert "₹0" not in page and not re.search(r"(?<!\d)0%", page) and "possible saving" not in page    # no zero tiles, no 0%, no empty generic saving
     assert 'class="db-stats"' not in page and 'class="db-check"' in page
@@ -389,9 +389,10 @@ def test_the_mrp_row_reads_correctly_with_one_other_line_and_lines_that_could_no
     at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
     at.run(); click(at, "Hospital pharmacy bill")
     page = html_blocks(at)
-    assert "Charged above the printed MRP on 1 line of 7. 1 other line is within it. 5 had no MRP or pack size to compare." in page
+    assert ("1 line is priced above the MRP printed on the pack. IV SET NOVOFUSION 30115: charged ₹265 per piece, the pack says ₹11. "
+            "1 other line is priced at or below its MRP. 5 lines could not be compared because the MRP or the strip size is missing.") in page
     ok = html_blocks(_bill_app(monkeypatch, [("SHELCAL 500MG TAB", 30, 9.81, 15, 163.45), ("DOLO 650 TAB", 10, 2.1, None, None)]))
-    assert "Charged at or below the printed MRP on 1 line of 2" in ok and "1 had no MRP or pack size to compare" in ok
+    assert "1 of 2 lines are priced at or below the MRP printed on the pack" in ok and "1 line could not be compared because the MRP or the strip size is missing" in ok
 
 
 def _fake_web(monkeypatch):
@@ -702,3 +703,13 @@ def test_results_lookup_callout_names_the_medicines_it_will_look_up(monkeypatch)
     at = _bill_app(monkeypatch, [("SHELCAL 500MG TAB", 30, 9.81, None, 163.45), ("CONCOR T 5MG TAB", 30, 15.73, None, 174.75)])
     page = html_blocks(at)
     assert "Strip size and listed price" in page and "SHELCAL 500MG TAB, CONCOR T 5MG TAB" in page
+
+
+def test_the_check_rows_name_the_line_and_both_prices_in_plain_words(monkeypatch):
+    at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
+    monkeypatch.setenv("DAWA_PROVIDER", "offline")
+    at.run(); click(at, "Hospital pharmacy bill")
+    page = html_blocks(at)
+    assert "AACEF 250 INJ: charged ₹90 per vial, the legal limit is ₹29.02" in page             # which line, what was charged, what the limit is
+    assert "2 of 5 price-controlled lines are above the legal ceiling price." in page
+    assert "Charged above the printed MRP on" not in page and "other line is within it" not in page    # the old, hard-to-read wording is gone
