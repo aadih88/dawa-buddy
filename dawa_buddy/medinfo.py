@@ -457,6 +457,18 @@ for _name, _extra in REVIEW_ADDITIONS.items():
     _wn = [w for w in _wn if not (w == "pregnancy" and _name in SOFT_PREGNANCY_REPLACED)]
     MEDS[_name] = (_pk, _se, _wn + [w for w in _extra if w not in _wn])
 
+# A third pass: a stronger model reviewed the 54 entries two other models had flagged and suggested sentences a patient could act on. Only the ones that
+# reuse an existing (already translated) warning are applied here; the rest would be new unreviewed text. LLM review only, no clinician.
+SECOND_OPINION_ADDITIONS = {
+    **{n: ['allergy'] for n in ("acebrophylline", "aspirin", "gabapentin", "pregabalin")},
+    **{n: ['no_alcohol'] for n in ("amisulpride", "aripiprazole", "carbamazepine", "cinnarizine", "clozapine", "cyproheptadine", "ketoconazole",
+                                    "levosulpiride", "nimesulide")},
+    "amlodipine": ['pregnancy'], "norethisterone": ['no_pregnancy'], "enalapril": ['blood_test'], "ramipril": ['blood_test'], "pregabalin": ['allergy', 'self_harm'],
+}
+for _name, _extra in SECOND_OPINION_ADDITIONS.items():
+    _pk, _se, _wn = MEDS[_name]
+    MEDS[_name] = (_pk, _se, _wn + [w for w in _extra if w not in _wn])
+
 # spellings a prescription or brand table may use for the same ingredient
 ALIASES = {"levothyroxine": "thyroxine", "thyroxine sodium": "thyroxine", "cholecalciferol": "vitamin d", "acetaminophen": "paracetamol",
            "amoxycillin": "amoxicillin", "cephalexin": "cefalexin", "clavulanate": "clavulanic acid", "potassium clavulanate": "clavulanic acid",

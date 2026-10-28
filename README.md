@@ -5,7 +5,7 @@
 **Photograph a pharmacy or hospital bill. Dawa Buddy checks it line by line against India's legal price lists and the doctor's prescription, then tells you exactly what to ask, in English, Hindi or Kannada.**
 
 ![licence: MIT](https://img.shields.io/badge/licence-MIT-green)
-![tests: 258 passing](https://img.shields.io/badge/tests-258%20passing-brightgreen)
+![tests: 260 passing](https://img.shields.io/badge/tests-260%20passing-brightgreen)
 ![Nebius Token Factory](https://img.shields.io/badge/runs%20on-Nebius%20Token%20Factory-1f6feb)
 ![NVIDIA Nemotron](https://img.shields.io/badge/models-NVIDIA%20Nemotron-76b900)
 ![Tavily](https://img.shields.io/badge/web%20evidence-Tavily-7b61ff)
@@ -30,7 +30,7 @@
 ### What a judge should know in one minute
 | Criterion | Short answer | Where to look |
 |---|---|---|
-| **Technological implementation** | Nemotron **Super VL** reads photos, **Lightning** reads prescriptions, **Ultra / Super** write Hindi, all through one Token Factory endpoint. A deterministic rules engine decides every price verdict, so the model can never invent an accusation. 258 tests; 4 evaluation suites. | [§7](#7-architecture), [§8](#8-how-we-use-nebius-nvidia-nemotron-and-tavily), [§10](#10-validation-and-evaluation) |
+| **Technological implementation** | Nemotron **Super VL** reads photos, **Lightning** reads prescriptions, **Ultra / Super** write Hindi, all through one Token Factory endpoint. A deterministic rules engine decides every price verdict, so the model can never invent an accusation. 260 tests; 4 evaluation suites. | [§7](#7-architecture), [§8](#8-how-we-use-nebius-nvidia-nemotron-and-tavily), [§10](#10-validation-and-evaluation) |
 | **Design** | One question per screen, verdict first, a "What we checked" list so a clean bill reads as protection, phone-first, status always colour + icon + words, Hindi and Kannada typography. | [§5](#5-the-product-tour) |
 | **Potential impact** | The Indian government's own court affidavit says patients have "very low bargaining position" and "very limited" knowledge of prices. This tool puts the comparison in the patient's hands at the moment of paying. | [§2](#2-the-problem-with-evidence), [§4](#4-the-idea) |
 | **Quality of the idea** | A *receipt audit*, not a price lookup: it resolves each line to a medicine, strength and form, converts per-tablet, per-strip, per-vial, per-ml and per-piece prices correctly, and reconciles the bill with the prescription (including the wrong *variant* handed over). It is honest about what it cannot see. | [§4](#4-the-idea), [§9](#9-engineering-decisions-and-why) |
@@ -314,7 +314,7 @@ All numbers below are reproducible with the commands in [section 13](#13-setup-r
 ### 10.1 Results
 | Check | Result | Caveat |
 |---|---|---|
-| Unit and integration tests | **258 pass** | Includes fake-server tests for the Ollama and Tavily paths and a test that inspects what is sent to Tavily. |
+| Unit and integration tests | **260 pass** | Includes fake-server tests for the Ollama and Tavily paths and a test that inspects what is sent to Tavily. |
 | Brand resolution, 108 real brand lines | **99 correct, 4 missed (safe), 0 wrong.** The curated map alone: 26 correct, 61 missed, 2 wrong (1 reached a price verdict). 14 of 14 supplements, invented and ambiguous names handled safely. | Expected answers were written from pharmaceutical knowledge, **not** copied from the table. A pharmacist should review them. |
 | Bill tier accuracy, 18 synthetic lines (tablets, liquids, injections) | **18 of 18** | Synthetic prices written by the author. |
 | Prescription extraction, 24 synthetic cases | Offline rules F1 **1.00**, live Nemotron F1 **1.00**; safety-flag F1 1.00 / 1.00; 0 invented medicines; median latency 1.33 s | **Saturated**: the rules were tuned on this style of text, so it does not show the model's value. The real-photo comparison does. |
@@ -322,6 +322,7 @@ All numbers below are reproducible with the commands in [section 13](#13-setup-r
 | Real prescription photos | 11 lines: the model kept the full product name where the rules truncated 7; 1 error (`STAT` read as `SOS`); one dose pattern `0---1---0` was read as `0---0` | Two prescriptions. This is why every transcription is shown for confirmation. |
 | Hindi and Kannada explainer, live | Hindi: good in every run I read, accepted by the script check, 1.7 to 5 s. Kannada: accepted by the script check **but a real run produced fluent nonsense**, so Kannada AI text is off. | Script check proves the alphabet, not the meaning. An LLM second-opinion review (28 Oct 2026, see the next row) marked **9 of 14 Kannada AI lines as nonsense**, one of them dangerous ("black stools" rendered as "black weakness"), which independently confirms that Kannada AI text must stay off; it found **no nonsense in the 14 Hindi AI lines** (meaning right in 13). **No native speaker or clinician has reviewed Hindi or Kannada yet.** |
 | Second-opinion review of the fixed Hindi and Kannada text and of the medicine table (28 Oct 2026, by an LLM: **not a native speaker or a clinician**) | Hindi fixed text: 82 of 88 rows OK. Kannada fixed text: 80 of 88 OK. Kannada medicine table: 132 of 147 OK. Medicine map (176 ingredients): 65 OK, 111 flagged, nearly all as "add a warning". **Applied:** 5 Hindi and 8 Kannada wording fixes (including a real Kannada grammar error: "like {drug}" had been written as "as {drug} does"); 14 table fixes (including a double-verb bug: several pieces ended in "to use" before the frame's "is used"); and 132 warning additions across 93 ingredients, each reusing a warning that was already written and translated, with my own clinical judgement on top (no "never in pregnancy" for statins, letrozole or clomiphene; none for low sugar on teneligliptin). **Not applied:** about 20 free-text requests that need new wording (listed for a clinician), and 3 stylistic changes. | An LLM shares blind spots with the model that wrote the text, so this is a second opinion, not a review. The files for human reviewers are `docs/language_review.md` and the reviewer spreadsheet (`scripts/build_review_sheet.py`). |
+| Third pass on the English medicine table (28 Oct 2026): two models from other families (Qwen3-235B, DeepSeek-V4-Pro) screened all 176 ingredients, then a stronger model reviewed the 54 they flagged (`scripts/clinical_review.py`; all LLMs, **no clinician**) | The first two over-flagged (152 of 176 "flagged by both" until missing-warning suggestions were ranked below wrong-warning flags). The stronger model rated 40 of the 54 purposes OK and 14 incomplete (another common use left out), **none wrong**. It found one unsafe line: torasemide said "drink plenty of water", which is wrong advice for a diuretic used in heart or kidney failure. **Applied:** that line removed, and 18 more warnings across 17 ingredients, each reusing an existing translated sentence (alcohol for sedating or liver-affecting drugs, allergy, blood tests for two ACE inhibitors, pregnancy for amlodipine and norethisterone). **Not applied:** about 40 suggested new sentences (new unreviewed text after the feature freeze), and a stricter pregnancy sentence for letrozole and clomiphene, which women take in order to conceive. | Disagreement between reviewers was the useful signal; a single model's "missing" list was mostly padding. Still no human review of the medicine content. |
 | NPPA price context for an unpriced combination (live, Tavily) | 10 distinct company rows from 4 NPPA documents for bisoprolol 5 mg + telmisartan 40 mg, parsed correctly against rows copied from the documents | One combination live. Only the "composition, unit, company, price" layout is parsed; anything else returns nothing, not a guess. |
 | Pharmacy-website lookup, real bill (live, Tavily) | **Pack sizes right for 6 of 6 products where the strip is known**; the **printed-MRP check became possible on 4 of 4 lines** with one button (2 of 4 before), while no line has a government price list entry (the page says so plainly); listed MRPs matched the printed MRP for Concor T and Shelcal. One brand (Pantop) had no two sites within 10% and correctly got no reference. | 6 products, one day. Listings change and sites disagree, so every result is a question. |
 | Online ingredient lookup, 4 real brands (live, Tavily) | Concor T 5/40 and Veltam 0.4: **two sites agree** after the fix (neither did before). Glycomet 500 SR: one clear answer, labelled as a suggestion. Roseday Gold: the pharmacy sites **genuinely disagree** and the app says so. 4 pages about similar-named products were ignored for each brand. | 4 brands, one day. Pages that state no composition (several Apollo and Netmeds pages) still add nothing. |
@@ -330,7 +331,7 @@ All numbers below are reproducible with the commands in [section 13](#13-setup-r
 
 ### 10.2 Reproduce
 ```bash
-pytest -q tests                                   # 258 tests
+pytest -q tests                                   # 260 tests
 python -m evals.run_bill_evals                    # 18 synthetic bill lines, tier accuracy
 python -m evals.run_brand_evals [--verbose]       # 108 brand lines: correct / missed / wrong
 python -m evals.run_evals --out evals/results.md  # 24 synthetic prescriptions, live model
@@ -505,7 +506,7 @@ The parsers are **checked, not trusted**: serial numbers must run 1..N with no g
 - **GST allowance.** Ceilings exclude local taxes; the tool allows up to 12% before flagging, which can hide a small overcharge but avoids false alarms.
 - **Photos may contain personal data.** Cover names, phone numbers, addresses and bill numbers before uploading. Photos are sent to Nebius Token Factory to be read; only brand or ingredient text goes to Tavily; the app stores nothing.
 - **Interaction and brand-safety tables are small demo sets** to be replaced with a licensed clinical database before real use.
-- **Hindi and Kannada.** Fixed text (dose, safety notes, timetable, disclaimer, and the Kannada medicine table) is never model-written, but has had **only an LLM second-opinion review** (28 Oct 2026; it found and fixed real errors, see section 10.1); **no native speaker or clinician has reviewed it yet**, and the medicine table's medical content in particular needs a pharmacist or doctor. The Hindi AI text is labelled as AI and can contain mistakes. See `docs/language_review.md`.
+- **Hindi and Kannada.** Fixed text (dose, safety notes, timetable, disclaimer, and the Kannada medicine table) is never model-written, but has had **only an LLM second-opinion review** (28 Oct 2026, two passes; they found and fixed real errors, including an unsafe "drink plenty of water" on a diuretic, see section 10.1); **no native speaker or clinician has reviewed it yet**, and the medicine table's medical content in particular needs a pharmacist or doctor. The Hindi AI text is labelled as AI and can contain mistakes. See `docs/language_review.md`.
 - **Known small gaps.** "With food" and "with milk" timings are not understood (only after food, before food and bedtime). A combination with two strengths on one line (for example `5mg/40`) shows only the first strength. A misread dose that is still *readable* (a wrong digit, not a missing one) is not caught.
 - **Unverified:** wording of the fixed Hindi and Kannada text, the Hindi AI text over many prescriptions, handwriting, a physical phone, and real-user outcomes.
 
@@ -577,6 +578,6 @@ dawa_buddy/
 data/                       Price lists, brand table, overrides, NOTICE.md
 scripts/                    audit_bill, read_photos, check_nebius, NPPA PDF parsers, brand-table builder, review-pack builder (markdown), review-sheet builder (xlsx for reviewers: one row per phrase, a verdict dropdown)
 evals/                      Gold sets and runners
-tests/                      258 tests
+tests/                      260 tests
 my_data/                    Your private bills and prescriptions (git-ignored)
 ```

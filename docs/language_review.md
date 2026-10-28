@@ -269,76 +269,76 @@ Written by NVIDIA Nemotron each time, so it varies. Mark: **meaning**, **plain**
 
 ### Hindi
 
-**Telma**: English: _helps control blood pressure / feeling dizzy or lightheaded when standing up quickly_
+**Telma**: English: _helps control blood pressure / dizziness or feeling very weak; tell your doctor if this happens_
 - purpose: यह दवा उच्च रक्तचाप को नियंत्रित करने के लिए उपयोग की जाती है।
 - watch for: चक्कर आना या खांसी हो सकती है। सूजन या सांस लेने में तकलीफ होने पर डॉक्टर से मिलें।
 - Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
 
-**Dolo**: English: _relieves pain and reduces fever / stomach upset or feeling sick_
+**Dolo**: English: _relieves pain and reduces fever / stomach upset or rash; stop and see your doctor if you have a bad reaction_
 - purpose: यह दवा बुखार और दर्द को कम करने के लिए उपयोग की जाती है।
-- watch for: पेट खराब होना या एलर्जी हो सकती है। त्वचा पर लाल चकत्ते या पीलिया होने पर तुरंत डॉक्टर से संपर्क करें।
+- watch for: आमतौर पर सुरक्षित है। त्वचा पर लाल चकत्ते या पेट दर्द होने पर डॉक्टर से मिलें।
 - Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
 
-**Atorva**: English: _helps lower cholesterol / muscle pain or weakness_
+**Atorva**: English: _helps lower cholesterol / muscle pain or weakness; tell your doctor if this happens_
 - purpose: यह दवा खून में कोलेस्ट्रॉल का स्तर कम करने के लिए उपयोग की जाती है।
-- watch for: मांसपेशियों में दर्द या कमजोरी हो सकती है। असामान्य थकान या गहरे रंग का पेशाब होने पर डॉक्टर को बताएं।
+- watch for: मांसपेशियों में दर्द या कमजोरी हो सकती है। असामान्य दर्द या गहरे रंग का पेशाब होने पर डॉक्टर से मिलें।
 - Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
 
-**Metformin**: English: _helps control blood sugar / stomach upset or diarrhea when starting_
+**Metformin**: English: _helps control blood sugar / stomach upset or diarrhea when you start; take with food to help_
 - purpose: यह दवा टाइप 2 मधुमेह में खून की शर्करा को नियंत्रित करने के लिए उपयोग की जाती है।
-- watch for: पेट खराब होना, दस्त या उल्टी हो सकती है। सांस लेने में तकलीफ या बहुत थकान होने पर तुरंत डॉक्टर से मिलें।
+- watch for: पेट खराब होना या दस्त लग सकते हैं। बहुत ज्यादा कमजोरी या सांस लेने में तकलीफ होने पर डॉक्टर से मिलें।
 - Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
 
-**Pantop**: English: _reduces acidity and helps the stomach / headache or dizziness_
+**Pantop**: English: _reduces acid in the stomach / headache or nausea; tell your doctor if it does not get better_
 - purpose: यह दवा पेट में एसिडिटी और अल्सर के इलाज के लिए उपयोग की जाती है।
-- watch for: सिरदर्द या दस्त हो सकता है। लगातार पेट दर्द या हड्डी में दर्द होने पर डॉक्टर से सलाह लें।
+- watch for: सिरदर्द या दस्त हो सकते हैं। लगातार पेट दर्द या काले मल होने पर डॉक्टर से मिलें।
 - Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
 
-**Cetzine**: English: _relieves allergy symptoms such as sneezing or itching / drowsiness or dry mouth_
-- purpose: यह दवा एलर्जी के लक्षणों जैसे छींक, खुजली और नाक बहने से राहत देती है।
-- watch for: नींद आना या मुंह सूखना आम है। धुंधला दिखना या पेशाब करने में दिक्कत होने पर डॉक्टर को बताएं।
+**Cetzine**: English: _relieves allergy symptoms such as sneezing or itching / drowsiness or dry mouth; avoid driving if you feel sleepy_
+- purpose: यह दवा एलर्जी के लक्षणों जैसे खुजली और छींक को कम करने के लिए उपयोग की जाती है।
+- watch for: नींद आना या मुंह सूखना आम है। धुंधला दिखना या पेशाब न आने पर डॉक्टर से मिलें।
 - Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
 
-**Ecosprin**: English: _helps prevent blood clots / easy bruising or stomach discomfort_
+**Ecosprin**: English: _helps prevent blood clots / easy bruising or bleeding; tell your doctor if you notice unusual bleeding_
 - purpose: यह दवा खून के थक्के जमने से रोकने और दिल की सुरक्षा के लिए उपयोग की जाती है।
-- watch for: पेट खराब होना या आसनी से नीला पड़ना हो सकता है। काला मल या खून की उल्टी होने पर तुरंत अस्पताल जाएं।
+- watch for: पेट खराब होना या आसनी से नीला पड़ जाना हो सकता है। काला मल या खून की उल्टी होने पर तुरंत डॉक्टर से मिलें।
 - Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
 
 ### Kannada (switched off for users)
 
-**Telma**: English: _helps control blood pressure / feeling dizzy or lightheaded when standing up quickly_
-- purpose: ಈ ಔಷಧಿ ಉನ್ನತ ರಕ್ತಚಾಪವನ್ನು ನಿಯಂತ್ರಿಸಲು ಬಳಸಲಾಗುತ್ತದೆ.
-- watch for: ಛಕ್ಕ ಎಱು ನಱುಱುಱು ಱಗಬಱುಱು. ಱುಱುಬಱುಫ ಎಱು ಱಱುಱು ತಱಱು ಱಱುಱು ಱುಱುಫಱುಪಱು ಱಱುಪಱುಱುಱು.
+**Telma**: English: _helps control blood pressure / dizziness or feeling very weak; tell your doctor if this happens_
+- purpose: ಈ ಔಷಧಿ ರಕ್ತದೊತ್ತಡವನ್ನು ನಿಯಂತ್ರಿಸಲು ಬಳಸಲಾಗುತ್ತದೆ.
+- watch for: ಛಕ್ಕ ಎಽು ನಽುಚ್ಋು ಙಬಽುತು. ಽೂಛಽುಬ್ಗು ಿಽುಟು ಕಽುಽಿಬುಟ್ಟು ಬಽಟಽುಪಽುಪ್ಪು ಷ್ಋಪಽುಷ್ಋ.
 - Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
 
-**Dolo**: English: _relieves pain and reduces fever / stomach upset or feeling sick_
+**Dolo**: English: _relieves pain and reduces fever / stomach upset or rash; stop and see your doctor if you have a bad reaction_
 - purpose: ಈ ಔಷಧಿ ಜ್ವರ ಮತ್ತು ನೋವನ್ನು ಕಡಿಮೆ ಮಾಡುತ್ತದೆ.
-- watch for: ಅತಿಮಾತ್ರೆ ತೆಗೆದರೆ ಯಕೃತ್ತಿನೋವು ಅಥವಾ ಅಲರ್ಜಿ ಆಗಬಹುದು. ತೀವ್ರ ವಯಸ್ಸು ಅಥವಾ ಚರ್ಮದ ಚಕತ್ತೆ ಇದ್ದರೆ ತಕ್ಷಣ ವೈದ್ಯನನ್ನು ಭೇಟಿ ಮಾಡಿ.
+- watch for: ಅತಿಮಾತ್ರೆ ತೆಗೆದುಕೊಂಡರೆ ಯಕೃತ್ತಿನೋವು ಅಥವಾ ಅಲರ್ಜಿ ಆಗಬಹುದು. ತೀವ್ರ ನೋವು ಅಥವಾ ಚರ್ಮದ ಮೇಲೆ ಚಿಗುರು ಬಂದರೆ ವೈದ್ಯನನ್ನು ಭೇಟಿ ಮಾಡಿ.
 - Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
 
-**Atorva**: English: _helps lower cholesterol / muscle pain or weakness_
-- purpose: ಈ ಔಷಧಿ ರಕ್ತದಲ್ಲಿ ಕೊಲೆಸ್ಟ್ರಾಲ್ ಅಳವಡಿಯನ್ನು ಕಡಿಮೆ ಮಾಡುತ್ತದೆ.
-- watch for: ಕಾಲು ನೋವು ಅಥವಾ ಬಲಹೀನತೆ ಆಗಬಹುದು. ತೀವ್ರ ಕಾಯಿಲೆ ಅಥವಾ ಉಸಿರು ಕಷ್ಟ ಇದ್ದರೆ ವೈದ್ಯರನ್ನು ತಿಳಿಸಿ.
+**Atorva**: English: _helps lower cholesterol / muscle pain or weakness; tell your doctor if this happens_
+- purpose: ಈ ಔಷಧಿ ರಕ್ತದ ಕೊಲೆಸ್ಟ್ರಾಲ್ ಪ್ರಮಾಣವನ್ನು ಕಡಿಮೆ ಮಾಡುತ್ತದೆ.
+- watch for: ಕಾಲು ನೋವು ಅಥವಾ ಬಲಹೀನತೆ ಥೋರಿಸಬಹುದು. ತೀವ್ರ ಕಾಲು ನೋವು ಅಥವಾ ಉಸಿರು ಕಷ್ಟವಿದ್ದರೆ ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ.
 - Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
 
-**Metformin**: English: _helps control blood sugar / stomach upset or diarrhea when starting_
-- purpose: ಈ ಔಷಧಿ ರಕ್ತ ಸಕ್ಕರೆ ಅಳವಡಿಯನ್ನು ನಿಯಂತ್ರಿಸುತ್ತದೆ.
-- watch for: ವಯಸ್ಸು, ಉಲ್ಟಿ ಅಥವಾ ಪೆಟ್ಟಿನೋವು ಆಗಬಹುದು. ತೀವ್ರ ಉಸಿರು ತೊಂದರೆ ಅಥವಾ ಅಸಹಜ ದುರ್ಬಲ್ಯ ಇದ್ದರೆ ವೈದ್ಯನನ್ನು ಸಂಪರ್ಕಿಸಿ.
+**Metformin**: English: _helps control blood sugar / stomach upset or diarrhea when you start; take with food to help_
+- purpose: ಈ ಔಷಧಿ ರಕ್ತದ ಸಕ್ಕರೆ ಪ್ರಮಾಣವನ್ನು ನಿಯಂತ್ರಿಸುತ್ತದೆ.
+- watch for: ವಾಂತಿ, ಉಲ್ಟಿ ಅಥವಾ ಹೊಟ್ಟೆ ದುರ್ಬಲತೆ ಆಗಬಹುದು. ತೀವ್ರ ಹೊಟ್ಟೆ ದುರ್ಬಲತೆ ಅಥವಾ ಉಸಿರು ಕಷ್ಟವಿದ್ದರೆ ವೈದ್ಯನನ್ನು ಭೇಟಿ ಮಾಡಿ.
 - Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
 
-**Pantop**: English: _reduces acidity and helps the stomach / headache or dizziness_
-- purpose: ಈ ಔಷಧಿ ಹೊಟ್ಟೆ ಅಮ್ಲತ್ವವನ್ನು ಕಡಿಮೆ ಮಾಡುತ್ತದೆ.
-- watch for: ತಲೆನೋವು ಅಥವಾ ದಸ್ತ ಆಗಬಹುದು. ದೀರ್ಘಕಾಲ ಬಳಸಿದರೆ ಅಸ್ಥಿ ದುರ್ಬಲ್ಯ ಅಥವಾ ಬಿ12 ಕೊರತೆ ಆಗಬಹುದು. ಲಕ್ಷಣಗಳು ಇರುವುದರೆ ವೈದ್ಯನನ್ನು ಭೇಟಿ ಮಾಡಿ.
+**Pantop**: English: _reduces acid in the stomach / headache or nausea; tell your doctor if it does not get better_
+- purpose: ಈ ಔಷಧಿ ಹೊಟ್ಟೆ ಆಮ್ಲಜನಕವನ್ನು ಕಡಿಮೆ ಮಾಡುತ್ತದೆ.
+- watch for: ತಲೆನೋವು ಅಥವಾ ದಸ್ತ ಆಗಬಹುದು. ತೀವ್ರ ಹೊಟ್ಟೆ ನೋವು ಅಥವಾ ರಕ್ತಮಿಶ್ರಿತ ದಸ್ತ ಬಂದರೆ ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ.
 - Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
 
-**Cetzine**: English: _relieves allergy symptoms such as sneezing or itching / drowsiness or dry mouth_
+**Cetzine**: English: _relieves allergy symptoms such as sneezing or itching / drowsiness or dry mouth; avoid driving if you feel sleepy_
 - purpose: ಈ ಔಷಧಿ ಅಲರ್ಜಿ ಲಕ್ಷಣಗಳನ್ನು ಕಡಿಮೆ ಮಾಡುತ್ತದೆ.
-- watch for: ನಿದ್ರೆ ಅಥವಾ ಒಣವುಂಟು ಆಗಬಹುದು. ವಾಹನ ಚಲಾಯಿಸಬೇಡಿ. ತೀವ್ರ ಉಸಿರು ತೊಂದರೆ ಇದ್ದರೆ ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ.
+- watch for: ನಿದ್ರೆ ಅಥವಾ ಒಣವುಂಟು ಆಗಬಹುದು. ವಾಹನ ಚಲಾಯಿಸುವುದನ್ನು ತಪ್ಪಿಸಿ. ತೀವ್ರ ಉಸಿರು ಕಷ್ಟವಿದ್ದರೆ ವೈದ್ಯನನ್ನು ಸಂಪರ್ಕಿಸಿ.
 - Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
 
-**Ecosprin**: English: _helps prevent blood clots / easy bruising or stomach discomfort_
-- purpose: ಈ ಔಷಧಿ ರಕ್ತದ ಗುಂಪು ರೂಪುವುದನ್ನು ತಡೆಗಟ್ಟುತ್ತದೆ.
-- watch for: ಹೊಟ್ಟೆ ರಕ್ತಸ್ರಾವ ಅಥವಾ ಸುಲಭವಾಗಿ ನೀಲಿ ಗುಂಪುಗಳು ಆಗಬಹುದು. ತೀವ್ರ ವಯಸ್ಸು ಅಥವಾ ಕಪ್ಪು ದಸ್ತ ಇದ್ದರೆ ತಕ್ಷಣ ವೈದ್ಯನನ್ನು ಭೇಟಿ ಮಾಡಿ.
+**Ecosprin**: English: _helps prevent blood clots / easy bruising or bleeding; tell your doctor if you notice unusual bleeding_
+- purpose: ಈ ಔಷಧಿ ರಕ್ತದ ಚಿಗುರು ರೂಪಾಗುವುದನ್ನು ತಡೆಗಟ್ಟುತ್ತದೆ.
+- watch for: ಹೊಟ್ಟೆ ನೋವು ಅಥವಾ ರಕ್ತಸ್ರಾವ ಹೆಚ್ಚುವರಿ ಆಗಬಹುದು. ಕಪ್ಪು ದಸ್ತ ಅಥವಾ ತೀವ್ರ ಹೊಟ್ಟೆ ನೋವು ಬಂದರೆ ವೈದ್ಯನನ್ನು ಭೇಟಿ ಮಾಡಿ.
 - Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
 
 
@@ -524,7 +524,7 @@ Shown to a Kannada reader for the ingredients below instead of AI text. Each lin
 | piroxicam | to ease pain and swelling | stomach pain, heartburn, nausea, dizziness | Black stools, vomiting blood or unusual bleeding: see a doctor at once. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. / Tell your doctor if you are pregnant or planning a pregnancy. |
 | lornoxicam | to ease pain and swelling | stomach pain, heartburn, nausea, dizziness | Black stools, vomiting blood or unusual bleeding: see a doctor at once. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. / Tell your doctor if you are pregnant or planning a pregnancy. |
 | etoricoxib | to ease pain and swelling | heartburn, stomach pain, dizziness, swollen feet | Black stools, vomiting blood or unusual bleeding: see a doctor at once. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. / Tell your doctor if you are pregnant or planning a pregnancy. |
-| nimesulide | to ease pain and fever | stomach pain, nausea | Yellow eyes or skin, or dark urine: tell your doctor. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. / Black stools, vomiting blood or unusual bleeding: see a doctor at once. |
+| nimesulide | to ease pain and fever | stomach pain, nausea | Yellow eyes or skin, or dark urine: tell your doctor. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. / Black stools, vomiting blood or unusual bleeding: see a doctor at once. / Do not drink alcohol with this medicine. |
 | mefenamic acid | to ease pain | stomach pain, nausea, loose motions | Black stools, vomiting blood or unusual bleeding: see a doctor at once. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. / Tell your doctor if you are pregnant or planning a pregnancy. |
 | tramadol | to ease strong pain | nausea, dizziness, sleepiness, constipation | Do not drink alcohol with this medicine. / Do not drive if you feel sleepy. / It can become a habit: do not take more than is written. |
 | tapentadol | to ease strong pain | nausea, dizziness, sleepiness, constipation | Do not drink alcohol with this medicine. / Do not drive if you feel sleepy. / It can become a habit: do not take more than is written. |
@@ -544,7 +544,7 @@ Shown to a Kannada reader for the ingredients below instead of AI text. Each lin
 | drotaverine | to ease cramping stomach pain | dizziness, nausea, a fast heartbeat | - |
 | ursodeoxycholic acid | to treat some liver and gallbladder problems | loose motions, stomach pain | Yellow eyes or skin, or dark urine: tell your doctor. |
 | rifaximin | to treat some gut infections and liver-related problems | nausea, headache, stomach pain | - |
-| levosulpiride | to ease nausea and poor digestion | sleepiness, dizziness | Do not drive if you feel sleepy. / Fainting or an uneven heartbeat: tell your doctor. |
+| levosulpiride | to ease nausea and poor digestion | sleepiness, dizziness | Do not drive if you feel sleepy. / Fainting or an uneven heartbeat: tell your doctor. / Do not drink alcohol with this medicine. |
 | amoxicillin | to treat infections caused by bacteria | loose motions, nausea, stomach pain | Take it for the full number of days your doctor wrote. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. |
 | ampicillin | to treat infections caused by bacteria | loose motions, nausea, stomach pain | Take it for the full number of days your doctor wrote. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. |
 | clavulanic acid | to help the antibiotic work better | loose motions, nausea | Severe or bloody loose motions: tell your doctor. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. / Yellow eyes or skin, or dark urine: tell your doctor. |
@@ -575,7 +575,7 @@ Shown to a Kannada reader for the ingredients below instead of AI text. Each lin
 | fluconazole | to treat fungal infections | nausea, stomach pain, headache | Yellow eyes or skin, or dark urine: tell your doctor. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. / Tell your doctor if you are pregnant or planning a pregnancy. |
 | itraconazole | to treat fungal infections | nausea, stomach pain, headache | Yellow eyes or skin, or dark urine: tell your doctor. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. / Tell your doctor if you are pregnant or planning a pregnancy. / Breathlessness or swollen legs: tell your doctor. |
 | terbinafine | to treat fungal infections | nausea, stomach pain, headache | Yellow eyes or skin, or dark urine: tell your doctor. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. |
-| ketoconazole | to treat fungal infections | nausea, stomach pain, headache | Yellow eyes or skin, or dark urine: tell your doctor. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. |
+| ketoconazole | to treat fungal infections | nausea, stomach pain, headache | Yellow eyes or skin, or dark urine: tell your doctor. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. / Do not drink alcohol with this medicine. |
 | luliconazole | to treat fungal infections | burning or redness of the skin where applied | - |
 | clotrimazole | to treat fungal infections | burning or redness of the skin where applied | - |
 | albendazole | to treat worm infections | stomach pain, nausea, headache | Yellow eyes or skin, or dark urine: tell your doctor. / Tell your doctor if you are pregnant or planning a pregnancy. |
@@ -588,24 +588,24 @@ Shown to a Kannada reader for the ingredients below instead of AI text. Each lin
 | cetirizine | to ease allergy symptoms such as sneezing, a runny nose and itching | sleepiness, a dry mouth, headache | Do not drive if you feel sleepy. |
 | levocetirizine | to ease allergy symptoms such as sneezing, a runny nose and itching | sleepiness, a dry mouth, headache | Do not drive if you feel sleepy. |
 | hydroxyzine | to ease allergy symptoms such as sneezing, a runny nose and itching | sleepiness, a dry mouth, headache | Do not drive if you feel sleepy. |
-| cyproheptadine | to ease allergy symptoms such as sneezing, a runny nose and itching | sleepiness, a dry mouth, a bigger appetite | Do not drive if you feel sleepy. |
+| cyproheptadine | to ease allergy symptoms such as sneezing, a runny nose and itching | sleepiness, a dry mouth, a bigger appetite | Do not drive if you feel sleepy. / Do not drink alcohol with this medicine. |
 | fexofenadine | to ease allergy symptoms such as sneezing, a runny nose and itching | headache, a dry mouth, tiredness | - |
 | loratadine | to ease allergy symptoms such as sneezing, a runny nose and itching | headache, a dry mouth, tiredness | - |
 | chlorpheniramine | to ease cold and allergy symptoms | sleepiness, a dry mouth | Do not drive if you feel sleepy. |
 | phenylephrine | to ease a blocked nose | headache, a fast heartbeat, trouble sleeping | - |
 | montelukast | to control asthma and allergy | headache, stomach pain | Low mood or bad dreams: tell your doctor. |
-| acebrophylline | to ease cough with phlegm and breathing trouble | nausea, an upset stomach | Fainting or an uneven heartbeat: tell your doctor. |
+| acebrophylline | to ease cough with phlegm and breathing trouble | nausea, an upset stomach | Fainting or an uneven heartbeat: tell your doctor. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. |
 | doxofylline | to ease breathing trouble from asthma | nausea, headache, a fast heartbeat, trouble sleeping | Fainting or an uneven heartbeat: tell your doctor. |
 | ambroxol | to thin the phlegm and ease cough | nausea, an upset stomach | If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. |
 | guaifenesin | to thin the phlegm and ease cough | nausea, an upset stomach | - |
 | levosalbutamol | to ease breathing trouble from asthma | shaky hands, a fast heartbeat, headache | If wheezing or breathing trouble gets worse, tell your doctor. |
-| amlodipine | to lower blood pressure | swollen feet, a flushed face, headache, dizziness, tiredness | Do not stop it suddenly without asking your doctor. / Stand up slowly. |
+| amlodipine | to lower blood pressure | swollen feet, a flushed face, headache, dizziness, tiredness | Do not stop it suddenly without asking your doctor. / Stand up slowly. / Tell your doctor if you are pregnant or planning a pregnancy. |
 | cilnidipine | to lower blood pressure | swollen feet, a flushed face, headache, dizziness | Do not stop it suddenly without asking your doctor. / Stand up slowly. |
 | telmisartan | to lower blood pressure | dizziness, tiredness | Stand up slowly. / Do not stop it suddenly without asking your doctor. / This medicine must never be taken in pregnancy. |
 | losartan | to lower blood pressure | dizziness, tiredness | Stand up slowly. / Do not stop it suddenly without asking your doctor. / This medicine must never be taken in pregnancy. |
 | olmesartan | to lower blood pressure | dizziness, tiredness | Stand up slowly. / Do not stop it suddenly without asking your doctor. / This medicine must never be taken in pregnancy. |
-| ramipril | to lower blood pressure | a dry cough, dizziness, tiredness | Stand up slowly. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. / Do not stop it suddenly without asking your doctor. / This medicine must never be taken in pregnancy. |
-| enalapril | to lower blood pressure | a dry cough, dizziness, tiredness | Stand up slowly. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. / Do not stop it suddenly without asking your doctor. / This medicine must never be taken in pregnancy. |
+| ramipril | to lower blood pressure | a dry cough, dizziness, tiredness | Stand up slowly. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. / Do not stop it suddenly without asking your doctor. / This medicine must never be taken in pregnancy. / Get the blood tests your doctor advises. |
+| enalapril | to lower blood pressure | a dry cough, dizziness, tiredness | Stand up slowly. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. / Do not stop it suddenly without asking your doctor. / This medicine must never be taken in pregnancy. / Get the blood tests your doctor advises. |
 | metoprolol | to control blood pressure and some heart problems | tiredness, dizziness, a slow heartbeat | If wheezing or breathing trouble gets worse, tell your doctor. / Do not stop it suddenly without asking your doctor. / Fainting or an uneven heartbeat: tell your doctor. |
 | atenolol | to control blood pressure and some heart problems | tiredness, dizziness, a slow heartbeat | If wheezing or breathing trouble gets worse, tell your doctor. / Do not stop it suddenly without asking your doctor. / Fainting or an uneven heartbeat: tell your doctor. |
 | propranolol | to control blood pressure and some heart problems | tiredness, dizziness, a slow heartbeat | If wheezing or breathing trouble gets worse, tell your doctor. / Do not stop it suddenly without asking your doctor. |
@@ -613,11 +613,11 @@ Shown to a Kannada reader for the ingredients below instead of AI text. Each lin
 | carvedilol | to control blood pressure and some heart problems | tiredness, dizziness, a slow heartbeat | If wheezing or breathing trouble gets worse, tell your doctor. / Do not stop it suddenly without asking your doctor. / Stand up slowly. |
 | bisoprolol | to control blood pressure and some heart problems | tiredness, dizziness, a slow heartbeat | If wheezing or breathing trouble gets worse, tell your doctor. / Do not stop it suddenly without asking your doctor. / Fainting or an uneven heartbeat: tell your doctor. |
 | diltiazem | to control blood pressure and some heart problems | headache, dizziness, swollen feet, a slow heartbeat | Do not stop it suddenly without asking your doctor. / Fainting or an uneven heartbeat: tell your doctor. / Breathlessness or swollen legs: tell your doctor. |
-| torasemide | to remove extra water from the body through urine | passing urine more often, dizziness, muscle cramps | Drink plenty of water. / Stand up slowly. / Get the blood tests your doctor advises. |
+| torasemide | to remove extra water from the body through urine | passing urine more often, dizziness, muscle cramps | Stand up slowly. / Get the blood tests your doctor advises. |
 | atorvastatin | to lower cholesterol | muscle pain, an upset stomach, headache | Muscle pain or weakness with no clear reason: tell your doctor. / Yellow eyes or skin, or dark urine: tell your doctor. / Tell your doctor if you are pregnant or planning a pregnancy. |
 | rosuvastatin | to lower cholesterol | muscle pain, an upset stomach, headache | Muscle pain or weakness with no clear reason: tell your doctor. / Yellow eyes or skin, or dark urine: tell your doctor. / Tell your doctor if you are pregnant or planning a pregnancy. |
 | clopidogrel | to prevent blood clots | stomach pain, heartburn | Black stools, vomiting blood or unusual bleeding: see a doctor at once. / Do not stop it suddenly without asking your doctor. / Ask your doctor or pharmacist before taking any new medicine, including painkillers. |
-| aspirin | to prevent blood clots | heartburn, an upset stomach | Black stools, vomiting blood or unusual bleeding: see a doctor at once. / Ask your doctor or pharmacist before taking any new medicine, including painkillers. / Do not stop it suddenly without asking your doctor. |
+| aspirin | to prevent blood clots | heartburn, an upset stomach | Black stools, vomiting blood or unusual bleeding: see a doctor at once. / Ask your doctor or pharmacist before taking any new medicine, including painkillers. / Do not stop it suddenly without asking your doctor. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. |
 | warfarin | to prevent blood clots | - | Black stools, vomiting blood or unusual bleeding: see a doctor at once. / Get the blood tests your doctor advises. / Ask your doctor or pharmacist before taking any new medicine, including painkillers. / Do not stop it suddenly without asking your doctor. / This medicine must never be taken in pregnancy. |
 | rivaroxaban | to prevent blood clots | - | Black stools, vomiting blood or unusual bleeding: see a doctor at once. / Do not stop it suddenly without asking your doctor. / Ask your doctor or pharmacist before taking any new medicine, including painkillers. / Tell your doctor if you are pregnant or planning a pregnancy. |
 | enoxaparin | to prevent blood clots | - | Black stools, vomiting blood or unusual bleeding: see a doctor at once. / It is given under a doctor's care: ask your doctor about side effects. |
@@ -652,24 +652,24 @@ Shown to a Kannada reader for the ingredients below instead of AI text. Each lin
 | olanzapine | to treat mental health conditions | sleepiness, weight gain, dizziness, a dry mouth | Do not stop it suddenly without asking your doctor. / Get the blood tests your doctor advises. / Do not drink alcohol with this medicine. / Do not drive if you feel sleepy. / Stand up slowly. |
 | quetiapine | to treat mental health conditions | sleepiness, weight gain, dizziness, a dry mouth | Do not stop it suddenly without asking your doctor. / Get the blood tests your doctor advises. / Do not drink alcohol with this medicine. / Do not drive if you feel sleepy. / Stand up slowly. |
 | risperidone | to treat mental health conditions | sleepiness, weight gain, dizziness, a dry mouth | Do not stop it suddenly without asking your doctor. / Get the blood tests your doctor advises. / Do not drink alcohol with this medicine. / Do not drive if you feel sleepy. / Stand up slowly. |
-| aripiprazole | to treat mental health conditions | sleepiness, weight gain, dizziness, a dry mouth | Do not stop it suddenly without asking your doctor. / Get the blood tests your doctor advises. / Do not drive if you feel sleepy. |
-| clozapine | to treat mental health conditions | sleepiness, weight gain, dizziness, a dry mouth | Do not stop it suddenly without asking your doctor. / Get the blood tests your doctor advises. / Do not drive if you feel sleepy. / Fainting or an uneven heartbeat: tell your doctor. / Breathlessness or swollen legs: tell your doctor. / Tell your doctor about fever or signs of infection. |
-| amisulpride | to treat mental health conditions | sleepiness, weight gain, dizziness, a dry mouth | Do not stop it suddenly without asking your doctor. / Get the blood tests your doctor advises. / Do not drive if you feel sleepy. / Fainting or an uneven heartbeat: tell your doctor. |
+| aripiprazole | to treat mental health conditions | sleepiness, weight gain, dizziness, a dry mouth | Do not stop it suddenly without asking your doctor. / Get the blood tests your doctor advises. / Do not drive if you feel sleepy. / Do not drink alcohol with this medicine. |
+| clozapine | to treat mental health conditions | sleepiness, weight gain, dizziness, a dry mouth | Do not stop it suddenly without asking your doctor. / Get the blood tests your doctor advises. / Do not drive if you feel sleepy. / Fainting or an uneven heartbeat: tell your doctor. / Breathlessness or swollen legs: tell your doctor. / Tell your doctor about fever or signs of infection. / Do not drink alcohol with this medicine. |
+| amisulpride | to treat mental health conditions | sleepiness, weight gain, dizziness, a dry mouth | Do not stop it suddenly without asking your doctor. / Get the blood tests your doctor advises. / Do not drive if you feel sleepy. / Fainting or an uneven heartbeat: tell your doctor. / Do not drink alcohol with this medicine. |
 | haloperidol | to treat mental health conditions | sleepiness, a dry mouth, shaky hands | Do not stop it suddenly without asking your doctor. / Fainting or an uneven heartbeat: tell your doctor. / Do not drink alcohol with this medicine. / Do not drive if you feel sleepy. |
 | levetiracetam | to control fits (seizures) | sleepiness, dizziness, nausea, blurred vision | Do not stop it suddenly without asking your doctor. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. / Do not drive if you feel sleepy. / If your mood gets worse or you think of harming yourself, contact a doctor at once. / Low mood or bad dreams: tell your doctor. |
-| carbamazepine | to control fits (seizures) | sleepiness, dizziness, nausea, blurred vision | Do not stop it suddenly without asking your doctor. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. / Do not drive if you feel sleepy. / Tell your doctor if you are pregnant or planning a pregnancy. / Tell your doctor about fever or signs of infection. |
+| carbamazepine | to control fits (seizures) | sleepiness, dizziness, nausea, blurred vision | Do not stop it suddenly without asking your doctor. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. / Do not drive if you feel sleepy. / Tell your doctor if you are pregnant or planning a pregnancy. / Tell your doctor about fever or signs of infection. / Do not drink alcohol with this medicine. |
 | oxcarbazepine | to control fits (seizures) | sleepiness, dizziness, nausea, blurred vision | Do not stop it suddenly without asking your doctor. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. / Do not drive if you feel sleepy. / Tell your doctor if you are pregnant or planning a pregnancy. |
 | lamotrigine | to control fits (seizures) | sleepiness, dizziness, nausea, blurred vision | Do not stop it suddenly without asking your doctor. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. / Do not drive if you feel sleepy. |
 | valproate | to control fits (seizures) | nausea, sleepiness, weight gain, shaky hands | Do not stop it suddenly without asking your doctor. / Yellow eyes or skin, or dark urine: tell your doctor. / This medicine must never be taken in pregnancy. / Do not drive if you feel sleepy. |
 | divalproex | to control fits (seizures) | nausea, sleepiness, weight gain, shaky hands | Do not stop it suddenly without asking your doctor. / Yellow eyes or skin, or dark urine: tell your doctor. / This medicine must never be taken in pregnancy. / Do not drive if you feel sleepy. |
 | topiramate | to control fits or prevent migraine | sleepiness, dizziness, a lower appetite, nausea | Do not stop it suddenly without asking your doctor. / Drink plenty of water. / Do not drive if you feel sleepy. / Tell your doctor if you are pregnant or planning a pregnancy. |
-| gabapentin | to ease nerve pain | sleepiness, dizziness, weight gain, swollen feet | Do not drive if you feel sleepy. / Do not stop it suddenly without asking your doctor. / Do not drink alcohol with this medicine. / If your mood gets worse or you think of harming yourself, contact a doctor at once. |
-| pregabalin | to ease nerve pain | sleepiness, dizziness, weight gain, swollen feet | Do not drive if you feel sleepy. / Do not stop it suddenly without asking your doctor. / Do not drink alcohol with this medicine. / It can become a habit: do not take more than is written. |
+| gabapentin | to ease nerve pain | sleepiness, dizziness, weight gain, swollen feet | Do not drive if you feel sleepy. / Do not stop it suddenly without asking your doctor. / Do not drink alcohol with this medicine. / If your mood gets worse or you think of harming yourself, contact a doctor at once. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. |
+| pregabalin | to ease nerve pain | sleepiness, dizziness, weight gain, swollen feet | Do not drive if you feel sleepy. / Do not stop it suddenly without asking your doctor. / Do not drink alcohol with this medicine. / It can become a habit: do not take more than is written. / If you get a rash, swelling of the face or lips, or trouble breathing, get medical help at once. / If your mood gets worse or you think of harming yourself, contact a doctor at once. |
 | piracetam | to support brain function | headache, nausea, trouble sleeping | - |
 | citicoline | to support brain function | headache, nausea, trouble sleeping | - |
 | betahistine | to ease dizziness and spinning (vertigo) | nausea, headache, an upset stomach | - |
 | flunarizine | to ease dizziness and prevent migraine headaches | sleepiness, weight gain, tiredness | Low mood or bad dreams: tell your doctor. / Do not drive if you feel sleepy. |
-| cinnarizine | to ease dizziness and prevent migraine headaches | sleepiness, weight gain, a dry mouth | Do not drive if you feel sleepy. |
+| cinnarizine | to ease dizziness and prevent migraine headaches | sleepiness, weight gain, a dry mouth | Do not drive if you feel sleepy. / Do not drink alcohol with this medicine. |
 | baclofen | to ease muscle stiffness and spasm | sleepiness, dizziness, weakness | Do not drive if you feel sleepy. / Do not stop it suddenly without asking your doctor. / Do not drink alcohol with this medicine. |
 | methylcobalamin | to correct vitamin B12 lack and support the nerves | nausea, loose motions | - |
 | prednisolone | to reduce inflammation and allergy | an upset stomach, a bigger appetite, trouble sleeping, mood changes | Do not stop it suddenly without asking your doctor. / Tell your doctor about fever or signs of infection. / Black stools, vomiting blood or unusual bleeding: see a doctor at once. |
@@ -681,7 +681,7 @@ Shown to a Kannada reader for the ingredients below instead of AI text. Each lin
 | progesterone | to give the hormone progesterone for period problems or to support a pregnancy | sleepiness, dizziness, nausea, headache | Pain or swelling in one leg, chest pain or sudden breathlessness: get help at once. / Do not drive if you feel sleepy. |
 | progesterone natural micronized | to give the hormone progesterone for period problems or to support a pregnancy | sleepiness, dizziness, nausea, headache | Pain or swelling in one leg, chest pain or sudden breathlessness: get help at once. / Do not drive if you feel sleepy. |
 | hydroxyprogesterone | to give the hormone progesterone for period problems or to support a pregnancy | nausea, headache | Pain or swelling in one leg, chest pain or sudden breathlessness: get help at once. |
-| norethisterone | to treat period problems | nausea, headache, weight gain | Pain or swelling in one leg, chest pain or sudden breathlessness: get help at once. |
+| norethisterone | to treat period problems | nausea, headache, weight gain | Pain or swelling in one leg, chest pain or sudden breathlessness: get help at once. / This medicine must never be taken in pregnancy. |
 | letrozole | to treat some breast cancers or help with fertility | hot flushes, joint pain, tiredness, headache | Tell your doctor if you are pregnant or planning a pregnancy. |
 | clomiphene | to help the body release an egg (ovulation) | hot flushes, headache, stomach pain, blurred vision | Tell your doctor if you are pregnant or planning a pregnancy. |
 | tranexamic acid | to reduce heavy bleeding | nausea, loose motions, headache | Pain or swelling in one leg, chest pain or sudden breathlessness: get help at once. |

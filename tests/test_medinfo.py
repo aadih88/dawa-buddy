@@ -180,3 +180,15 @@ def test_a_composed_combination_stays_readable_with_the_extra_warnings():
     en = medinfo.info(Medication(name="Roseday Gold", generic="aspirin+clopidogrel+rosuvastatin"), "en")[1]
     assert en.count("Black stools") == 1 and "pregnan" in en                                 # merged without repeats
     assert len(en.split(". ")) <= 12                                                         # a long list is still a list a person can read
+
+
+def test_torasemide_never_says_drink_plenty_of_water():
+    # a water tablet for heart or kidney failure: fluid is often limited, so "drink plenty of water" is unsafe advice (second-opinion review)
+    assert "water" not in medinfo.MEDS["torasemide"][2]
+    assert "drink plenty" not in medinfo.info(type("M", (), {"generic": "torasemide", "name": "Torasemide", "form": "tablet", "strength": None, "raw": ""})(), "en")[1].lower()
+
+
+def test_second_opinion_additions_reuse_existing_warnings():
+    for name, extra in medinfo.SECOND_OPINION_ADDITIONS.items():
+        assert all(w in medinfo.WARN and w in medinfo.ORDER for w in extra), name       # no new, untranslated sentence slipped in
+        assert all(w in medinfo.MEDS[name][2] for w in extra), name
