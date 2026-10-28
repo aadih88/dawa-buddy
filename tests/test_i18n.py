@@ -94,7 +94,7 @@ def test_a_rule_without_a_translation_shows_english_not_a_guess():
 
 def test_batch_alert_status_is_translated():
     f = SafetyFlag(severity="call_doctor", title="x", detail="y", code="batch_alert", args={"month": "2026-01", "status": "not_of_standard_quality"})
-    assert "मानक गुणवत्ता का नहीं" in i18n.flag_text(f, "hi")[1] and "ಗುಣಮಟ್ಟದ ಮಾನದಂಡಕ್ಕೆ" in i18n.flag_text(f, "kn")[1]
+    assert "मानक गुणवत्ता का नहीं" in i18n.flag_text(f, "hi")[1] and "ನಿಗದಿತ ಗುಣಮಟ್ಟದ್ದಲ್ಲ" in i18n.flag_text(f, "kn")[1]
 
 
 def test_timetable_is_translated_and_english_is_unchanged():

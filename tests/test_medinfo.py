@@ -142,3 +142,41 @@ def test_a_brand_the_table_keys_with_its_strength_is_found_by_name_and_strength(
 def test_bisoprolol_has_fixed_text():
     p, w = medinfo.info(Medication(name="Concor", generic="bisoprolol"), "en")
     assert "blood pressure" in p and "Do not stop it suddenly" in w
+
+
+# ---------------------------------------------------------------- what the 28 Oct 2026 second-opinion review taught us
+def test_no_kannada_purpose_piece_ends_in_the_verb_the_frame_already_supplies():
+    """The frame is 'This medicine is used {p}.' (...ಬಳಸಲಾಗುತ್ತದೆ). A piece that itself ends in 'ಬಳಸಲು' ('to use') made 'used to use'."""
+    bad = [k for k, (en, kn) in medinfo._P.items() if kn.rstrip().endswith("ಬಳಸಲು") or kn.rstrip().endswith("ಬಳಸಲಾಗುತ್ತದೆ")]
+    assert not bad, bad
+
+
+def test_the_review_additions_only_reuse_warnings_that_already_exist_and_are_translated():
+    assert medinfo.REVIEW_ADDITIONS and all(w in medinfo.WARN and w in medinfo.ORDER for ws in medinfo.REVIEW_ADDITIONS.values() for w in ws)
+    for name, (pk, se, wn) in medinfo.MEDS.items():
+        assert len(wn) == len(set(wn)), name                                               # no warning twice
+        assert not ("pregnancy" in wn and "no_pregnancy" in wn), name                      # the stronger sentence replaces the softer, never both
+
+
+def test_pregnancy_wording_follows_the_clinical_judgement_applied_on_top_of_the_review():
+    never = {"telmisartan", "losartan", "olmesartan", "ramipril", "enalapril", "warfarin", "methotrexate", "valproate", "divalproex", "isotretinoin", "thiocolchicoside"}
+    assert all("no_pregnancy" in medinfo.MEDS[n][2] for n in never)
+    soft_only = {"atorvastatin", "rosuvastatin", "letrozole", "clomiphene"}                 # not 'never': guidance relaxed, or taken by women trying to conceive
+    assert all("pregnancy" in medinfo.MEDS[n][2] and "no_pregnancy" not in medinfo.MEDS[n][2] for n in soft_only)
+    assert all("pregnancy" in medinfo.MEDS[n][2] for n in ("diclofenac", "ibuprofen", "doxycycline", "albendazole", "fluconazole", "clonazepam"))
+
+
+def test_the_reviewed_corrections_are_in_the_fixed_text():
+    from dawa_buddy import i18n
+    assert i18n.SEVERITY["call_doctor"]["hi"] == "अपने डॉक्टर से संपर्क करें"                     # not 'phone your doctor'
+    assert "ನಂತಹ" in i18n.DETAILS["warfarin_nsaid"]["kn"] and "ಹಾಗೆ" not in i18n.DETAILS["warfarin_nsaid"]["kn"]   # 'like {drug}', not 'as {drug} does'
+    assert i18n.TIMETABLE["headers"]["kn"][2] == "ತೆಗೆದುಕೊಳ್ಳುವ ರೀತಿ"
+    from dawa_buddy.explainer import PHRASES
+    assert "दी जाती" not in PHRASES["hi"]["stat"] and "ನೀಡಲಾಗುತ್ತದೆ" not in PHRASES["kn"]["stat"]   # neutral: right for a vaccine a nurse gives and for a pill
+
+
+def test_a_composed_combination_stays_readable_with_the_extra_warnings():
+    from dawa_buddy.schemas import Medication
+    en = medinfo.info(Medication(name="Roseday Gold", generic="aspirin+clopidogrel+rosuvastatin"), "en")[1]
+    assert en.count("Black stools") == 1 and "pregnan" in en                                 # merged without repeats
+    assert len(en.split(". ")) <= 12                                                         # a long list is still a list a person can read

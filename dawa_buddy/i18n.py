@@ -12,7 +12,7 @@ from .schemas import Lang, SafetyFlag, ScheduleItem
 LANGS = ("en", "hi", "kn")
 
 SEVERITY = {
-    "call_doctor": {"en": "Call your doctor", "hi": "अपने डॉक्टर को फ़ोन करें", "kn": "ನಿಮ್ಮ ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ"},
+    "call_doctor": {"en": "Call your doctor", "hi": "अपने डॉक्टर से संपर्क करें", "kn": "ನಿಮ್ಮ ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ"},
     "ask_pharmacist": {"en": "Ask your pharmacist", "hi": "अपने दवा-विक्रेता से पूछें", "kn": "ನಿಮ್ಮ ಔಷಧಿ ಅಂಗಡಿಯವರನ್ನು ಕೇಳಿ"},
     "info": {"en": "Good to know", "hi": "जानने योग्य बात", "kn": "ತಿಳಿದುಕೊಳ್ಳಿ"},
 }
@@ -24,10 +24,10 @@ TITLES = {
     "nitrate_sildenafil": {"en": "Dangerous blood pressure drop", "hi": "रक्तचाप का ख़तरनाक रूप से गिरना", "kn": "ರಕ್ತದೊತ್ತಡ ಅಪಾಯಕಾರಿಯಾಗಿ ಕುಸಿಯುವ ಅಪಾಯ"},
     "potassium": {"en": "High potassium risk", "hi": "पोटैशियम बढ़ने का ख़तरा", "kn": "ಪೊಟ್ಯಾಸಿಯಮ್ ಹೆಚ್ಚಾಗುವ ಅಪಾಯ"},
     "statin_macrolide": {"en": "Muscle damage risk", "hi": "मांसपेशियों को नुकसान का ख़तरा", "kn": "ಸ್ನಾಯುಗಳಿಗೆ ಹಾನಿಯ ಅಪಾಯ"},
-    "double_ingredient": {"en": "Same ingredient twice", "hi": "एक ही तत्व दो बार", "kn": "ಒಂದೇ ಘಟಕ ಎರಡು ಬಾರಿ"},
+    "double_ingredient": {"en": "Same ingredient twice", "hi": "एक ही दवा का तत्व दो बार", "kn": "ಒಂದೇ ಔಷಧದ ಅಂಶ ಎರಡು ಬಾರಿ"},
     "paracetamol_max": {"en": "Paracetamol above 4 g a day", "hi": "पैरासिटामोल दिन में 4 ग्राम से अधिक", "kn": "ಪ್ಯಾರಾಸಿಟಮಾಲ್ ದಿನಕ್ಕೆ 4 ಗ್ರಾಂಗಿಂತ ಹೆಚ್ಚು"},
     "not_written": {"en": "Something is not written", "hi": "प्रिस्क्रिप्शन में कुछ जानकारी नहीं लिखी है", "kn": "ಔಷಧಿ ಚೀಟಿಯಲ್ಲಿ ಕೆಲವು ಮಾಹಿತಿ ಬರೆದಿಲ್ಲ"},
-    "batch_alert": {"en": "Batch flagged by the regulator", "hi": "नियामक ने इस बैच को चिह्नित किया है", "kn": "ನಿಯಂತ್ರಕರು ಈ ಬ್ಯಾಚ್ ಅನ್ನು ಗುರುತಿಸಿದ್ದಾರೆ"},
+    "batch_alert": {"en": "Batch flagged by the regulator", "hi": "सरकारी दवा विभाग (रेगुलेटर) ने इस बैच पर चेतावनी दी है", "kn": "ಸರ್ಕಾರಿ ಔಷಧ ನಿಯಂತ್ರಕರು ಈ ಬ್ಯಾಚ್ ಬಗ್ಗೆ ಎಚ್ಚರಿಕೆ ನೀಡಿದ್ದಾರೆ"},
 }
 TITLE_OF = {"warfarin_aspirin": "bleeding", "warfarin_nsaid": "bleeding"}      # several rules share one title
 
@@ -39,11 +39,11 @@ DETAILS = {
     "warfarin_nsaid": {
         "en": "Painkillers like {drug} can increase bleeding on warfarin. Check with the prescriber before taking both.",
         "hi": "{drug} जैसी दर्द की दवाएँ वारफ़रिन के साथ रक्तस्राव बढ़ा सकती हैं। दोनों लेने से पहले डॉक्टर से पूछ लें।",
-        "kn": "{drug} ಹಾಗೆ ನೋವು ನಿವಾರಕಗಳು ವಾರ್ಫರಿನ್ ಜೊತೆ ರಕ್ತಸ್ರಾವವನ್ನು ಹೆಚ್ಚಿಸಬಹುದು. ಎರಡನ್ನೂ ತೆಗೆದುಕೊಳ್ಳುವ ಮೊದಲು ವೈದ್ಯರನ್ನು ಕೇಳಿ."},
+        "kn": "{drug} ನಂತಹ ನೋವು ನಿವಾರಕಗಳು ವಾರ್ಫರಿನ್ ಜೊತೆ ರಕ್ತಸ್ರಾವವನ್ನು ಹೆಚ್ಚಿಸಬಹುದು. ಎರಡನ್ನೂ ತೆಗೆದುಕೊಳ್ಳುವ ಮೊದಲು ವೈದ್ಯರನ್ನು ಕೇಳಿ."},
     "two_nsaids": {
         "en": "Both are anti-inflammatory painkillers (NSAIDs). Taking two together raises stomach and kidney risk. Ask whether both are really needed.",
         "hi": "दोनों सूजन-रोधी दर्द की दवाएँ (NSAIDs) हैं। दोनों साथ लेने से पेट और गुर्दे को नुकसान का ख़तरा बढ़ता है। पूछें कि क्या दोनों सचमुच ज़रूरी हैं।",
-        "kn": "ಎರಡೂ ಉರಿಯೂತ ನಿವಾರಕ ನೋವು ಔಷಧಿಗಳು (NSAIDs). ಎರಡನ್ನೂ ಒಟ್ಟಿಗೆ ತೆಗೆದುಕೊಂಡರೆ ಹೊಟ್ಟೆ ಮತ್ತು ಮೂತ್ರಪಿಂಡಕ್ಕೆ ಅಪಾಯ ಹೆಚ್ಚಾಗುತ್ತದೆ. ಎರಡೂ ನಿಜಕ್ಕೂ ಬೇಕೇ ಎಂದು ಕೇಳಿ."},
+        "kn": "ಎರಡೂ ಉರಿಯೂತ ಮತ್ತು ನೋವು ಕಡಿಮೆ ಮಾಡುವ ಔಷಧಿಗಳು (NSAIDs). ಎರಡನ್ನೂ ಒಟ್ಟಿಗೆ ತೆಗೆದುಕೊಂಡರೆ ಹೊಟ್ಟೆ ಮತ್ತು ಕಿಡ್ನಿಗೆ (ಮೂತ್ರಪಿಂಡಕ್ಕೆ) ಅಪಾಯ ಹೆಚ್ಚಾಗುತ್ತದೆ. ಎರಡೂ ನಿಜಕ್ಕೂ ಬೇಕೇ ಎಂದು ಕೇಳಿ."},
     "nitrate_sildenafil": {
         "en": "Nitrates with sildenafil can cause a severe drop in blood pressure. Contact the prescriber before taking both.",
         "hi": "नाइट्रेट के साथ सिल्डेनाफिल लेने से रक्तचाप बहुत ज़्यादा गिर सकता है। दोनों लेने से पहले डॉक्टर से संपर्क करें।",
@@ -79,14 +79,14 @@ NOT_WRITTEN = {
              "kn": " ಪ್ರಾರಂಭಿಸುವ ಮೊದಲು ಔಷಧಿ ಅಂಗಡಿಯವರನ್ನು ಕೇಳಿ."},
 }
 STATUS = {   # the regulator's status words
-    "not_of_standard_quality": {"en": "not of standard quality", "hi": "मानक गुणवत्ता का नहीं", "kn": "ಗುಣಮಟ್ಟದ ಮಾನದಂಡಕ್ಕೆ ಅನುಗುಣವಾಗಿಲ್ಲ"},
+    "not_of_standard_quality": {"en": "not of standard quality", "hi": "मानक गुणवत्ता का नहीं (ख़राब गुणवत्ता)", "kn": "ನಿಗದಿತ ಗುಣಮಟ್ಟದ್ದಲ್ಲ (ಕಳಪೆ ಗುಣಮಟ್ಟ)"},
     "spurious": {"en": "spurious", "hi": "नकली", "kn": "ನಕಲಿ"},
     "adulterated": {"en": "adulterated", "hi": "मिलावटी", "kn": "ಕಲಬೆರಕೆ"},
     "misbranded": {"en": "misbranded", "hi": "ग़लत लेबल वाली", "kn": "ತಪ್ಪು ಲೇಬಲ್ ಇರುವ"},
 }
 
 TIMETABLE = {
-    "headers": {"en": ("Time", "Medicine", "How"), "hi": ("समय", "दवा", "कैसे लें"), "kn": ("ಸಮಯ", "ಔಷಧಿ", "ಹೇಗೆ")},
+    "headers": {"en": ("Time", "Medicine", "How"), "hi": ("समय", "दवा", "कैसे लें"), "kn": ("ಸಮಯ", "ಔಷಧಿ", "ತೆಗೆದುಕೊಳ್ಳುವ ರೀತಿ")},
     "slots": {"morning": {"en": "Morning", "hi": "सुबह", "kn": "ಬೆಳಿಗ್ಗೆ"}, "afternoon": {"en": "Afternoon", "hi": "दोपहर", "kn": "ಮಧ್ಯಾಹ್ನ"},
               "night": {"en": "Night", "hi": "रात", "kn": "ರಾತ್ರಿ"}, "as_needed": {"en": "As needed", "hi": "ज़रूरत पड़ने पर", "kn": "ಅಗತ್ಯವಿದ್ದಾಗ"}},
     "before": {"en": "before food", "hi": "खाने से पहले", "kn": "ಊಟದ ಮೊದಲು"},
@@ -132,7 +132,7 @@ PARTIAL_NOTE = {   # some medicines from the fixed table, the rest in English fr
 
 LABELS = {   # headings and captions of the explainer screen
     "medicines": {"en": "Your medicines", "hi": "आपकी दवाएँ", "kn": "ನಿಮ್ಮ ಔಷಧಿಗಳು"},
-    "safety": {"en": "Safety notes", "hi": "सुरक्षा संबंधी बातें", "kn": "ಸುರಕ್ಷತೆಯ ಟಿಪ್ಪಣಿಗಳು"},
+    "safety": {"en": "Safety notes", "hi": "सुरक्षा संबंधी बातें", "kn": "ಸುರಕ್ಷತಾ ಮಾಹಿತಿ"},
     "from_rx": {"en": "From your prescription", "hi": "आपके प्रिस्क्रिप्शन से", "kn": "ನಿಮ್ಮ ಔಷಧಿ ಚೀಟಿಯಿಂದ"},
     "watch_for": {"en": "Watch for", "hi": "ध्यान रखें", "kn": "ಗಮನಿಸಿ"},
     "timetable": {"en": "Your day, hour by hour", "hi": "आपका दिन, समय के अनुसार", "kn": "ನಿಮ್ಮ ದಿನ, ಸಮಯಕ್ಕೆ ತಕ್ಕಂತೆ"},
