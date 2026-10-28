@@ -1,7 +1,7 @@
 """Dawa Buddy: was your medicine bill fair?  Photo (or sample) -> confirm the numbers -> what to ask.
 
 Run:  streamlit run bill_app.py
-Hosting knob: DAWA_MAX_PHOTO_READS (photo reads per browser session, default 5) protects a public demo's model credits.
+Hosting knobs: DAWA_ACCESS_CODE (visitors start locked: no model or web calls until the code is entered) and DAWA_MAX_PHOTO_READS (photo reads per browser session, default 5).
 """
 import hmac
 import html
