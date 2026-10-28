@@ -267,7 +267,79 @@ Written by NVIDIA Nemotron each time, so it varies. Mark: **meaning**, **plain**
 
 **Hindi** is shown to users. **Kannada is NOT shown to users by default**: on a real run three of four 'watch for' lines were fluent-looking nonsense (place names, 'Friday'), which no automatic check can catch. The Kannada samples below are here so you can tell us whether it could ever be switched on, and the answer is probably no unless nearly all lines are correct.
 
-_Not generated: set NEBIUS_API_KEY and run again._
+### Hindi
+
+**Telma**: English: _helps control blood pressure / feeling dizzy or lightheaded when standing up quickly_
+- purpose: यह दवा उच्च रक्तचाप को नियंत्रित करने के लिए उपयोग की जाती है।
+- watch for: चक्कर आना या खांसी हो सकती है। सूजन या सांस लेने में तकलीफ होने पर डॉक्टर से मिलें।
+- Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
+
+**Dolo**: English: _relieves pain and reduces fever / stomach upset or feeling sick_
+- purpose: यह दवा बुखार और दर्द को कम करने के लिए उपयोग की जाती है।
+- watch for: आमतौर पर सुरक्षित है। त्वचा पर लाल चकत्ते या पेट दर्द होने पर डॉक्टर से संपर्क करें।
+- Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
+
+**Atorva**: English: _helps lower cholesterol / muscle pain or weakness_
+- purpose: यह दवा खून में कोलेस्ट्रॉल का स्तर कम करने के लिए उपयोग की जाती है।
+- watch for: मांसपेशियों में दर्द या कमजोरी हो सकती है। असामान्य थकान या गहरे रंग का पेशाब होने पर डॉक्टर को बताएं।
+- Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
+
+**Metformin**: English: _helps control blood sugar / stomach upset or diarrhea when starting_
+- purpose: यह दवा टाइप 2 मधुमेह में रक्त शर्करा को नियंत्रित करने के लिए उपयोग की जाती है।
+- watch for: पेट खराब होना या दस्त लग सकते हैं। सांस लेने में तकलीफ या बहुत थकान होने पर तुरंत डॉक्टर से मिलें।
+- Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
+
+**Pantop**: English: _reduces acidity and helps the stomach heal / headache or dizziness_
+- purpose: यह दवा पेट में एसिड की मात्रा कम करके जलन और अल्सर में आराम देती है।
+- watch for: सिरदर्द या दस्त हो सकते हैं। लगातार पेट दर्द या खून की उल्टी होने पर डॉक्टर से संपर्क करें।
+- Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
+
+**Cetzine**: English: _relieves allergy symptoms such as sneezing or itchy eyes / drowsiness; avoid driving if feeling sleepy_
+- purpose: यह दवा एलर्जी के लक्षणों जैसे खुजली, छींक और नाक बहने को कम करती है।
+- watch for: नींद आना या मुंह सूखना आम है। धुंधला दिखना या पेशाब न आने पर डॉक्टर को बताएं।
+- Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
+
+**Ecosprin**: English: _helps prevent blood clots and protects the heart / easy bruising or bleeding from the gums_
+- purpose: यह दवा खून को पतला करके दिल के दौरे और स्ट्रोक के खतरे को कम करती है।
+- watch for: पेट खराब होना या आसनी से नीले निशान पड़ सकते हैं। काली टट्टी या असामान्य रक्तस्राव होने पर तुरंत डॉक्टर से मिलें।
+- Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
+
+### Kannada (switched off for users)
+
+**Telma**: English: _helps control blood pressure / feeling dizzy or lightheaded when standing up quickly_
+- purpose: ಈ ಔಷಧಿಯನ್ನು ರಕ್ತದೊತ್ತಡವನ್ನು ಕಡಿಮೆ ಮಾಡಲು ಬಳಸಲಾಗುತ್ತದೆ.
+- watch for: ಕೆಲವರಲ್ಲಿ ತಲೆತಿರುಗುವಿಕೆ, ಆಯಾಸ ಉಂಟಾಗಬಹುದು. ನೀವು ಗರ್ಭಿಣಿಯಾಗಿದ್ದರೆ ಅಥವಾ ಗರ್ಭಧಾರಣೆಗೆ ಯೋಜಿಸುತ್ತಿದ್ದರೆ ವೈದ್ಯರಿಗೆ ತಿಳಿಸಿ. ನಿಧಾನವಾಗಿ ಎದ್ದು ನಿಲ್ಲಿ. ವೈದ್ಯರನ್ನು ಕೇಳದೆ ಇದ್ದಕ್ಕಿದ್ದಂತೆ ನಿಲ್ಲಿಸಬೇಡಿ.
+- Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
+
+**Dolo**: English: _relieves pain and reduces fever / stomach upset or feeling sick_
+- purpose: ಈ ಔಷಧಿಯನ್ನು ಜ್ವರ ಮತ್ತು ಸಾಧಾರಣ ನೋವನ್ನು ಕಡಿಮೆ ಮಾಡಲು ಬಳಸಲಾಗುತ್ತದೆ.
+- watch for: ಕಣ್ಣು ಅಥವಾ ಚರ್ಮ ಹಳದಿಯಾದರೆ ಅಥವಾ ಮೂತ್ರ ಗಾಢ ಬಣ್ಣವಾದರೆ ವೈದ್ಯರಿಗೆ ತಿಳಿಸಿ. ಪ್ಯಾರಾಸಿಟಮಾಲ್ ಇರುವ ಬೇರೆ ಔಷಧಿಗಳನ್ನು ಜೊತೆಗೆ ತೆಗೆದುಕೊಳ್ಳಬೇಡಿ.
+- Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
+
+**Atorva**: English: _helps lower cholesterol / muscle pain or weakness_
+- purpose: ಈ ಔಷಧಿಯನ್ನು ಕೊಲೆಸ್ಟ್ರಾಲ್ ಕಡಿಮೆ ಮಾಡಲು ಬಳಸಲಾಗುತ್ತದೆ.
+- watch for: ಕೆಲವರಲ್ಲಿ ಸ್ನಾಯು ನೋವು, ಹೊಟ್ಟೆ ಕೆಡುವುದು, ತಲೆನೋವು ಉಂಟಾಗಬಹುದು. ಕಣ್ಣು ಅಥವಾ ಚರ್ಮ ಹಳದಿಯಾದರೆ ಅಥವಾ ಮೂತ್ರ ಗಾಢ ಬಣ್ಣವಾದರೆ ವೈದ್ಯರಿಗೆ ತಿಳಿಸಿ. ಕಾರಣವಿಲ್ಲದ ಸ್ನಾಯು ನೋವು ಅಥವಾ ದೌರ್ಬಲ್ಯ ಇದ್ದರೆ ವೈದ್ಯರಿಗೆ ತಿಳಿಸಿ. ನೀವು ಗರ್ಭಿಣಿಯಾಗಿದ್ದರೆ ಅಥವಾ ಗರ್ಭಧಾರಣೆಗೆ ಯೋಜಿಸುತ್ತಿದ್ದರೆ ವೈದ್ಯರಿಗೆ ತಿಳಿಸಿ.
+- Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
+
+**Metformin**: English: _helps control blood sugar / stomach upset or diarrhea when starting_
+- purpose: ಈ ಔಷಧಿಯನ್ನು ಮಧುಮೇಹದಲ್ಲಿ ರಕ್ತದ ಸಕ್ಕರೆಯನ್ನು ನಿಯಂತ್ರಿಸಲು ಬಳಸಲಾಗುತ್ತದೆ.
+- watch for: ಕೆಲವರಲ್ಲಿ ವಾಕರಿಕೆ, ಭೇದಿ, ಹೊಟ್ಟೆ ನೋವು, ಬಾಯಿಯಲ್ಲಿ ಲೋಹದ ರುಚಿ, ಹಸಿವು ಕಡಿಮೆಯಾಗುವುದು ಉಂಟಾಗಬಹುದು. ವಾಂತಿ ಆಗುತ್ತಿದ್ದರೆ ಅಥವಾ ತುಂಬಾ ಅಸ್ವಸ್ಥರಾಗಿದ್ದರೆ ಮುಂದುವರಿಸಬೇಕೇ ಎಂದು ವೈದ್ಯರನ್ನು ಕೇಳಿ.
+- Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
+
+**Pantop**: English: _reduces acidity and helps the stomach heal / headache or dizziness_
+- purpose: ಈ ಔಷಧಿಯನ್ನು ಹೊಟ್ಟೆಯಲ್ಲಿ ಆಮ್ಲ ಕಡಿಮೆ ಮಾಡಿ ಎದೆಯುರಿ ಮತ್ತು ಹುಣ್ಣಿನಿಂದ ಆರಾಮ ನೀಡಲು ಬಳಸಲಾಗುತ್ತದೆ.
+- watch for: ಕೆಲವರಲ್ಲಿ ತಲೆನೋವು, ವಾಕರಿಕೆ, ಭೇದಿ, ಹೊಟ್ಟೆ ನೋವು ಉಂಟಾಗಬಹುದು.
+- Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
+
+**Cetzine**: English: _relieves allergy symptoms such as sneezing or itchy eyes / drowsiness; avoid driving if feeling sleepy_
+- purpose: ಈ ಔಷಧಿಯನ್ನು ಅಲರ್ಜಿಯ ಲಕ್ಷಣಗಳಾದ ಸೀನು, ಮೂಗು ಸೋರುವುದು ಮತ್ತು ತುರಿಕೆಯನ್ನು ಕಡಿಮೆ ಮಾಡಲು ಬಳಸಲಾಗುತ್ತದೆ.
+- watch for: ಕೆಲವರಲ್ಲಿ ನಿದ್ರೆ ಮಂಪರು, ಬಾಯಿ ಒಣಗುವುದು, ತಲೆನೋವು ಉಂಟಾಗಬಹುದು. ನಿದ್ರೆ ಮಂಪರು ಇದ್ದರೆ ವಾಹನ ಚಲಾಯಿಸಬೇಡಿ.
+- Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
+
+**Ecosprin**: English: _helps prevent blood clots and protects the heart / easy bruising or bleeding from the gums_
+- purpose: ಈ ಔಷಧಿಯನ್ನು ರಕ್ತ ಹೆಪ್ಪುಗಟ್ಟುವುದನ್ನು ತಡೆಯಲು ಬಳಸಲಾಗುತ್ತದೆ.
+- watch for: ಕೆಲವರಲ್ಲಿ ಎದೆಯುರಿ, ಹೊಟ್ಟೆ ಕೆಡುವುದು ಉಂಟಾಗಬಹುದು. ಕಪ್ಪು ಮಲ, ರಕ್ತ ವಾಂತಿ ಅಥವಾ ಅಸಾಮಾನ್ಯ ರಕ್ತಸ್ರಾವ ಆದರೆ ತಕ್ಷಣ ವೈದ್ಯರನ್ನು ಕಾಣಿ. ಯಾವುದೇ ಹೊಸ ಔಷಧಿ, ನೋವು ನಿವಾರಕ ಸೇರಿದಂತೆ, ತೆಗೆದುಕೊಳ್ಳುವ ಮೊದಲು ವೈದ್ಯರು ಅಥವಾ ಔಷಧಿ ಅಂಗಡಿಯವರನ್ನು ಕೇಳಿ.
+- Reviewer: meaning [ ]  plain [ ]  safe [ ]  natural [ ]   Notes:
 
 
 ## Part D: Kannada "what it is for / watch for" table (fixed, no AI)

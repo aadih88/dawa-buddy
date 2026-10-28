@@ -97,7 +97,11 @@ else:
     os.environ["DAWA_KN_MODEL_TEXT"] = "1"        # Part B only: show reviewers what the switched-off Kannada path produces
     en = {m.name: e for m, e in zip(RX.medications, explain(RX, "en"))}
     for lang, label in (("hi", "Hindi"), ("kn", "Kannada (switched off for users)")):
+        _info = medinfo.info
+        if lang == "kn":
+            medinfo.info = lambda *a, **k: None       # the fixed table would answer for common medicines: show the raw model output the table replaces
         items = explain(RX, "hi" if lang == "hi" else "kn")
+        medinfo.info = _info
         out += [f"### {label}", ""]
         if any(i.language_fallback for i in items):
             out += ["_This run fell back to English; the app would have shown a notice._", ""]

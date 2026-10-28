@@ -573,7 +573,7 @@ dawa_buddy/
   ui.py                     Visual layer: design tokens, fonts, widget restyling, HTML builders
   samples.py                Two built-in synthetic sample bills (one-click demo, no key needed)
 data/                       Price lists, brand table, overrides, NOTICE.md
-scripts/                    audit_bill, read_photos, check_nebius, NPPA PDF parsers, brand-table builder, review-pack builder
+scripts/                    audit_bill, read_photos, check_nebius, NPPA PDF parsers, brand-table builder, review-pack builder (markdown), review-sheet builder (xlsx for reviewers: one row per phrase, a verdict dropdown)
 evals/                      Gold sets and runners
 tests/                      253 tests
 my_data/                    Your private bills and prescriptions (git-ignored)
