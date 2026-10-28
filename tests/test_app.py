@@ -286,6 +286,12 @@ def test_help_text_in_identify_section_is_for_users_not_about_vendors(monkeypatc
 
 
 
+def _confirm(at, text, index=0):
+    """What a person does: type the ingredients, then press the Confirm button (a bare text box only applies on Enter)."""
+    [e for e in at.text_input if "Ingredients" in e.label][index].set_value(text)
+    [b for b in at.button if b.label == "Confirm ingredients"][index].click().run()
+
+
 def _identify_app(monkeypatch, desc="TAB.CONCOR T 5MG"):
     import pandas as pd
     monkeypatch.setenv("DAWA_PROVIDER", "offline")
@@ -300,7 +306,7 @@ def test_typing_an_ingredient_updates_the_result_in_the_same_step(monkeypatch):
     """Before: the cards and lists stayed stale until the next click, so typing seemed to do nothing."""
     at = _identify_app(monkeypatch)
     assert "cheaper generic" not in html_blocks(at).lower()
-    [t for t in at.text_input if t.label.startswith("Ingredients")][0].set_value("bisoprolol 5 mg").run()          # one interaction, no extra click
+    _confirm(at, "bisoprolol 5 mg")          # one interaction, no extra click
     page = html_blocks(at)
     assert "cheaper generic" in page.lower() and "Compared as bisoprolol 5 mg" in page
     assert "Not covered by a price list" not in [e.label for e in at.expander][0]
@@ -309,7 +315,7 @@ def test_typing_an_ingredient_updates_the_result_in_the_same_step(monkeypatch):
 def test_a_confirmed_item_says_what_the_confirmation_did_and_an_unconfirmed_one_says_nothing_was_judged(monkeypatch):
     at = _identify_app(monkeypatch)
     assert "Not confirmed yet" in " ".join(c.value for c in at.caption)
-    [t for t in at.text_input if t.label.startswith("Ingredients")][0].set_value("bisoprolol 5 mg + telmisartan 40 mg").run()
+    _confirm(at, "bisoprolol 5 mg + telmisartan 40 mg")
     assert "Compared as" in html_blocks(at) and "No price list covers this" in html_blocks(at)       # an honest outcome, not silence
 
 
@@ -330,7 +336,7 @@ def test_not_covered_items_say_why_and_how_they_were_judged(monkeypatch):
 def test_the_identify_box_stays_open_after_a_confirmation_so_the_outcome_is_visible(monkeypatch):
     at = _identify_app(monkeypatch)
     assert not [e for e in at.expander if e.label.startswith("TAB.CONCOR T 5MG")][0].proto.expanded
-    [t for t in at.text_input if t.label.startswith("Ingredients")][0].set_value("bisoprolol 5 mg").run()
+    _confirm(at, "bisoprolol 5 mg")
     box = [e for e in at.expander if e.label.startswith("TAB.CONCOR T 5MG")][0]
     assert box.proto.expanded and "Compared as bisoprolol 5 mg" in " ".join(m.value for m in at.markdown)
 
@@ -384,7 +390,7 @@ def test_medicines_to_confirm_are_listed_and_leave_the_list_as_you_confirm_them(
     at = _bill_app(monkeypatch, [("TAB.CONCOR T 5MG/40", 26, 18.1, 15, 271.5), ("TAB.ROSEDAY GOLD 75MG/75MG/10MG", 30, 17.0, 10, 170.0)])
     page = html_blocks(at)
     assert "Medicines to confirm" in page and "TAB.CONCOR T 5MG/40, TAB.ROSEDAY GOLD" in page
-    [t for t in at.text_input if "Ingredients" in t.label][0].set_value("bisoprolol 5 mg + telmisartan 40 mg").run()
+    _confirm(at, "bisoprolol 5 mg + telmisartan 40 mg")
     after = html_blocks(at).split("Medicines to confirm")[1].split("</div>")[0]
     assert "TAB.ROSEDAY GOLD" in after and "CONCOR" not in after
 
@@ -436,12 +442,13 @@ def test_the_use_it_button_is_disabled_once_used_and_the_row_stays_open(monkeypa
     assert "confirmed" in [e for e in at.expander if e.label.startswith("TAB.CONCOR T 5MG")][0].label
 
 
-def test_typing_something_else_after_using_a_suggestion_enables_the_button_again(monkeypatch):
+def test_changing_the_ingredients_after_using_a_suggestion_enables_the_button_again(monkeypatch):
     _fake_web(monkeypatch)
     at = _identify_app(monkeypatch)
     [b for b in at.button if b.key and b.key.startswith("web_")][0].click().run()
     [b for b in at.button if b.key and b.key.startswith("use_")][0].click().run()
-    [t for t in at.text_input if "Ingredients" in t.label][0].set_value("bisoprolol 5 mg").run()           # the user changed their mind
+    [b for b in at.button if b.label == "Change ingredients"][0].click().run()                                  # the user changed their mind
+    _confirm(at, "bisoprolol 5 mg")
     assert not [b for b in at.button if b.key and b.key.startswith("use_")][0].disabled
 
 
@@ -456,7 +463,7 @@ def test_each_medicine_to_identify_is_its_own_collapsed_row_with_a_status(monkey
     mine = [e for e in at.expander if "needs your confirmation" in e.label]
     assert len(mine) == 3 and all(not e.proto.expanded for e in mine)                             # three short rows, none open: the section stays compact
     assert not [e for e in at.expander if e.label.startswith("Help us identify")]                 # no outer box: expanders cannot nest, and the rows are the structure
-    [t for t in at.text_input if "Ingredients" in t.label][0].set_value("bisoprolol 5 mg + telmisartan 40 mg").run()
+    _confirm(at, "bisoprolol 5 mg + telmisartan 40 mg")
     labels = [e.label for e in at.expander]
     assert "TAB.CONCOR T 5MG/40 · confirmed" in labels and sum("needs your confirmation" in l for l in labels) == 2
 
@@ -467,11 +474,49 @@ def test_the_government_orders_button_is_disabled_once_searched_for_the_same_tex
     calls = []
     monkeypatch.setattr(webcheck, "lookup_orders", lambda text: calls.append(text) or ([], []))
     at = _identify_app(monkeypatch)
-    [t for t in at.text_input if "Ingredients" in t.label][0].set_value("bisoprolol 5 mg + telmisartan 40 mg").run()
+    _confirm(at, "bisoprolol 5 mg + telmisartan 40 mg")
     btn = [b for b in at.button if b.key and b.key.startswith("ord_")][0]
     assert not btn.disabled and btn.label.startswith("See government price orders")
     btn.click().run()
     done = [b for b in at.button if b.key and b.key.startswith("ord_")][0]
     assert done.disabled and done.label == "Searched: no price order found" and len(calls) == 1
-    [t for t in at.text_input if "Ingredients" in t.label][0].set_value("bisoprolol 5 mg + telmisartan 80 mg").run()     # different text: a new search makes sense
+    [b for b in at.button if b.label == "Change ingredients"][0].click().run()
+    _confirm(at, "bisoprolol 5 mg + telmisartan 80 mg")     # different text: a new search makes sense
     assert not [b for b in at.button if b.key and b.key.startswith("ord_")][0].disabled
+
+
+def test_the_text_box_gives_way_to_the_confirmed_state_and_a_change_link(monkeypatch):
+    at = _identify_app(monkeypatch)
+    assert [e for e in at.text_input if "Ingredients" in e.label] and [b for b in at.button if b.label == "Confirm ingredients"]       # a visible OK button
+    _confirm(at, "bisoprolol 5 mg + telmisartan 40 mg")
+    assert not [e for e in at.text_input if "Ingredients" in e.label]                                                            # the box has disappeared
+    assert not [b for b in at.button if b.label == "Confirm ingredients"] and [b for b in at.button if b.label == "Change ingredients"]
+    assert "Compared as" in html_blocks(at)
+    [b for b in at.button if b.label == "Change ingredients"][0].click().run()                                                   # a typo is not a dead end
+    box = [e for e in at.text_input if "Ingredients" in e.label][0]
+    assert box.value == "bisoprolol 5 mg + telmisartan 40 mg"                                                                    # it comes back pre-filled with what was confirmed
+
+
+def test_using_the_online_suggestion_also_replaces_the_box_and_hides_the_lookup(monkeypatch):
+    _fake_web(monkeypatch)
+    at = _identify_app(monkeypatch)
+    [b for b in at.button if b.key and b.key.startswith("web_")][0].click().run()
+    [b for b in at.button if b.key and b.key.startswith("use_")][0].click().run()
+    assert not [e for e in at.text_input if "Ingredients" in e.label]
+    assert not [b for b in at.button if b.key and b.key.startswith("web_")]                                                      # nothing left to look up once confirmed
+
+
+def test_confirming_the_value_suggested_from_the_brand_table_is_one_press(monkeypatch):
+    """Veltam is in the brand table, so the box arrives pre-filled; the user presses Confirm if it matches the strip (before, they had to edit the text)."""
+    at = _bill_app(monkeypatch, [("VELTAM 0.4MG TAB", 15, 12.66, 15, 210.94)])
+    box = [e for e in at.text_input if "Ingredients" in e.label][0]
+    assert box.value == "tamsulosin 0.4 mg"
+    [b for b in at.button if b.label == "Confirm ingredients"][0].click().run()
+    assert "VELTAM 0.4MG TAB · confirmed" in [e.label for e in at.expander]
+
+
+def test_pressing_confirm_with_an_empty_box_asks_for_the_ingredients_and_confirms_nothing(monkeypatch):
+    at = _identify_app(monkeypatch)
+    [b for b in at.button if b.label == "Confirm ingredients"][0].click().run()
+    assert "Type the ingredients printed on the strip first." in " ".join(c.value for c in at.caption)
+    assert not at.session_state["confirmed"]

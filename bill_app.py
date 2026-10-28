@@ -568,36 +568,49 @@ def identify(fs, confirmed):
     st.markdown(ui.section_label("Help us identify", len(todo)), unsafe_allow_html=True)
     st.caption("These medicines could not be matched from the bill alone. Open one and type the ingredients printed on the strip (under \"Each tablet contains\"). "
                "We then compare the line with the government price lists and update the result above. Until you do, we make no price judgement.")
-    changed = False
+    texts = st.session_state.setdefault("ident_text", {})          # what the user confirmed for each medicine, in their own words
     for f in todo:
         key = f.line.desc.lower()
-        status = "confirmed" if key in confirmed else "needs your confirmation"
+        is_confirmed = key in confirmed
+        editing = st.session_state.get(f"edit_{key}", False)
+        status = "confirmed" if is_confirmed else "needs your confirmation"
         # the row the user last worked in stays open: the page above re-flows after a confirmation and Streamlit would otherwise fold it shut
         with st.expander(f"{f.line.desc} · {status}", expanded=st.session_state.get("ident_open") == key):
-            guess = f"Our AI guessed {f.ingredients} {f.strength}: check the strip" if f.tier == b.TIER_NEEDS_CONFIRM and f.ingredients else "e.g. bisoprolol 5 mg + telmisartan 40 mg"
-            typed = st.text_input("Ingredients and strengths on the strip", key=f"salt_{key}", value=prefill(f), placeholder=guess)
-            want = nppa_orders.parse_wanted(typed)
-            if typed.strip() and typed.strip() != prefill(f):      # only what the user changed counts as a confirmation
-                new_value = "+".join(n for n, _ in want) if want else typed.strip().lower()
-                if confirmed.get(key) != new_value:
-                    confirmed[key], changed = new_value, True
+            if not is_confirmed or editing:
+                guess = f"Our AI guessed {f.ingredients} {f.strength}: check the strip" if f.tier == b.TIER_NEEDS_CONFIRM and f.ingredients else "e.g. bisoprolol 5 mg + telmisartan 40 mg"
+                with st.form(f"form_{key}", border=False):         # a form, so there is a visible button to press (a bare text box only applies on Enter)
+                    typed = st.text_input("Ingredients and strengths on the strip", key=f"salt_{key}", value=texts.get(key) or prefill(f), placeholder=guess)
+                    submitted = st.form_submit_button("Confirm ingredients", type="primary")
+                if submitted and not typed.strip():
+                    st.caption("Type the ingredients printed on the strip first.")
+                elif submitted:                                    # pressing the button is the user's confirmation, even of a value we suggested from the brand table
+                    want = nppa_orders.parse_wanted(typed)
+                    confirmed[key] = "+".join(n for n, _ in want) if want else typed.strip().lower()
+                    texts[key] = typed.strip()
+                    st.session_state[f"edit_{key}"] = False
                     st.session_state.ident_open = key
-            if key in confirmed and not changed:      # say what the confirmation did, so the row is never a dead end
+                    st.rerun()
+                if not is_confirmed:
+                    st.caption("Not confirmed yet, so this line has no price judgement.")
+            else:                                                  # confirmed: the box gives way to what was confirmed, and what it did
                 what = f"{f.ingredients} {f.strength}".strip() or confirmed[key]
                 st.markdown(f"<div class='db-outcome'><b>Compared as {html.escape(what)}.</b> {html.escape(RESULT[f.tier][1])}. "
                             f"{html.escape(first_sentence(f.note))}</div>", unsafe_allow_html=True)
-            elif key not in confirmed:
-                st.caption("Not confirmed yet, so this line has no price judgement.")
-            if want and webcheck.available():
-                done = key in orders and orders[key][1] == typed          # already searched for exactly this: nothing new to get from pressing again
-                if st.button("Government price orders shown below" if done and orders[key][0][0] else "Searched: no price order found" if done else
-                             "See government price orders for this combination", key=f"ord_{key}", disabled=done,
-                             help="The government sets these prices company by company. This shows what other brands of the same combination are capped at, as context. It is not a limit on your brand."):
-                    with st.spinner("Searching NPPA orders..."):
-                        orders[key] = (webcheck.lookup_orders(typed), typed)
+                if st.button("Change ingredients", key=f"chg_{key}", type="tertiary"):
+                    st.session_state[f"edit_{key}"] = True
                     st.session_state.ident_open = key
                     st.rerun()
-            if webcheck.available():
+                text = texts.get(key, "")
+                if nppa_orders.parse_wanted(text) and webcheck.available():
+                    done = key in orders and orders[key][1] == text          # already searched for exactly this: nothing new to get from pressing again
+                    if st.button("Government price orders shown below" if done and orders[key][0][0] else "Searched: no price order found" if done else
+                                 "See government price orders for this combination", key=f"ord_{key}", disabled=done,
+                                 help="The government sets these prices company by company. This shows what other brands of the same combination are capped at, as context. It is not a limit on your brand."):
+                        with st.spinner("Searching NPPA orders..."):
+                            orders[key] = (webcheck.lookup_orders(text), text)
+                        st.session_state.ident_open = key
+                        st.rerun()
+            if webcheck.available() and (not is_confirmed or editing):    # once confirmed there is nothing left to look up
                 looked = st.session_state.get("evidence", {}).get(key) is not None
                 if st.button("Looked up online (see below)" if looked else "Look up the ingredients online", key=f"web_{key}", disabled=looked,
                              help="Reads pharmacy websites for this exact product and shows what each page says. You still confirm it against your strip."):
@@ -619,11 +632,10 @@ def identify(fs, confirmed):
                     answer = "+".join(n for n, _ in sorted(pick))
                     used = confirmed.get(key) == answer
                     if st.button(f"Using: {webcheck.show(pick)}" if used else f"My strip says {webcheck.show(pick)}: use it", key=f"use_{key}", disabled=used):
-                        confirmed[key] = answer
+                        confirmed[key], texts[key] = answer, webcheck.show(pick)
+                        st.session_state[f"edit_{key}"] = False
                         st.session_state.ident_open = key
                         st.rerun()
-    if changed:
-        st.rerun()
 
 
 def briefing():

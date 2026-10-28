@@ -5,7 +5,7 @@
 **Photograph a pharmacy or hospital bill. Dawa Buddy checks it line by line against India's legal price lists and the doctor's prescription, then tells you exactly what to ask, in English, Hindi or Kannada.**
 
 ![licence: MIT](https://img.shields.io/badge/licence-MIT-green)
-![tests: 206 passing](https://img.shields.io/badge/tests-206%20passing-brightgreen)
+![tests: 210 passing](https://img.shields.io/badge/tests-210%20passing-brightgreen)
 ![Nebius Token Factory](https://img.shields.io/badge/runs%20on-Nebius%20Token%20Factory-1f6feb)
 ![NVIDIA Nemotron](https://img.shields.io/badge/models-NVIDIA%20Nemotron-76b900)
 ![Tavily](https://img.shields.io/badge/web%20evidence-Tavily-7b61ff)
@@ -30,7 +30,7 @@
 ### What a judge should know in one minute
 | Criterion | Short answer | Where to look |
 |---|---|---|
-| **Technological implementation** | Nemotron **Super VL** reads photos, **Lightning** reads prescriptions, **Ultra / Super** write Hindi, all through one Token Factory endpoint. A deterministic rules engine decides every price verdict, so the model can never invent an accusation. 206 tests; 4 evaluation suites. | [§7](#7-architecture), [§8](#8-how-we-use-nebius-nvidia-nemotron-and-tavily), [§10](#10-validation-and-evaluation) |
+| **Technological implementation** | Nemotron **Super VL** reads photos, **Lightning** reads prescriptions, **Ultra / Super** write Hindi, all through one Token Factory endpoint. A deterministic rules engine decides every price verdict, so the model can never invent an accusation. 210 tests; 4 evaluation suites. | [§7](#7-architecture), [§8](#8-how-we-use-nebius-nvidia-nemotron-and-tavily), [§10](#10-validation-and-evaluation) |
 | **Design** | One question per screen, verdict first, a "What we checked" list so a clean bill reads as protection, phone-first, status always colour + icon + words, Hindi and Kannada typography. | [§5](#5-the-product-tour) |
 | **Potential impact** | The Indian government's own court affidavit says patients have "very low bargaining position" and "very limited" knowledge of prices. This tool puts the comparison in the patient's hands at the moment of paying. | [§2](#2-the-problem-with-evidence), [§4](#4-the-idea) |
 | **Quality of the idea** | A *receipt audit*, not a price lookup: it resolves each line to a medicine, strength and form, converts per-tablet, per-strip, per-vial, per-ml and per-piece prices correctly, and reconciles the bill with the prescription (including the wrong *variant* handed over). It is honest about what it cannot see. | [§4](#4-the-idea), [§9](#9-engineering-decisions-and-why) |
@@ -170,7 +170,7 @@ If the Court's final order changes the rules, the tool's data layer is a set of 
 | **1. Start** | Upload a bill photo (and optionally a prescription) and press **Read my bill**, or tap a sample. Every control is disabled while the photo is read. | The first thing a visitor can do is try it. Samples run with no key and take the same road as a photo. |
 | **2. Check the numbers** | Press **See the result** when it matches your paper. One card per bill line shows what was read (to compare with the paper), how it was sold (per tablet, strip, bottle, tube, vial, piece), pack size and printed MRP. A line the reader flagged is marked *Please re-check this line*. If a prescription line has no readable dose, **one** amber note lists them at the top and opens the prescription box. | A misread digit must never become an accusation (R10). |
 | **3. Result** | A verdict first ("4 things to ask about", or "Nothing above a legal limit"). Tiles appear **only when they carry news**: the rupees above a legal limit, or a possible generic saving. A zero is never shown as a result. Under it, **What we checked** lists each check and what it found: *printed MRP* (green tick: at or below on N lines), *legal price ceiling* (grey "not applicable" when none of the medicines is price-controlled, which is normal), *your prescription* (matches, or N differences), *cheaper generics* (only when one exists) and *medicines to confirm*. Then a card per line that needs attention, each with a **price meter**. Lines within limits and lines no list covers are folded away. | A clean bill must read as protection, not as a screen of zeros, and a check that does not apply is explained, not hidden. |
-| **4. Ask** | **Download the questions to ask** the seller or doctor. Medicines that could not be matched appear under *Help us identify*, **one collapsible row per medicine** with its status in the title ("needs your confirmation" or "confirmed"), so the section stays short however many there are. In a row, type the ingredients from the strip and the result above updates at once, with a line saying what changed; or let the app read pharmacy sites for that exact product, then confirm it against the strip. A button that has done its job is disabled for the rest of the session ("Looked up online", "Using: …"), so nothing can be pressed twice to no effect. | Output a person can act on (R12), and the section is never a dead end. |
+| **4. Ask** | **Download the questions to ask** the seller or doctor. Medicines that could not be matched appear under *Help us identify*, **one collapsible row per medicine** with its status in the title ("needs your confirmation" or "confirmed"), so the section stays short however many there are. In a row, type the ingredients from the strip and press **Confirm ingredients**; the result above updates at once, the box gives way to what was confirmed (with a **Change ingredients** link), and a line says what changed; or let the app read pharmacy sites for that exact product, then confirm it against the strip. A button that has done its job is disabled for the rest of the session ("Looked up online", "Using: …"), so nothing can be pressed twice to no effect. | Output a person can act on (R12), and the section is never a dead end. |
 | **5. Explain** | *Explain my medicines in plain language*: dose sentences, safety notes, timetable, in English, Hindi or Kannada. | R7 and R8. |
 
 ### Design decisions
@@ -313,7 +313,7 @@ All numbers below are reproducible with the commands in [section 13](#13-setup-r
 ### 10.1 Results
 | Check | Result | Caveat |
 |---|---|---|
-| Unit and integration tests | **206 pass** | Includes fake-server tests for the Ollama and Tavily paths and a test that inspects what is sent to Tavily. |
+| Unit and integration tests | **210 pass** | Includes fake-server tests for the Ollama and Tavily paths and a test that inspects what is sent to Tavily. |
 | Brand resolution, 108 real brand lines | **99 correct, 4 missed (safe), 0 wrong.** The curated map alone: 26 correct, 61 missed, 2 wrong (1 reached a price verdict). 14 of 14 supplements, invented and ambiguous names handled safely. | Expected answers were written from pharmaceutical knowledge, **not** copied from the table. A pharmacist should review them. |
 | Bill tier accuracy, 18 synthetic lines (tablets, liquids, injections) | **18 of 18** | Synthetic prices written by the author. |
 | Prescription extraction, 24 synthetic cases | Offline rules F1 **1.00**, live Nemotron F1 **1.00**; safety-flag F1 1.00 / 1.00; 0 invented medicines; median latency 1.33 s | **Saturated**: the rules were tuned on this style of text, so it does not show the model's value. The real-photo comparison does. |
@@ -328,7 +328,7 @@ All numbers below are reproducible with the commands in [section 13](#13-setup-r
 
 ### 10.2 Reproduce
 ```bash
-pytest -q tests                                   # 206 tests
+pytest -q tests                                   # 210 tests
 python -m evals.run_bill_evals                    # 18 synthetic bill lines, tier accuracy
 python -m evals.run_brand_evals [--verbose]       # 108 brand lines: correct / missed / wrong
 python -m evals.run_evals --out evals/results.md  # 24 synthetic prescriptions, live model
@@ -357,6 +357,7 @@ Synthetic tests passed long before real documents did. These are the failures re
 | Jan Aushadhi writes "Prolonged **release**" with a space; the name parser only ignored the hyphenated form, so "prolonged" was read as an *ingredient* and metformin SR never matched its own 500 mg price (₹1.08 a tablet; a bill charging ₹3.60 got no comparison). Found while debugging why a real bill showed 0%. | "prolonged" is ignored like "sustained" and "extended"; a regression test pins it. Evals unchanged (18/18; 99 correct, 4 safe misses, 0 wrong). |
 | The result page gave no sign of progress as ingredients were confirmed, and no reason when the price-list figure stayed at 0%. | It lists what is not identified yet (the list shrinks as you confirm), shows what each confirmation did, and when no list covers any medicine says so plainly. |
 | In the *Help us identify* box the look-up and "use it" buttons stayed active after use, inviting repeat searches and doubt about what had happened; with several medicines the single box grew very long. | Each button disables once it has done its job (and re-enables only if the user changes the text it acted on). Each medicine gets its own collapsed row, with the row the user last worked in kept open. |
+| The ingredients box had no button: a Streamlit text box only applies on Enter or when you click away, so users typed and nothing visibly happened. It also stayed on screen after the answer was confirmed. | A form with an explicit **Confirm ingredients** button (pressing it also confirms a value suggested from the brand table, which used to need an edit). Once confirmed, the box is replaced by the confirmed value and its outcome, with a **Change ingredients** link so a typo is not a dead end. |
 | The Supreme Court's headline example (a ₹11 consumable billed at ₹270) was caught only if the user chose a unit; consumables had no "per piece" option. | Added **per piece** with a direct MRP comparison, plus a test and the hospital sample line. Found by reading the court coverage against the app, on 28 October. |
 
 ## 11. How it meets the requirements
@@ -565,6 +566,6 @@ dawa_buddy/
 data/                       Price lists, brand table, overrides, NOTICE.md
 scripts/                    audit_bill, read_photos, check_nebius, NPPA PDF parsers, brand-table builder, review-pack builder
 evals/                      Gold sets and runners
-tests/                      206 tests
+tests/                      210 tests
 my_data/                    Your private bills and prescriptions (git-ignored)
 ```
