@@ -177,7 +177,9 @@ def test_one_button_fills_pack_sizes_and_checks_the_mrp_against_pharmacy_listing
     assert at.session_state["df"].loc[0, "pack"] == 10                                              # filled in as a suggestion
     assert at.session_state["pack_guess"]["CONCOR T 5MG TAB"][0] == 10 and "pharmacy websites" in at.session_state["pack_guess"]["CONCOR T 5MG TAB"][1]
     assert "consistent with this bill" in " ".join(c.value for c in at.caption)                       # printed 174.75 per 10 = listed
-    assert re.search(r"100%</b><span[^>]*>of the bill checked", html_blocks(at))
+    # the printed MRP now matches for the whole bill, but no price list covers the unidentified brand: the headline must not say 100%
+    assert re.search(r"0%</b><span[^>]*>of the bill compared with a price list", html_blocks(at))
+    assert "Compared with the printed MRP: 100%" in " ".join(c.value for c in at.caption)
 
 
 def test_a_bill_without_mrp_charging_above_the_listed_mrp_gets_a_question_not_a_violation(monkeypatch):
@@ -336,7 +338,7 @@ def test_not_covered_items_say_why_and_how_they_were_judged(monkeypatch):
 
 def test_the_checked_percentage_says_what_it_was_checked_against():
     src = (ROOT / "bill_app.py").read_text()
-    assert "of the bill checked against an MRP or a price list" in src
+    assert "of the bill compared with a price list" in src and "Compared with the printed MRP" in src
 
 
 def test_the_identify_box_stays_open_after_a_confirmation_so_the_outcome_is_visible(monkeypatch):
@@ -345,3 +347,17 @@ def test_the_identify_box_stays_open_after_a_confirmation_so_the_outcome_is_visi
     [t for t in at.text_input if t.label.startswith("Ingredients")][0].set_value("bisoprolol 5 mg").run()
     box = [e for e in at.expander if e.label.startswith("Help us identify")][0]
     assert box.proto.expanded and "Compared as bisoprolol 5 mg" in " ".join(m.value for m in at.markdown)
+
+
+def test_headline_never_says_100_percent_while_unidentified_medicines_have_no_price_list(monkeypatch):
+    """Pack sizes and MRPs were filled in, so the printed MRP matched for every line; four medicines are still unidentified."""
+    import pandas as pd
+    monkeypatch.setenv("DAWA_PROVIDER", "offline")
+    rows = [("TAB.ROSEDAY GOLD 75MG/75MG/10MG", 30, 17.0, 10, 170.0), ("TAB.CONCOR T 5MG/40", 26, 18.1, 15, 271.5), ("TAB.VELTAM 0.4", 15, 12.66, 15, 210.94)]
+    at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
+    at.session_state["df"] = pd.DataFrame([{"description": d, "qty": q, "rate": r, "amount": round(q * r, 2), "unit": "tab", "pack": pk, "mrp": m, "unsure": False} for d, q, r, pk, m in rows])
+    at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "results"
+    at.run()
+    page, caps = html_blocks(at), " ".join(c.value for c in at.caption)
+    assert re.search(r"0%</b><span[^>]*>of the bill compared with a price list", page) and "Compared with the printed MRP: 100%" in caps
+    assert "Help us identify" in " ".join(e.label for e in at.expander)

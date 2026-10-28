@@ -288,7 +288,7 @@ def review():
 
 
 # ---------------------------------------------------------------- screen 3: results
-def verdict(checked_share, n_viol, n_ask, excess, generic):
+def verdict(listed_share, mrp_share, n_viol, n_ask, excess, generic):
     """The headline answer: what to do first, in a sentence, with three numbers."""
     if n_viol:
         total = n_viol + n_ask          # the headline counts everything listed below it, so the two numbers always agree
@@ -303,8 +303,10 @@ def verdict(checked_share, n_viol, n_ask, excess, generic):
         body = "Everything we could check is within the price limits."
     stats = [(rupees(excess) if excess else "₹0", "above legal limits", "red" if excess else "green"),
              (rupees(generic) if generic else "₹0", "possible generic saving", "amber" if generic else "grey"),
-             (f"{checked_share:.0f}%", "of the bill checked against an MRP or a price list", "green" if checked_share >= 80 else "amber" if checked_share >= 40 else "grey")]
+             (f"{listed_share:.0f}%", "of the bill compared with a price list", "green" if listed_share >= 80 else "amber" if listed_share >= 40 else "grey")]
     st.markdown(ui.verdict(kind, head, body, stats), unsafe_allow_html=True)
+    st.caption(f"Compared with a government price list: {listed_share:.0f}% of the bill (this needs the medicine to be identified). "
+               f"Compared with the printed MRP: {mrp_share:.0f}% (this applies to any product).")
 
 
 def mini(f) -> str:
@@ -330,8 +332,9 @@ def results(df, total):
     lines = vision.rows_to_lines(rows)
     fs = [b.audit_line(l, confirmed) for l in lines]
     tot = sum(f.line.amount for f in fs) or 1
-    checked = sum(f.line.amount for f in fs if f.mrp_pct is not None or f.tier in (
-        b.TIER_ABOVE_CEILING, b.TIER_GENERIC_GAP, b.TIER_OK, b.TIER_DOCTOR_ONLY, b.TIER_ABOVE_MRP))
+    # Two different things, never merged: a PRICE LIST needs the medicine identified (ceiling, generic reference); the printed MRP applies to any product.
+    list_checked = sum(f.line.amount for f in fs if f.tier in (b.TIER_ABOVE_CEILING, b.TIER_GENERIC_GAP, b.TIER_OK, b.TIER_DOCTOR_ONLY))
+    mrp_checked = sum(f.line.amount for f in fs if f.mrp_pct is not None or f.tier == b.TIER_ABOVE_MRP)
     s = b.summary(fs)
     group = lambda g: sorted([f for f in fs if RESULT[f.tier][2] == g], key=lambda f: list(RESULT).index(f.tier))
     attention, fine, unchecked = group("attention"), group("fine"), group("unchecked")
@@ -349,7 +352,7 @@ def results(df, total):
     n_ask += len(flagged_listings)
     n_viol_total = n_viol + len(wrong)
     st.markdown(ui.header(3, "Result"), unsafe_allow_html=True)
-    verdict(100 * checked / tot, n_viol_total, n_ask, s["possible_saving_above_ceiling"] + s["possible_saving_above_mrp"], s["possible_saving_generic"])
+    verdict(100 * list_checked / tot, 100 * mrp_checked / tot, n_viol_total, n_ask, s["possible_saving_above_ceiling"] + s["possible_saving_above_mrp"], s["possible_saving_generic"])
 
     needs_pack = [f for f in fs if f.line.mrp and f.mrp_unit is None and (f.line.unit or "").lower() in ("tab", "strip") and not f.line.pack]
     if needs_pack:
