@@ -66,6 +66,31 @@ PHRASES = {
 }
 
 
+_VOLUME = re.compile(r"^\d+(?:\.\d+)?ml$", re.I)
+
+
+def pretty_strength(s: str | None) -> str:
+    """'500MG' -> '500 mg'; '75MG/75MG/10MG' -> '75 mg / 75 mg / 10 mg'; '5MG/40' -> '5 mg / 40 mg' (a bare number takes the unit before it);
+    stray words around the numbers ('T 5MG/40' from a model) are dropped: only the amounts are kept."""
+    if not s:
+        return ""
+    found = [re.search(r"(\d+(?:\.\d+)?)\s*(mg|mcg|g|ml|iu)?\b", x, re.I) for x in re.split(r"\s*/\s*", str(s))]
+    found = [m for m in found if m]
+    first = next((m.group(2).lower() for m in found if m.group(2)), "")
+    return " / ".join(f"{m.group(1)} {(m.group(2) or first).lower()}".strip() for m in found)
+
+
+def amount_text(m, lang: str = "en", n: int = 1) -> str:
+    """What to take at one time, in words a person understands: '1 tablet (500 mg)', '15 ml', '1 dose (500 mg)'. The strength says what is IN the medicine; the amount says how much to take."""
+    p = PHRASES[lang]
+    strength = pretty_strength(m.strength)
+    solid = (m.form or "").lower() in ("", "tablet", "capsule", "tab", "cap")
+    if not solid and _VOLUME.match(strength.replace(" ", "")):
+        return strength                                        # a syrup or drops: the volume IS the amount
+    unit, units = (p["unit"], p["units"]) if solid else (p["dose"], p["doses"])
+    return f"{n} {unit if n == 1 else units}" + (f" ({strength})" if strength else "")
+
+
 def dose_text(m, lang: str = "en") -> str:
     """The dose sentence for one prescribed medicine, from the prescription only (frequency 1-0-1, timing, days, SOS)."""
     p = PHRASES[lang]
@@ -78,11 +103,7 @@ def dose_text(m, lang: str = "en") -> str:
     digits = re.findall(r"\d", freq)
     if len(digits) != 3 or not any(int(d) for d in digits):
         return p["unclear"]
-    strength = f" ({m.strength})" if m.strength else ""
-    # "tablet" is only right for a tablet or capsule: a syrup, drops or injection is a dose (the strength shows the amount, e.g. 15 ml)
-    solid = (m.form or "").lower() in ("", "tablet", "capsule", "tab", "cap")
-    unit, units = (p["unit"], p["units"]) if solid else (p["dose"], p["doses"])
-    parts = [f"{p['slots'][slot]} {d} {unit if d == '1' else units}{strength}" for slot, d in zip("man", digits) if int(d)]
+    parts = [f"{p['slots'][slot]} {amount_text(m, lang, int(d))}" for slot, d in zip("man", digits) if int(d)]
     tail = ([timing] if timing else []) + ([p["days"].format(n=m.duration_days)] if m.duration_days else [])
     sentence = f"{p['times'][len(parts)]}: " + ", ".join(parts) + "".join(", " + t for t in tail)
     # No end date: 'to continue' really means keep going; otherwise the days are simply missing, and a painkiller course must not read as ongoing

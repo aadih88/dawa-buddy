@@ -136,6 +136,7 @@ LABELS = {   # headings and captions of the explainer screen
     "from_rx": {"en": "From your prescription", "hi": "आपके प्रिस्क्रिप्शन से", "kn": "ನಿಮ್ಮ ಔಷಧಿ ಚೀಟಿಯಿಂದ"},
     "watch_for": {"en": "Watch for", "hi": "ध्यान रखें", "kn": "ಗಮನಿಸಿ"},
     "timetable": {"en": "Your day, hour by hour", "hi": "आपका दिन, समय के अनुसार", "kn": "ನಿಮ್ಮ ದಿನ, ಸಮಯಕ್ಕೆ ತಕ್ಕಂತೆ"},
+    "one_time": {"en": "One-time dose (not part of the daily routine)", "hi": "सिर्फ़ एक बार की खुराक (रोज़ की नहीं)", "kn": "ಒಂದೇ ಬಾರಿಯ ಡೋಸ್ (ದಿನನಿತ್ಯದ್ದಲ್ಲ)"},
     "download": {"en": "Download the timetable to share", "hi": "साझा करने के लिए समय-सारणी डाउनलोड करें", "kn": "ಹಂಚಿಕೊಳ್ಳಲು ವೇಳಾಪಟ್ಟಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ"},
 }
 
@@ -182,11 +183,11 @@ def localize_flags(flags: list[SafetyFlag], lang: Lang) -> list[SafetyFlag]:
     return out
 
 
-def instruction(strength: str | None, timing: str | None, lang: Lang) -> str:
-    """The 'how' cell of a timetable row: strength and food timing in the reader's language."""
+def instruction(amount: str | None, timing: str | None, lang: Lang) -> str:
+    """The 'how' cell of a timetable row: the amount to take and the food timing, in the reader's language."""
     t = TIMETABLE
     when = {"before food": _pick(t["before"], lang), "after food": _pick(t["after"], lang), "bedtime": _pick(t["bedtime"], lang)}.get(timing or "", "")
-    return " ".join(p for p in (strength, when) if p) or _pick(t["as_written"], lang)
+    return ", ".join(p for p in (amount, when) if p) or _pick(t["as_written"], lang)
 
 
 def schedule_rows(items: list[ScheduleItem], lang: Lang) -> list[dict]:
@@ -199,7 +200,11 @@ def share_text(items: list[ScheduleItem], days: int | None, lang: Lang) -> str:
     """The WhatsApp-able timetable, in the reader's language."""
     t = TIMETABLE
     lines = [_pick(t["share_title"], lang)]
-    lines += [f"{i.time} - {i.med}: {i.instruction}" for i in items]
+    daily = [i for i in items if i.slot != "once"]
+    once = [i for i in items if i.slot == "once"]
+    lines += [f"{i.time} - {i.med}: {i.instruction}" for i in daily]
+    if once:
+        lines += ["", _pick(LABELS["one_time"], lang) + ":"] + [f"- {i.med}: {i.instruction}" for i in once]
     if days:
         lines.append(_pick(t["share_days"], lang).format(n=days))
     lines.append(_pick(t["share_foot"], lang))

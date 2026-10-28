@@ -1,6 +1,6 @@
 # Hindi and Kannada: reviewer pack
 
-Generated 2026-10-27. The script of every text is machine-checked (no stray letters from another script); **the wording is not, and that is what we need you for.**
+Generated 2026-10-28. The script of every text is machine-checked (no stray letters from another script); **the wording is not, and that is what we need you for.**
 
 Medicine names, ingredient names, numbers and units (mg, ml) stay as printed on the strip, in Latin script, on purpose.
 
@@ -85,6 +85,7 @@ Three kinds of text, three ways they are made:
 | From your prescription | आपके प्रिस्क्रिप्शन से | ನಿಮ್ಮ ಔಷಧಿ ಚೀಟಿಯಿಂದ | |
 | Watch for | ध्यान रखें | ಗಮನಿಸಿ | |
 | Your day, hour by hour | आपका दिन, समय के अनुसार | ನಿಮ್ಮ ದಿನ, ಸಮಯಕ್ಕೆ ತಕ್ಕಂತೆ | |
+| One-time dose (not part of the daily routine) | सिर्फ़ एक बार की खुराक (रोज़ की नहीं) | ಒಂದೇ ಬಾರಿಯ ಡೋಸ್ (ದಿನನಿತ್ಯದ್ದಲ್ಲ) | |
 | Download the timetable to share | साझा करने के लिए समय-सारणी डाउनलोड करें | ಹಂಚಿಕೊಳ್ಳಲು ವೇಳಾಪಟ್ಟಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ | |
 
 ### Safety notes: titles
@@ -228,16 +229,16 @@ Shown above the medicine cards, depending on whether the AI text was written in 
 
 ```
 दवाओं की समय-सारणी
---:-- - Cetzine: 10 mg; सिर्फ़ ज़रूरत पड़ने पर, डॉक्टर की बताई सीमा का पालन करें
-08:00 - Telma: 40 mg
-08:00 - Dolo: 650 mg खाने के बाद
-08:00 - Metformin: 500 mg खाने के बाद
-08:00 - Pantop: 40 mg खाने से पहले
-14:00 - Metformin: 500 mg खाने के बाद
-21:00 - Dolo: 650 mg खाने के बाद
-21:00 - Atorva: 10 mg
-21:00 - Metformin: 500 mg खाने के बाद
-21:00 - Ecosprin: 75 mg
+08:00 - Telma: 1 गोली (40 mg)
+08:00 - Dolo: 1 गोली (650 mg), खाने के बाद
+08:00 - Metformin: 1 गोली (500 mg), खाने के बाद
+08:00 - Pantop: 1 गोली (40 mg), खाने से पहले
+14:00 - Metformin: 1 गोली (500 mg), खाने के बाद
+21:00 - Dolo: 1 गोली (650 mg), खाने के बाद
+21:00 - Atorva: 1 गोली (10 mg)
+21:00 - Metformin: 1 गोली (500 mg), खाने के बाद
+21:00 - Ecosprin: 1 गोली (75 mg)
+--:-- - Cetzine: 1 गोली (10 mg); सिर्फ़ ज़रूरत पड़ने पर, डॉक्टर की बताई सीमा का पालन करें
 अवधि: 30 दिन (जैसा प्रिस्क्रिप्शन में लिखा है)
 यह चिकित्सा सलाह नहीं है। अपने डॉक्टर या दवा-विक्रेता से पूछें।
 ```
@@ -246,16 +247,16 @@ Shown above the medicine cards, depending on whether the AI text was written in 
 
 ```
 ಔಷಧಿಗಳ ವೇಳಾಪಟ್ಟಿ
---:-- - Cetzine: 10 mg; ಅಗತ್ಯವಿದ್ದಾಗ ಮಾತ್ರ, ವೈದ್ಯರು ಹೇಳಿದ ಮಿತಿಯನ್ನು ಪಾಲಿಸಿ
-08:00 - Telma: 40 mg
-08:00 - Dolo: 650 mg ಊಟದ ನಂತರ
-08:00 - Metformin: 500 mg ಊಟದ ನಂತರ
-08:00 - Pantop: 40 mg ಊಟದ ಮೊದಲು
-14:00 - Metformin: 500 mg ಊಟದ ನಂತರ
-21:00 - Dolo: 650 mg ಊಟದ ನಂತರ
-21:00 - Atorva: 10 mg
-21:00 - Metformin: 500 mg ಊಟದ ನಂತರ
-21:00 - Ecosprin: 75 mg
+08:00 - Telma: 1 ಮಾತ್ರೆ (40 mg)
+08:00 - Dolo: 1 ಮಾತ್ರೆ (650 mg), ಊಟದ ನಂತರ
+08:00 - Metformin: 1 ಮಾತ್ರೆ (500 mg), ಊಟದ ನಂತರ
+08:00 - Pantop: 1 ಮಾತ್ರೆ (40 mg), ಊಟದ ಮೊದಲು
+14:00 - Metformin: 1 ಮಾತ್ರೆ (500 mg), ಊಟದ ನಂತರ
+21:00 - Dolo: 1 ಮಾತ್ರೆ (650 mg), ಊಟದ ನಂತರ
+21:00 - Atorva: 1 ಮಾತ್ರೆ (10 mg)
+21:00 - Metformin: 1 ಮಾತ್ರೆ (500 mg), ಊಟದ ನಂತರ
+21:00 - Ecosprin: 1 ಮಾತ್ರೆ (75 mg)
+--:-- - Cetzine: 1 ಮಾತ್ರೆ (10 mg); ಅಗತ್ಯವಿದ್ದಾಗ ಮಾತ್ರ, ವೈದ್ಯರು ಹೇಳಿದ ಮಿತಿಯನ್ನು ಪಾಲಿಸಿ
 ಅವಧಿ: 30 ದಿನಗಳು (ಔಷಧಿ ಚೀಟಿಯಲ್ಲಿ ಬರೆದಂತೆ)
 ಇದು ವೈದ್ಯಕೀಯ ಸಲಹೆ ಅಲ್ಲ. ನಿಮ್ಮ ವೈದ್ಯರು ಅಥವಾ ಔಷಧಿ ಅಂಗಡಿಯವರನ್ನು ಕೇಳಿ.
 ```

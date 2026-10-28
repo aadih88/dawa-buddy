@@ -101,12 +101,12 @@ def test_timetable_is_translated_and_english_is_unchanged():
     from dawa_buddy.scheduler import build_schedule, share_text
     rx = read_offline("Tab Dolo 650 mg 1-0-1 x 5 days after food\nTab Cetzine 10 mg SOS\nTab Pantop 40 mg 1-0-0 x 30 days before food")
     en = build_schedule(rx)
-    assert {i.instruction for i in en} == {"650 mg after food", "40 mg before food", "10 mg; only when needed, follow the doctor's limit"}
+    assert {i.instruction for i in en} == {"1 tablet (650 mg), after food", "1 tablet (40 mg), before food", "1 tablet (10 mg); only when needed, follow the doctor's limit"}
     hi = build_schedule(rx, "hi")
-    assert any(i.instruction == "650 mg खाने के बाद" for i in hi) and any("खाने से पहले" in i.instruction for i in hi)
+    assert any(i.instruction == "1 गोली (650 mg), खाने के बाद" for i in hi) and any("खाने से पहले" in i.instruction for i in hi)
     rows = i18n.schedule_rows(hi, "hi")
     morning = next(r for r in rows if r["दवा"] == "Pantop")
-    assert list(morning) == ["समय", "दवा", "कैसे लें"] and morning["समय"] == "08:00 सुबह" and morning["कैसे लें"] == "40 mg खाने से पहले"
+    assert list(morning) == ["समय", "दवा", "कैसे लें"] and morning["समय"] == "08:00 सुबह" and morning["कैसे लें"] == "1 गोली (40 mg), खाने से पहले"
     assert "सिर्फ़ ज़रूरत पड़ने पर" in [i for i in hi if i.slot == "as_needed"][0].instruction
     text = share_text(hi, 5, "hi")
     assert text.splitlines()[0] == "दवाओं की समय-सारणी" and "अवधि: 5 दिन" in text and text.splitlines()[-1].startswith("यह चिकित्सा सलाह नहीं है")
@@ -120,4 +120,61 @@ def test_bedtime_is_not_dropped_from_the_dose_sentence_or_the_timetable():
     m = read_offline("Tab Zolfresh 10 mg 0-0-1 at bedtime x 7 days").medications[0]
     assert m.timing == "bedtime"
     assert "at bedtime" in dose_text(m, "en") and "सोने से पहले" in dose_text(m, "hi") and "ಮಲಗುವ ಮೊದಲು" in dose_text(m, "kn")
-    assert i18n.instruction("10 mg", "bedtime", "hi") == "10 mg सोने से पहले"
+    assert i18n.instruction("1 गोली (10 mg)", "bedtime", "hi") == "1 गोली (10 mg), सोने से पहले"
+
+
+# ---------------------------------------------------------------- the timetable says what to TAKE, and keeps one-off doses out of the daily routine
+def _med(line):
+    return read_offline(line).medications[0]
+
+
+@__import__("pytest").mark.parametrize("line,en", [
+    ("Tab Glycomet 500 mg 1-0-0 x 30 days after food", "1 tablet (500 mg)"),
+    ("TAB.ROSEDAY GOLD, 75MG/75MG/10MG, PO, 0-0-1, AFTER FOOD X TO CONTINUE", "1 tablet (75 mg)"),
+    ("SYP. CREMAFFIN PLUS, 15mL, PO, 0-0-1 x 5 days", "15 ml"),                       # a syrup: the volume is the amount
+    ("INJ.ACYCLOVIR 500MG IV 1-1-1 AFTER FOOD X 7 DAYS", "1 dose (500 mg)"),         # an injection is a dose, not a tablet
+    ("TAB SHELCAL-XT 0-1-0 TO CONTINUE", "1 tablet"),                                  # no strength written: still says how much to take
+])
+def test_the_amount_is_what_to_take_not_what_is_in_it(line, en):
+    from dawa_buddy.explainer import amount_text
+    assert amount_text(_med(line), "en") == en
+
+
+def test_strengths_are_tidied_and_a_bare_number_takes_the_unit_before_it():
+    from dawa_buddy.explainer import pretty_strength
+    assert pretty_strength("500MG") == "500 mg" and pretty_strength("75MG/75MG/10MG") == "75 mg / 75 mg / 10 mg"
+    assert pretty_strength("5MG/40") == "5 mg / 40 mg" and pretty_strength("0.4mg") == "0.4 mg" and pretty_strength(None) == ""
+    assert pretty_strength("T 5MG/40") == "5 mg / 40 mg" and pretty_strength("Forte") == ""       # stray words from a model are dropped
+
+
+def test_the_timetable_rows_name_an_amount_in_every_language():
+    from dawa_buddy.scheduler import build_schedule
+    rx = read_offline("Tab Glycomet 500 mg 1-0-0 x 30 days after food")
+    assert build_schedule(rx)[0].instruction == "1 tablet (500 mg), after food"
+    assert build_schedule(rx, "hi")[0].instruction == "1 गोली (500 mg), खाने के बाद"
+    assert build_schedule(rx, "kn")[0].instruction == "1 ಮಾತ್ರೆ (500 mg), ಊಟದ ನಂತರ"
+
+
+def test_a_single_dose_is_not_in_the_daily_table_and_the_as_needed_rows_come_last():
+    from dawa_buddy.scheduler import build_schedule, share_text
+    rx = read_offline("Tab Glycomet 500 mg 1-0-0 x 30 days after food\nTab Dolo 650 SOS\nINJ INFLUVAC TETRA 1 ML IM STAT\nTab Telma 40 0-0-1 x 30 days")
+    items = build_schedule(rx)
+    assert [i.slot for i in items] == ["morning", "night", "as_needed", "once"]                 # daily first, then as-needed, then the one-off
+    once = [i for i in items if i.slot == "once"][0]
+    assert once.med == "Influvac" or "Influvac" in once.med
+    assert once.instruction == "1 ml. One single dose, given once."
+    text = share_text(items, None, "en")
+    assert "One-time dose (not part of the daily routine):" in text and "Influvac" in text.split("One-time dose")[1] and "Influvac" not in text.split("One-time dose")[0]
+    assert "सिर्फ़ एक बार की खुराक" in share_text(build_schedule(rx, "hi"), None, "hi")
+
+
+def test_an_sos_word_in_the_line_beats_the_digits_a_model_returns():
+    """The model reads 'SYP CREMAFFIN 0-0-1 ... SOS in case of constipation' as 0-0-1 and loses the SOS; the nightly row was wrong."""
+    from dawa_buddy.reader import _clean_model_meds
+    line = "SYP. CREMAFFIN PLUS, 15mL, PO, 0-0-1, AFTER FOOD SOS IN CASE OF CONSTIPATION."
+    got = _clean_model_meds({"medications": [{"name": "Cremaffin Plus", "frequency": "0-0-1", "strength": "15 ml", "form": "syrup"}]}, line)
+    assert got[0].frequency == "SOS"
+    stat = _clean_model_meds({"medications": [{"name": "Influvac Tetra", "frequency": "SOS", "strength": "1 ml"}]}, "INJ INFLUVAC TETRA 1 ML IM STAT")
+    assert stat[0].frequency == "STAT"                                                          # and a model that says SOS for a STAT line is corrected too
+    two = _clean_model_meds({"medications": [{"name": "Dolo", "frequency": "1-0-1"}, {"name": "Cetzine", "frequency": "SOS"}]}, "Tab Dolo 650 1-0-1, Tab Cetzine SOS")
+    assert [m.frequency for m in two] == ["1-0-1", "SOS"]                                       # a line with two medicines is left to the model

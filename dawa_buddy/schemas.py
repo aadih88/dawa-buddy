@@ -43,7 +43,7 @@ class SafetyFlag(BaseModel):
 
 class ScheduleItem(BaseModel):
     time: str                              # "08:00"
-    slot: Literal["morning", "afternoon", "night", "as_needed"]
+    slot: Literal["morning", "afternoon", "night", "as_needed", "once"]
     med: str
     instruction: str
 

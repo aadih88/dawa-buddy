@@ -780,8 +780,13 @@ def briefing():
         st.markdown(ui.section_label(L["medicines"], len(brief.explanations)) + "".join(
             ui.med_card(e.name, e.how_to_take, L["from_rx"], e.purpose, L["watch_for"], e.watch_for) for e in brief.explanations), unsafe_allow_html=True)
         if brief.schedule:
-            st.markdown(ui.section_label(L["timetable"]), unsafe_allow_html=True)
-            st.table(i18n.schedule_rows(brief.schedule, lang))
+            daily = [i for i in brief.schedule if i.slot != "once"]
+            once = [i for i in brief.schedule if i.slot == "once"]
+            if daily:
+                st.markdown(ui.section_label(L["timetable"]), unsafe_allow_html=True)
+                st.table(i18n.schedule_rows(daily, lang))
+            if once:           # a vaccine or any single dose is not part of a daily routine: shown apart, never as a row of the table
+                st.markdown(ui.section_label(L["one_time"]) + "".join(ui.card("grey", i.med, i.instruction, icon_name="check") for i in once), unsafe_allow_html=True)
             days = max([m.duration_days or 0 for m in brief.prescription.medications] or [0]) or None
             st.download_button(L["download"], scheduler.share_text(brief.schedule, days, lang), file_name="timetable.txt", key="tt_dl")
         st.markdown(ui.footer(brief.disclaimer), unsafe_allow_html=True)

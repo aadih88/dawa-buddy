@@ -198,6 +198,8 @@ def _clean_model_meds(data, line: str) -> list[Medication]:
                                   duration_days=days, timing=canon_timing(d.get("timing"), line), raw=line))
         except Exception:
             continue
+    if len(out) == 1 and freq_from_text(line.lower()) in ("SOS", "STAT"):
+        out[0].frequency = freq_from_text(line.lower())      # "0-0-1 ... SOS": the model keeps the digits and loses the word; the line is the evidence
     return out
 
 

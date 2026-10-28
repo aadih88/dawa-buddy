@@ -713,3 +713,14 @@ def test_the_check_rows_name_the_line_and_both_prices_in_plain_words(monkeypatch
     assert "AACEF 250 INJ: charged ₹90 per vial, the legal limit is ₹29.02" in page             # which line, what was charged, what the limit is
     assert "2 of 5 price-controlled lines are above the legal ceiling price." in page
     assert "Charged above the printed MRP on" not in page and "other line is within it" not in page    # the old, hard-to-read wording is gone
+
+
+def test_a_vaccine_is_shown_apart_from_the_daily_timetable(monkeypatch):
+    at = _bill_app(monkeypatch, [("SHELCAL 500MG TAB", 30, 9.81, 15, 163.45)], rx="Tab Glycomet 500 mg 1-0-0 x 30 days after food\nINJ INFLUVAC TETRA 1 ML IM STAT")
+    at.segmented_control[0].set_value("English")
+    [b for b in at.button if b.label == "Explain"][0].click().run()
+    page = html_blocks(at)
+    assert "One-time dose (not part of the daily routine)" in page and "One single dose, given once." in page
+    rows = [row for tbl in at.table for row in tbl.value.to_dict("records")]
+    assert [r["Medicine"] for r in rows] == ["Glycomet"]                                         # the table holds only the daily routine
+    assert rows[0]["How"] == "1 tablet (500 mg), after food"                                     # an amount, not a bare strength
