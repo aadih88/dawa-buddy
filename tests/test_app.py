@@ -17,7 +17,11 @@ def app(monkeypatch):
 
 
 def click(app, name):
+    """Tap a sample and carry on to its result, the way a person does: sample -> check the numbers -> see the result."""
     [b for b in app.button if b.key == f"sample_{name}"][0].click().run()
+    assert app.title[0].value == "Check the numbers"
+    [b for b in app.button if b.label == "See the result"][0].click().run()          # first run: the button disables itself ...
+    app.run()                                                                       # ... the next run shows the result
     return app
 
 
@@ -80,7 +84,7 @@ def test_review_screen_shows_one_readable_card_per_line_not_a_wide_table(monkeyp
     at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "review"
     at.run()
     assert not at.exception and at.title[0].value == "Check the numbers"
-    assert {"Start over", "Check this bill"} <= {b.label for b in at.button}
+    assert {"Start over", "See the result"} <= {b.label for b in at.button}
     page = html_blocks(at)
     assert "SHELCAL 500MG TAB" in page and "30 × ₹9.81 = ₹294.21" in page                  # what we read, in one line, to compare with the paper
     assert not [d for d in at.dataframe]                                                     # no wide table to scroll sideways on a phone
@@ -94,7 +98,7 @@ def test_changing_a_number_on_a_card_changes_the_result(monkeypatch):
     at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "review"
     at.run()
     assert "legal limit ₹6.92" not in html_blocks(at)
-    [b for b in at.button if b.label == "Check this bill"][0].click().run()
+    [b for b in at.button if b.label == "See the result"][0].click().run()
     assert not at.exception and "Above the legal ceiling price" in html_blocks(at)
 
 
@@ -127,8 +131,8 @@ def test_the_same_item_billed_twice_does_not_break_the_page(monkeypatch):
     at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "results"
     at.run()
     assert not at.exception
-    assert sum(1 for e in at.expander if e.label.startswith("Check more on")) == 1
-    assert "Check more on 1 item" in [e.label for e in at.expander]                          # Veltam once; Shelcal is a supplement
+    assert sum(1 for e in at.expander if e.label.startswith("Help us identify")) == 1
+    assert "Help us identify 1 item" in [e.label for e in at.expander]                          # Veltam once; Shelcal is a supplement
 
 
 def test_a_model_guess_is_never_prefilled_into_the_confirm_box(monkeypatch):
@@ -243,3 +247,49 @@ def test_no_dose_warning_when_every_dose_reads(monkeypatch):
 def test_the_warning_also_shows_in_the_explainer_on_the_result_screen(monkeypatch):
     at = _review_with(monkeypatch, "TAB SHELCAL-XT 0---0 TO CONTINUE", stage="results")
     assert "We could not read the dose on 1 prescription line" in html_blocks(at)
+
+
+def test_start_screen_button_says_read_my_bill_and_is_disabled_until_a_photo_is_chosen(monkeypatch):
+    from dawa_buddy import llm
+    monkeypatch.setattr(llm, "vision_available", lambda: True)
+    at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
+    at.run()
+    read = [b for b in at.button if b.label == "Read my bill"][0]
+    assert read.disabled and not [b for b in at.button if b.label == "Check my bill"]       # the first step reads the bill; it does not "check" it
+
+
+def test_a_lost_upload_gives_the_start_controls_back_instead_of_crashing(monkeypatch):
+    from dawa_buddy import llm
+    monkeypatch.setattr(llm, "vision_available", lambda: True)
+    at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
+    at.session_state["reading"] = True                  # as if the page was refreshed while a photo was being read
+    at.run()
+    assert not at.exception and at.session_state["reading"] is False
+    assert all(not b.disabled for b in at.button if b.key and b.key.startswith("sample_"))
+
+
+def test_samples_take_the_same_road_as_a_photo_through_the_review_screen():
+    at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
+    at.run()
+    [b for b in at.button if b.key == "sample_Hospital pharmacy bill"][0].click().run()
+    assert at.title[0].value == "Check the numbers" and "Sample:" in " ".join(c.value for c in at.caption)
+    assert {"See the result", "Start over"} <= {b.label for b in at.button}
+
+
+def test_help_text_in_identify_section_is_for_users_not_about_vendors(monkeypatch):
+    """No tooltip should mention Tavily or a URL; each should say what the button gives the user."""
+    import re
+    src = (ROOT / "bill_app.py").read_text()
+    helps = re.findall(r'help="([^"]+)"', src)
+    assert helps and not [h for h in helps if re.search(r"tavily|nppa\.gov|sends only", h, re.I)]
+
+
+def test_verdict_sentence_does_not_claim_a_legal_limit_was_exceeded_when_none_was(monkeypatch):
+    monkeypatch.setenv("DAWA_PROVIDER", "offline")
+    from dawa_buddy import samples
+    at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
+    at.session_state["df"] = samples.frame("Outpatient pharmacy bill").iloc[4:5].reset_index(drop=True)      # the Shelcal line only: a variant warning, no price limit
+    at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "Tab Shelcal-XT 0-1-0 to continue", 0.0, "results"
+    at.run()
+    page = html_blocks(at)
+    assert "Some lines are above a legal price limit" not in page and "above legal limits" in page

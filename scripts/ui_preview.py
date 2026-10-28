@@ -11,7 +11,7 @@ st.markdown(ui.header(), unsafe_allow_html=True)
 st.title("Was your medicine bill fair?")
 st.markdown("<p class='db-sub'>Photograph your bill. We compare it with government price lists and your prescription, and tell you what to ask.</p>", unsafe_allow_html=True)
 st.file_uploader("Photo of your bill", type=["png", "jpg"], key="p_up")
-st.button("Check my bill", type="primary", width="stretch", key="p_b1")
+st.button("Read my bill", type="primary", width="stretch", key="p_b1")
 c1, c2 = st.columns(2)
 c1.button("Pharmacy bill", width="stretch", key="p_s1"); c2.button("Hospital bill", width="stretch", key="p_s2")
 

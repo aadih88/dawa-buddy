@@ -108,40 +108,51 @@ def start():
     st.title("Was your medicine bill fair?")
     st.markdown("<p class='db-sub'>Photograph your bill. We compare it with government price lists and your prescription, "
                 "and tell you what to ask.</p>", unsafe_allow_html=True)
+    pending = st.session_state.pop("start_msg", None)       # an error from the last read, shown once
+    if pending:
+        msg(*pending)
+    reading = st.session_state.get("reading", False)       # set by the button, so the next run shows every control disabled while the photo is read
+    bill_img = rx_img = None
     if llm.vision_available():
-        bill_img = st.file_uploader("Photo of your bill", type=["png", "jpg", "jpeg"], key="bill_photo")
+        bill_img = st.file_uploader("Photo of your bill", type=["png", "jpg", "jpeg"], key="bill_photo", disabled=reading)
         with st.expander("＋ Add your prescription (optional)"):
-            rx_img = st.file_uploader("Photo of your prescription", type=["png", "jpg", "jpeg"], key="rx_photo")
-        if st.button("Check my bill", type="primary", disabled=bill_img is None, width="stretch"):
-            read_photos(bill_img, rx_img)
+            rx_img = st.file_uploader("Photo of your prescription", type=["png", "jpg", "jpeg"], key="rx_photo", disabled=reading)
+        if st.button("Read my bill", type="primary", disabled=bill_img is None or reading, width="stretch"):
+            st.session_state.reading = True
+            st.rerun()
+        if reading and bill_img is None:          # the upload was lost (a refresh): give the controls back
+            st.session_state.reading = False
+            st.rerun()
         st.markdown("<p class='db-or'>or try a sample</p>", unsafe_allow_html=True)
     else:
         st.markdown("<p class='db-or'>Try a sample bill</p>", unsafe_allow_html=True)
     cols = st.columns(len(samples.SAMPLES))
     for col, name in zip(cols, samples.SAMPLES):
-        if col.button(name, key=f"sample_{name}", width="stretch"):
+        if col.button(name, key=f"sample_{name}", width="stretch", disabled=reading):
             smp = samples.SAMPLES[name]
-            reset()
-            st.session_state.update(df=samples.frame(name), rx=smp["rx"], total=smp["total"], sample=name, stage="results")
+            reset()          # a sample takes the same road as a photo: confirm the numbers, then see the result
+            st.session_state.update(df=samples.frame(name), rx=smp["rx"], total=smp["total"], sample=name, stage="review")
             st.rerun()
+    if reading and bill_img is not None:      # last, so every control above is already drawn (disabled) while the photo is read
+        read_photos(bill_img, rx_img)
 
 
 def read_photos(bill_img, rx_img):
     limit = int(os.environ.get("DAWA_MAX_PHOTO_READS", "5"))
     if st.session_state.get("photo_reads", 0) >= limit:
-        msg("amber", f"This demo reads {limit} photos per visit. Try a sample, or run the app yourself (see the README).")
-        return
+        st.session_state.update(reading=False, start_msg=("amber", f"This demo reads {limit} photos per visit. Try a sample, or run the app yourself (see the README)."))
+        st.rerun()
     reads = st.session_state.get("photo_reads", 0) + 1
     with st.spinner("Reading your bill..."):
         try:
             rows, total = vision.read_bill_photo(bill_img.getvalue(), bill_img.type)
             rx = vision.read_rx_photo(rx_img.getvalue(), rx_img.type) if rx_img else ""
         except Exception as e:
-            msg("red", f"We could not read that photo ({type(e).__name__}). Try a sharper, flatter photo.")
-            return
+            st.session_state.update(reading=False, start_msg=("red", f"We could not read that photo ({type(e).__name__}). Try a sharper, flatter photo."))
+            st.rerun()
     if not rows:
-        msg("amber", "We could not find any bill lines in that photo. Try a sharper, flatter photo.")
-        return
+        st.session_state.update(reading=False, start_msg=("amber", "We could not find any bill lines in that photo. Try a sharper, flatter photo."))
+        st.rerun()
     reset()
     df = pd.DataFrame([r.__dict__ for r in rows]).drop(columns=["notes"], errors="ignore")
     st.session_state.update(df=enrich(df), rx=rx, total=total, stage="review", photo_reads=reads, load_id=1)
@@ -256,17 +267,24 @@ def review():
     st.markdown(ui.header(2, "Step 2 of 3 · Check the numbers"), unsafe_allow_html=True)
     st.title("Check the numbers")
     st.markdown("<p class='db-sub'>Compare each line with your paper. Choose how it was sold, and fix anything that is wrong.</p>", unsafe_allow_html=True)
+    if st.session_state.get("sample"):
+        st.caption(f"Sample: {samples.SAMPLES[st.session_state.sample]['about']}")
     unclear = dose_warning(st.session_state.get("rx", ""))      # first: it is the thing most likely to be missed, so it must not sit below six cards
     df = lines_form(st.session_state.df, "r")
     add_line()
     total = st.number_input("Total printed on the bill (optional)", value=float(st.session_state.get("total") or 0.0))
     with st.expander("Prescription lines", expanded=unclear):
         st.text_area("One medicine per line, as written", key="rx", height=130, label_visibility="collapsed")
-    if st.button("Check this bill", type="primary", width="stretch"):
-        st.session_state.update(df=df, total=total, stage="results", load_id=st.session_state.get("load_id", 0) + 1)
+    checking = st.session_state.get("checking", False)
+    if st.button("See the result", type="primary", width="stretch", disabled=checking):
+        st.session_state.checking = True
         st.rerun()
-    if st.button("Start over", type="tertiary", width="stretch"):
+    if st.button("Start over", type="tertiary", width="stretch", disabled=checking):
         reset(); st.rerun()
+    if checking:
+        with st.spinner("Checking prices..."):
+            st.session_state.update(df=df, total=total, stage="results", load_id=st.session_state.get("load_id", 0) + 1, checking=False)
+            st.rerun()
 
 
 # ---------------------------------------------------------------- screen 3: results
@@ -275,7 +293,8 @@ def verdict(checked_share, n_viol, n_ask, excess, generic):
     if n_viol:
         total = n_viol + n_ask          # the headline counts everything listed below it, so the two numbers always agree
         kind, head = "red", f"{total} thing{'s' if total > 1 else ''} to ask about"
-        body = "Some are above a legal price limit or may not be what was prescribed. Ask the seller to explain them."
+        body = ("Some lines are above a legal price limit. Ask the seller to explain them." if excess else
+                "Nothing is above a legal limit, but these need a question to the seller or your confirmation.")
     elif n_ask:
         kind, head = "amber", "Nothing above a legal limit, but a few questions"
         body = f"{n_ask} line{'s need' if n_ask > 1 else ' needs'} a look or your confirmation."
@@ -425,7 +444,7 @@ def online_check(fs, df) -> None:
     if not todo or not webcheck.available():
         return
     if st.button(f"Look up {len(todo)} line{'s' if len(todo) > 1 else ''} on pharmacy websites", width="stretch",
-                 help="Finds the strip size and the listed MRP on 1mg, PharmEasy, Truemeds and Netmeds. Sends only the brand name and strength."):
+                 help="Reads the strip size and the listed price from 1mg, PharmEasy, Truemeds and Netmeds so your MRP can be checked. A listing is a reference, never the legal limit."):
         with st.spinner("Searching pharmacy websites..."):
             with ThreadPoolExecutor(max_workers=6) as ex:
                 found = list(ex.map(lambda f: listings.search(f.line.desc), todo))
@@ -494,8 +513,8 @@ def identify(fs, confirmed):
             todo.append(f)
     if not todo:
         return
-    with st.expander(f"Check more on {len(todo)} item{'s' if len(todo) > 1 else ''}"):
-        st.caption("Type what is printed on the strip. Until you do, no price judgement is made on an unidentified medicine.")
+    with st.expander(f"Help us identify {len(todo)} item{'s' if len(todo) > 1 else ''}"):
+        st.caption("We could not tell what these medicines contain from the bill alone. Type the ingredients printed on the strip (under \"Each tablet contains\") and we will compare prices. Until then we make no price judgement.")
         for f in todo:
             key = f.line.desc.lower()
             st.markdown(f"**{f.line.desc}**")
@@ -505,13 +524,15 @@ def identify(fs, confirmed):
             if typed.strip() and typed.strip() != prefill(f):      # only what the user changed counts as a confirmation
                 confirmed[key] = "+".join(n for n, _ in want) if want else typed.strip().lower()
             if want and webcheck.available():
-                if st.button("Find NPPA prices for this combination", key=f"ord_{key}", help="Searches nppa.gov.in orders with Tavily. Sends only the ingredients."):
+                if st.button("See government price orders for this combination", key=f"ord_{key}",
+                             help="The government sets these prices company by company. This shows what other brands of the same combination are capped at, as context. It is not a limit on your brand."):
                     with st.spinner("Searching NPPA orders..."):
                         orders[key] = (webcheck.lookup_orders(typed), typed)
                     st.rerun()
                 if key in orders and not orders[key][0][0]:
                     st.caption("No NPPA price order found for this exact combination and strength.")
-            if webcheck.available() and st.button("Check the web for the ingredients", key=f"web_{key}", help="Sends only the brand name to Tavily"):
+            if webcheck.available() and st.button("Look up the ingredients online", key=f"web_{key}",
+                                                  help="Finds what this brand contains on pharmacy and drug-information websites. If two sites agree you can use it, but always check it against the strip."):
                 with st.spinner("Searching..."):
                     st.session_state.setdefault("evidence", {})[key] = webcheck.lookup_brand(f.line.desc)
             ev = st.session_state.get("evidence", {}).get(key)
@@ -572,6 +593,7 @@ def footer():
             f"**Price lists.** NPPA legal ceilings effective {dates['nppa_ceiling']}, Jan Aushadhi prices ({dates['jan_aushadhi']}), "
             "and the MRP printed on the pack.\n\n"
             "**Privacy.** Photos are sent to Nebius Token Factory (NVIDIA Nemotron) to be read. Nothing is stored. "
+            "The look-up buttons search the web for the medicine name and strength (or the ingredients you typed) only: never your photos, name or amounts. "
             "Cover your name, phone and address before uploading.")
     st.markdown(ui.footer("Information, not a finding of wrongdoing. Not medical advice."), unsafe_allow_html=True)
 
