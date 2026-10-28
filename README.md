@@ -5,7 +5,7 @@
 **Photograph a pharmacy or hospital bill. Dawa Buddy checks it line by line against India's legal price lists and the doctor's prescription, then tells you exactly what to ask, in English, Hindi or Kannada.**
 
 ![licence: MIT](https://img.shields.io/badge/licence-MIT-green)
-![tests: 167 passing](https://img.shields.io/badge/tests-167%20passing-brightgreen)
+![tests: 184 passing](https://img.shields.io/badge/tests-184%20passing-brightgreen)
 ![Nebius Token Factory](https://img.shields.io/badge/runs%20on-Nebius%20Token%20Factory-1f6feb)
 ![NVIDIA Nemotron](https://img.shields.io/badge/models-NVIDIA%20Nemotron-76b900)
 ![Tavily](https://img.shields.io/badge/web%20evidence-Tavily-7b61ff)
@@ -30,7 +30,7 @@
 ### What a judge should know in one minute
 | Criterion | Short answer | Where to look |
 |---|---|---|
-| **Technological implementation** | Nemotron **Super VL** reads photos, **Lightning** reads prescriptions, **Ultra / Super** write Hindi, all through one Token Factory endpoint. A deterministic rules engine decides every price verdict, so the model can never invent an accusation. 167 tests; 4 evaluation suites. | [§7](#7-architecture), [§8](#8-how-we-use-nebius-nvidia-nemotron-and-tavily), [§10](#10-validation-and-evaluation) |
+| **Technological implementation** | Nemotron **Super VL** reads photos, **Lightning** reads prescriptions, **Ultra / Super** write Hindi, all through one Token Factory endpoint. A deterministic rules engine decides every price verdict, so the model can never invent an accusation. 184 tests; 4 evaluation suites. | [§7](#7-architecture), [§8](#8-how-we-use-nebius-nvidia-nemotron-and-tavily), [§10](#10-validation-and-evaluation) |
 | **Design** | One question per screen, verdict first, phone-first, status always colour + icon + words, Hindi and Kannada typography. | [§5](#5-the-product-tour) |
 | **Potential impact** | The Indian government's own court affidavit says patients have "very low bargaining position" and "very limited" knowledge of prices. This tool puts the comparison in the patient's hands at the moment of paying. | [§2](#2-the-problem-with-evidence), [§4](#4-the-idea) |
 | **Quality of the idea** | A *receipt audit*, not a price lookup: it resolves each line to a medicine, strength and form, converts per-tablet, per-strip, per-vial, per-ml and per-piece prices correctly, and reconciles the bill with the prescription (including the wrong *variant* handed over). It is honest about what it cannot see. | [§4](#4-the-idea), [§9](#9-engineering-decisions-and-why) |
@@ -170,7 +170,7 @@ If the Court's final order changes the rules, the tool's data layer is a set of 
 | **1. Start** | Upload a bill photo (and optionally a prescription) and press **Read my bill**, or tap a sample. Every control is disabled while the photo is read. | The first thing a visitor can do is try it. Samples run with no key and take the same road as a photo. |
 | **2. Check the numbers** | Press **See the result** when it matches your paper. One card per bill line shows what was read (to compare with the paper), how it was sold (per tablet, strip, bottle, tube, vial, piece), pack size and printed MRP. A line the reader flagged is marked *Please re-check this line*. If a prescription line has no readable dose, **one** amber note lists them at the top and opens the prescription box. | A misread digit must never become an accusation (R10). |
 | **3. Result** | A verdict first ("4 things to ask about") with three numbers (amount above legal limits, possible generic saving, share of bill checked). Then a card per line that needs attention, each with a **price meter** (paid against the limit). Lines within limits and lines no list covers are folded away. | The answer in one glance; the detail on demand. |
-| **4. Ask** | **Download the questions to ask** the seller or doctor. Unidentified brands appear under *Help us identify* (type the ingredient from the strip, or use the web check). | Output a person can act on (R12). |
+| **4. Ask** | **Download the questions to ask** the seller or doctor. Medicines that could not be matched appear under *Help us identify*: type the ingredients from the strip and the result above updates at once, with a line saying what changed; or let the app read pharmacy sites for that exact product, then confirm it against the strip. | Output a person can act on (R12), and the section is never a dead end. |
 | **5. Explain** | *Explain my medicines in plain language*: dose sentences, safety notes, timetable, in English, Hindi or Kannada. | R7 and R8. |
 
 ### Design decisions
@@ -284,7 +284,7 @@ Everything model-related runs on **Nebius Token Factory** through its OpenAI-com
 **Not used.** Nebius Serverless Endpoints, Serverless Jobs and AI Cloud are not used; the demo is hosted on Streamlit Community Cloud and calls Token Factory at runtime. They are encouraged but not required, and listed in the [roadmap](#16-roadmap).
 
 ### Tavily: three runtime uses, each as evidence for the user, never a verdict by itself
-1. **Identify a brand** the tables cannot resolve (`webcheck.py`). Agreement counts only when two different sites match. Only the brand text is sent.
+1. **Identify a brand** the tables cannot resolve (`webcheck.py`). The search returns whole pages; we read each page's *Composition* paragraph, and **drop pages about a different product** before anyone votes (a *Veltam Plus* page does not count for *Veltam*, *Concor 5* does not count for *Concor T*, a 2.5 mg page does not count for 5 mg). Two different sites agreeing is shown as agreement; a single clear answer is shown as a labelled suggestion ("only one site states this"); real disagreement is shown as disagreement. In every case the user confirms from the strip, and only the brand text is sent.
 2. **NPPA price context** (`nppa_orders.py`). For a medicine with no ceiling of its own (a combination such as bisoprolol 5 mg + telmisartan 40 mg), Tavily searches `nppa.gov.in` only, phrased like NPPA's own order lists, and the rows are parsed from the official text. NPPA fixes such prices **company by company**: on a real bill, ten other companies' versions were priced at ₹11.60 to ₹12.71 per tablet before GST, and none of the orders found named the maker of the brand billed. So the app shows them as *"other brands of the same combination are price-controlled lower"*, with links to the orders and the sentence *"this is not a legal limit on your brand"*, and never as above-ceiling. Applying one company's price to another's brand would be a false accusation. Only the ingredients are sent, never prices, quantities or patient details (a test inspects the outgoing request).
 3. **Pack size and listed MRP from pharmacy websites** (`listings.py`, one button). PharmEasy, 1mg, Truemeds and Netmeds state the strip size and the current MRP. A pack size is suggested only when two sites agree, and the MRP reference is the highest per-tablet value that two different sites support within 10%. A listed MRP is never the legal limit (1mg itself says "MRP may vary by batch"): a bill whose printed MRP is more than 10% above every listing gets a *question* ("ask to see the MRP on the strip"), never the above-MRP label. Pages are matched by name and strength so `Telma 40` never becomes `Telma H 40`.
 
@@ -313,7 +313,7 @@ All numbers below are reproducible with the commands in [section 13](#13-setup-r
 ### 10.1 Results
 | Check | Result | Caveat |
 |---|---|---|
-| Unit and integration tests | **167 pass** | Includes fake-server tests for the Ollama and Tavily paths and a test that inspects what is sent to Tavily. |
+| Unit and integration tests | **184 pass** | Includes fake-server tests for the Ollama and Tavily paths and a test that inspects what is sent to Tavily. |
 | Brand resolution, 108 real brand lines | **99 correct, 4 missed (safe), 0 wrong.** The curated map alone: 26 correct, 61 missed, 2 wrong (1 reached a price verdict). 14 of 14 supplements, invented and ambiguous names handled safely. | Expected answers were written from pharmaceutical knowledge, **not** copied from the table. A pharmacist should review them. |
 | Bill tier accuracy, 18 synthetic lines (tablets, liquids, injections) | **18 of 18** | Synthetic prices written by the author. |
 | Prescription extraction, 24 synthetic cases | Offline rules F1 **1.00**, live Nemotron F1 **1.00**; safety-flag F1 1.00 / 1.00; 0 invented medicines; median latency 1.33 s | **Saturated**: the rules were tuned on this style of text, so it does not show the model's value. The real-photo comparison does. |
@@ -322,12 +322,13 @@ All numbers below are reproducible with the commands in [section 13](#13-setup-r
 | Hindi and Kannada explainer, live | Hindi: good in every run I read, accepted by the script check, 1.7 to 5 s. Kannada: accepted by the script check **but a real run produced fluent nonsense**, so Kannada AI text is off. | Script check proves the alphabet, not the meaning. **No native speaker has reviewed Hindi or Kannada yet**; `docs/language_review.md` is the pack for that. |
 | NPPA price context for an unpriced combination (live, Tavily) | 10 distinct company rows from 4 NPPA documents for bisoprolol 5 mg + telmisartan 40 mg, parsed correctly against rows copied from the documents | One combination live. Only the "composition, unit, company, price" layout is parsed; anything else returns nothing, not a guess. |
 | Pharmacy-website lookup, real bill (live, Tavily) | **Pack sizes right for 6 of 6 products where the strip is known**; the bill went from **0% to 100% checked** with one button; listed MRPs matched the printed MRP for Concor T and Shelcal. One brand (Pantop) had no two sites within 10% and correctly got no reference. | 6 products, one day. Listings change and sites disagree, so every result is a question. |
+| Online ingredient lookup, 4 real brands (live, Tavily) | Concor T 5/40 and Veltam 0.4: **two sites agree** after the fix (neither did before). Glycomet 500 SR: one clear answer, labelled as a suggestion. Roseday Gold: the pharmacy sites **genuinely disagree** and the app says so. 4 pages about similar-named products were ignored for each brand. | 4 brands, one day. Pages that state no composition (several Apollo and Netmeds pages) still add nothing. |
 | Live hosted app (28 Oct 2026) | Sample bill to verdict; a real 4.2 MB bill photo to the review screen in about 5 s | Manual check, one run. |
 | **Not yet measured** | Handwriting, other bill layouts, real-user outcomes, native-speaker review, a physical phone | |
 
 ### 10.2 Reproduce
 ```bash
-pytest -q tests                                   # 167 tests
+pytest -q tests                                   # 184 tests
 python -m evals.run_bill_evals                    # 18 synthetic bill lines, tier accuracy
 python -m evals.run_brand_evals [--verbose]       # 108 brand lines: correct / missed / wrong
 python -m evals.run_evals --out evals/results.md  # 24 synthetic prescriptions, live model
@@ -349,6 +350,9 @@ Synthetic tests passed long before real documents did. These are the failures re
 | Pharmacy-site parsing read a pack of 1 from a URL ending `-1`; an outlier listing (Pantop ₹499) set a bad MRP reference. | Patterns per source; a reference needs two different sites within 10%. |
 | A real run of Kannada AI text was fluent nonsense in valid script. | Kannada AI text off; a fixed, reviewable table for common ingredients; a fixed notice when the table does not cover a medicine. |
 | The same "Something is not written" card repeated for every medicine. | One grouped note per kind of issue. |
+| After the user typed an ingredient, the cards and verdict stayed stale until the next click, so the *Help us identify* box looked like it did nothing. | The page now refreshes in the same step, the box stays open and says what the confirmation did ("Compared as … No price list covers this"). |
+| The online ingredient lookup almost never reached agreement. The cause was extraction, not the web: it read only the short search snippet with one rigid pattern, and the search mixed in neighbouring products. | Read each page's *Composition* paragraph; ignore pages about a different product or strength; show a single clear answer as a labelled suggestion. |
+| The result card said "100% of the bill checked" while three lines were listed as not covered by a price list. It counted lines compared with their *printed MRP*, not only with a legal limit. | The number now says what it was checked against ("of the bill checked against an MRP or a price list"), and every not-covered line says why and how it was judged. |
 | The Supreme Court's headline example (a ₹11 consumable billed at ₹270) was caught only if the user chose a unit; consumables had no "per piece" option. | Added **per piece** with a direct MRP comparison, plus a test and the hospital sample line. Found by reading the court coverage against the app, on 28 October. |
 
 ## 11. How it meets the requirements
@@ -557,6 +561,6 @@ dawa_buddy/
 data/                       Price lists, brand table, overrides, NOTICE.md
 scripts/                    audit_bill, read_photos, check_nebius, NPPA PDF parsers, brand-table builder, review-pack builder
 evals/                      Gold sets and runners
-tests/                      167 tests
+tests/                      184 tests
 my_data/                    Your private bills and prescriptions (git-ignored)
 ```

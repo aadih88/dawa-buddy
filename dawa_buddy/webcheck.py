@@ -66,6 +66,8 @@ class Evidence:
     query: str
     sources: list = field(default_factory=list)
     consensus: frozenset | None = None
+    best: frozenset | None = None          # the one composition the matching pages state when no second site confirms it (still only a suggestion)
+    skipped: int = 0                       # pages dropped because they are a different product (Veltam Plus is not Veltam)
     agrees_with_table: bool | None = None
     note: str = ""
 
@@ -78,13 +80,50 @@ def show(comp: frozenset) -> str:
     return " + ".join(f"{n} {s}" for n, s in sorted(comp))
 
 
-def gather(results: list[dict], table_hit=None) -> Evidence:
-    """Pure part: turn search results into evidence (separate from the network call so it is testable)."""
+_FORM_WORDS = {"tab", "tablet", "tablets", "cap", "caps", "capsule", "capsules", "syp", "syrup", "inj", "injection", "mg", "mcg", "ml", "gm", "g",
+               "iu", "ip", "buy", "online", "strip", "of", "po"}
+_RELEASE = {"mr", "sr", "xr", "er", "pr", "cr", "od"}      # sites add or drop these freely; they do not make a different brand
+_TITLE_CUT = re.compile(r"\b(?:tablets?|capsules?|syrup|injection|suspension|drops|cream|gel|ointment|online|strip|price|uses?)\b|[:|\u2013\u2014]| - ", re.I)
+
+
+def _brand_part(title: str) -> str:
+    return _TITLE_CUT.split(re.sub(r"(?i)^\s*buy\s+", "", title or ""), maxsplit=1)[0]
+
+
+def _words(text: str) -> set[str]:
+    return {w for w in re.findall(r"[a-z]+", text.lower()) if w not in _FORM_WORDS | _RELEASE}
+
+
+def _numbers(text: str) -> set[float]:
+    return {float(n) for n in re.findall(r"\d+(?:\.\d+)?", text)}
+
+
+def same_product(title: str, desc: str) -> bool:
+    """Is this page about the product on the bill? 'Veltam Plus' is not 'Veltam', 'Concor 5' is not 'Concor T', 'Concor T 2.5/40' is not 'Concor T 5/40'.
+    The brand words must be identical (SR/MR ignored) and any strength in the page title must be one the bill also prints."""
+    part = _brand_part(title)
+    return _words(part) == _words(desc) and _numbers(part) <= _numbers(desc)
+
+
+COMPOSITION_BLOCK = re.compile(r"(?is)composition\W{0,12}(.{0,240})")
+
+
+def composition_text(raw: str) -> str:
+    """The 'Composition:' paragraphs of a full page (the short search snippet usually leaves them out)."""
+    return " ".join(m.group(1) for m in COMPOSITION_BLOCK.finditer(raw or ""))[:1200]
+
+
+def gather(results: list[dict], table_hit=None, desc: str | None = None) -> Evidence:
+    """Pure part: turn search results into evidence (separate from the network call so it is testable).
+    With `desc` (the bill line), pages about a different product are dropped before anyone gets to vote."""
     ev = Evidence(query="")
     by_domain: dict[str, Counter] = {}
     for r in results:
+        if desc is not None and not same_product(r.get("title", ""), desc):
+            ev.skipped += 1
+            continue
         d = _domain(r.get("url", ""))
-        groups = parse_compositions(f'{r.get("title", "")}. {r.get("content", "")}')
+        groups = parse_compositions(f'{r.get("title", "")}. {r.get("content", "")}. {composition_text(r.get("raw_content", ""))}')
         comp = max(groups, key=len) if groups else None
         ev.sources.append(Source(r.get("url", ""), r.get("title", ""), comp))
         if comp:
@@ -97,8 +136,17 @@ def gather(results: list[dict], table_hit=None) -> Evidence:
     if ev.consensus and table_hit and not any("/" in u or u == "%" for _, u in table_hit.strengths):
         want = frozenset((norm_salt(s), f"{v:g}{u}") for s, (v, u) in zip(table_hit.salts.split("+"), table_hit.strengths))
         ev.agrees_with_table = want == ev.consensus
-    ev.note = ("Two different sites agree. Check this against the composition printed on your strip." if ev.consensus else
-               "No agreement between sites (or nothing readable). Read the composition off the strip yourself.")
+    distinct = {c for counter in by_domain.values() for c in counter}
+    if not ev.consensus and len(distinct) == 1:
+        ev.best = next(iter(distinct))
+    if ev.consensus:
+        ev.note = "Two different sites agree. Check this against the composition printed on your strip."
+    elif ev.best:
+        ev.note = "Only one site states this and no page disagrees. Check it against the composition printed on your strip before using it."
+    elif distinct:
+        ev.note = "The sites disagree. Read the composition off the strip yourself."
+    else:
+        ev.note = "No page for this exact product stated its composition. Read the composition off the strip yourself."
     return ev
 
 
@@ -109,11 +157,11 @@ def lookup_brand(desc: str, form: str = "tablet") -> Evidence | None:
     import httpx
     brand = " ".join(re.findall(r"[A-Za-z0-9.]+", desc))[:80]
     query = f"{brand} {form} composition salt strength India"
-    r = httpx.post(BASE_URL.rstrip("/") + "/search", timeout=30,
+    r = httpx.post(BASE_URL.rstrip("/") + "/search", timeout=60,
                    headers={"Authorization": f"Bearer {os.environ['TAVILY_API_KEY']}"},
-                   json={"query": query, "search_depth": "basic", "max_results": 6, "include_domains": TRUSTED})
+                   json={"query": query, "search_depth": "basic", "max_results": 8, "include_raw_content": True, "include_domains": TRUSTED})
     r.raise_for_status()
-    ev = gather(r.json().get("results", []), lookup(desc, form))
+    ev = gather(r.json().get("results", []), lookup(desc, form), desc=desc)
     ev.query = query
     return ev
 

@@ -303,14 +303,25 @@ def verdict(checked_share, n_viol, n_ask, excess, generic):
         body = "Everything we could check is within the price limits."
     stats = [(rupees(excess) if excess else "₹0", "above legal limits", "red" if excess else "green"),
              (rupees(generic) if generic else "₹0", "possible generic saving", "amber" if generic else "grey"),
-             (f"{checked_share:.0f}%", "of the bill checked", "green" if checked_share >= 80 else "amber" if checked_share >= 40 else "grey")]
+             (f"{checked_share:.0f}%", "of the bill checked against an MRP or a price list", "green" if checked_share >= 80 else "amber" if checked_share >= 40 else "grey")]
     st.markdown(ui.verdict(kind, head, body, stats), unsafe_allow_html=True)
 
 
 def mini(f) -> str:
+    """One line per folded-away item: what it is, how it was judged, and (for 'not covered') why there is nothing to compare with."""
     right = rupees(f.line.amount)
     label = html.escape(RESULT[f.tier][1])
-    return f"<div class='mini'><span class='l'>{html.escape(f.line.desc)}<br><span class='small'>{label}</span></span><span class='r'>{right}</span></div>"
+    why = ""
+    if f.tier in (b.TIER_NO_BENCHMARK, b.TIER_NOT_MEDICINE, b.TIER_SUPPLEMENT):
+        known = f"Identified as {f.ingredients} {f.strength}. " if f.ingredients and f.tier == b.TIER_NO_BENCHMARK else ""
+        reason = {b.TIER_NO_BENCHMARK: "We hold no NPPA ceiling or Jan Aushadhi price for this salt, strength and form.",
+                  b.TIER_NOT_MEDICINE: "Consumables and devices have no price list here.",
+                  b.TIER_SUPPLEMENT: "Supplements have no government price limit."}[f.tier]
+        mrp = f" Charged {f.mrp_pct:.0f}% of the printed MRP." if f.mrp_pct is not None else ""
+        why = f"<br><span class='small'>{html.escape(known + reason + mrp)}</span>"
+    elif f.mrp_pct is not None and f.tier == b.TIER_OK:
+        why = f"<br><span class='small'>Charged {f.mrp_pct:.0f}% of the printed MRP.</span>"
+    return f"<div class='mini'><span class='l'>{html.escape(f.line.desc)}<br><span class='small'>{label}</span>{why}</span><span class='r'>{right}</span></div>"
 
 
 def results(df, total):
@@ -513,8 +524,11 @@ def identify(fs, confirmed):
             todo.append(f)
     if not todo:
         return
-    with st.expander(f"Help us identify {len(todo)} item{'s' if len(todo) > 1 else ''}"):
-        st.caption("We could not tell what these medicines contain from the bill alone. Type the ingredients printed on the strip (under \"Each tablet contains\") and we will compare prices. Until then we make no price judgement.")
+    # open once the user has worked in it: the page above re-flows after a confirmation and Streamlit would otherwise fold the box shut
+    with st.expander(f"Help us identify {len(todo)} item{'s' if len(todo) > 1 else ''}", expanded=st.session_state.get("ident_open", False)):
+        st.caption("These medicines could not be matched from the bill alone. Type the ingredients printed on the strip (under \"Each tablet contains\"). "
+                   "We then compare the line with the government price lists and update the result above. Until you do, we make no price judgement.")
+        changed = False
         for f in todo:
             key = f.line.desc.lower()
             st.markdown(f"**{f.line.desc}**")
@@ -522,27 +536,45 @@ def identify(fs, confirmed):
             typed = st.text_input("Ingredients and strengths on the strip", key=f"salt_{key}", value=prefill(f), placeholder=guess)
             want = nppa_orders.parse_wanted(typed)
             if typed.strip() and typed.strip() != prefill(f):      # only what the user changed counts as a confirmation
-                confirmed[key] = "+".join(n for n, _ in want) if want else typed.strip().lower()
+                new_value = "+".join(n for n, _ in want) if want else typed.strip().lower()
+                if confirmed.get(key) != new_value:
+                    confirmed[key], changed = new_value, True
+                    st.session_state.ident_open = True
+            if key in confirmed and not changed:      # say what the confirmation did, so the section is never a dead end
+                what = f"{f.ingredients} {f.strength}".strip() or confirmed[key]
+                st.markdown(f"<div class='db-outcome'><b>Compared as {html.escape(what)}.</b> {html.escape(RESULT[f.tier][1])}. "
+                            f"{html.escape(first_sentence(f.note))}</div>", unsafe_allow_html=True)
+            elif key not in confirmed:
+                st.caption("Not confirmed yet, so this line has no price judgement.")
             if want and webcheck.available():
                 if st.button("See government price orders for this combination", key=f"ord_{key}",
                              help="The government sets these prices company by company. This shows what other brands of the same combination are capped at, as context. It is not a limit on your brand."):
                     with st.spinner("Searching NPPA orders..."):
                         orders[key] = (webcheck.lookup_orders(typed), typed)
+                    st.session_state.ident_open = True
                     st.rerun()
                 if key in orders and not orders[key][0][0]:
                     st.caption("No NPPA price order found for this exact combination and strength.")
             if webcheck.available() and st.button("Look up the ingredients online", key=f"web_{key}",
-                                                  help="Finds what this brand contains on pharmacy and drug-information websites. If two sites agree you can use it, but always check it against the strip."):
+                                                  help="Reads pharmacy websites for this exact product and shows what each page says. You still confirm it against your strip."):
                 with st.spinner("Searching..."):
                     st.session_state.setdefault("evidence", {})[key] = webcheck.lookup_brand(f.line.desc)
             ev = st.session_state.get("evidence", {}).get(key)
             if ev:
                 st.write(ev.note)
-                for src in ev.sources:
-                    st.markdown(f"- [{src.title or src.url}]({src.url}): " + (webcheck.show(src.composition) if src.composition else "nothing readable"))
-                if ev.consensus and st.button(f"My strip says {webcheck.show(ev.consensus)}: use it", key=f"use_{key}"):
-                    confirmed[key] = "+".join(n for n, _ in sorted(ev.consensus))
+                for src in [x for x in ev.sources if x.composition]:
+                    st.markdown(f"- [{src.title or src.url}]({src.url}): {webcheck.show(src.composition)}")
+                hidden = sum(1 for x in ev.sources if not x.composition)
+                if hidden or ev.skipped:
+                    st.caption(" ".join(filter(None, [f"{hidden} matching page{'s' if hidden != 1 else ''} did not state the composition." if hidden else "",
+                                                      f"{ev.skipped} page{'s' if ev.skipped != 1 else ''} about similar-named products (a different strength or a 'Plus' version) were ignored." if ev.skipped else ""])))
+                pick = ev.consensus or ev.best
+                if pick and st.button(f"My strip says {webcheck.show(pick)}: use it", key=f"use_{key}"):
+                    confirmed[key] = "+".join(n for n, _ in sorted(pick))
+                    st.session_state.ident_open = True
                     st.rerun()
+        if changed:
+            st.rerun()
 
 
 def briefing():

@@ -172,6 +172,7 @@ div[class*="st-key-card_"] {{background:var(--card); border:1px solid var(--line
 .db-mrp {{font-size:.78rem; font-weight:650; color:var(--brand-dark); background:var(--brand-tint); border-radius:999px; padding:4px 10px;}}
 [data-testid="stSpinner"] {{color:var(--brand-dark); background:var(--brand-tint); border-radius:14px; padding:10px 14px; font-weight:550;}}
 [data-testid="stSpinner"] svg, [data-testid="stSpinner"] i {{color:var(--brand) !important; border-top-color:var(--brand) !important;}}
+.db-outcome {{margin:4px 0 10px; border-radius:12px; padding:9px 12px; background:var(--brand-tint); color:var(--brand-dark); font-size:.9rem; line-height:1.5;}}
 .db-watch {{margin-top:8px; font-size:.9rem; line-height:1.5; color:var(--muted); overflow-wrap:anywhere;}} .db-watch b {{color:var(--ink);}}
 .db-note {{border-radius:16px; padding:13px 15px; margin:0 0 10px;}}
 .db-notehead {{display:flex; align-items:center; gap:7px; font-size:.82rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase;}}

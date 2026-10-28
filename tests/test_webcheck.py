@@ -16,6 +16,10 @@ def res(url, content):
     return {"url": url, "title": "", "content": content}
 
 
+def page(url, title, content="", raw=""):
+    return {"url": url, "title": title, "content": content, "raw_content": raw}
+
+
 def test_consensus_needs_two_different_sites_and_no_equal_rival():
     one_site = webcheck.gather([res("https://www.1mg.com/a", "Telmisartan (40mg)"), res("https://www.1mg.com/b", "Telmisartan (40mg)")])
     assert one_site.consensus is None                           # same site twice is not independent
@@ -42,8 +46,9 @@ class FakeTavily(BaseHTTPRequestHandler):
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         FakeTavily.seen = {"path": self.path, "auth": self.headers["Authorization"], "body": body}
-        out = {"results": [res("https://www.1mg.com/x", "Zerodol-SP: Aceclofenac (100mg)+ Paracetamol (325mg)+ Serratiopeptidase (15mg)"),
-                           res("https://www.apollopharmacy.in/y", "ACECLOFENAC (100mg) + PARACETAMOL (325mg) + SERRATIOPEPTIDASE (15mg)")]}
+        out = {"results": [page("https://www.1mg.com/x", "Buy Zerodol-SP Tablet Online: Uses, Price", "Aceclofenac (100mg)+ Paracetamol (325mg)+ Serratiopeptidase (15mg)"),
+                           page("https://www.apollopharmacy.in/y", "Zerodol SP Tablet 15's Substitute", "ACECLOFENAC (100mg) + PARACETAMOL (325mg) + SERRATIOPEPTIDASE (15mg)"),
+                           page("https://www.1mg.com/z", "Buy Zerodol-P Tablet Online", "Aceclofenac (100mg) + Paracetamol (325mg)")]}
         self.send_response(200); self.send_header("Content-Type", "application/json"); self.end_headers()
         self.wfile.write(json.dumps(out).encode())
     def log_message(self, *a): pass
@@ -57,4 +62,43 @@ def test_lookup_sends_only_the_brand_and_returns_evidence(monkeypatch):
     ev = webcheck.lookup_brand("ZERODOL-SP TAB")
     assert len(ev.consensus) == 3 and FakeTavily.seen["auth"] == "Bearer tvly-test"
     sent = json.dumps(FakeTavily.seen["body"])
-    assert "ZERODOL" in sent.upper() and set(FakeTavily.seen["body"]) == {"query", "search_depth", "max_results", "include_domains"}
+    assert "ZERODOL" in sent.upper() and set(FakeTavily.seen["body"]) == {"query", "search_depth", "max_results", "include_raw_content", "include_domains"}
+
+
+@pytest.mark.parametrize("title,desc,ok", [
+    ("Buy Veltam 0.4 Tablet MR Online: View Uses, Side Effects, Price", "VELTAM 0.4MG TAB", True),
+    ("Buy Veltam Plus Tablet MR Online: View Uses", "VELTAM 0.4MG TAB", False),            # a different product
+    ("Buy Veltam-F Tablet MR Online", "VELTAM 0.4MG TAB", False),
+    ("Concor T 5 Tablet 10's Substitute - Alternatives, Uses", "TAB.CONCOR T 5MG/40", True),
+    ("Concor 5 Tablet: Uses, Side Effects, Price", "TAB.CONCOR T 5MG/40", False),         # Concor is not Concor T
+    ("Buy Concor T 2.5mg/40mg Tablet Online", "TAB.CONCOR T 5MG/40", False),              # a different strength
+    ("Buy Concor T 5mg/40mg Tablet Online: View Uses", "TAB.CONCOR T 5MG/40", True),
+    ("Roseday-Gold Capsule 10's Substitute", "TAB.ROSEDAY GOLD, 75MG/75MG/10MG", True),
+    ("Buy Roseday-A 10 Capsule Online", "TAB.ROSEDAY GOLD, 75MG/75MG/10MG", False),
+])
+def test_a_page_counts_only_if_it_is_the_same_product(title, desc, ok):
+    assert webcheck.same_product(title, desc) is ok
+
+
+def test_pages_about_other_products_do_not_vote_and_one_clear_answer_is_offered_as_a_suggestion():
+    pages = [page("https://www.1mg.com/a", "Buy Veltam 0.4 Tablet MR Online", raw="Marketer\nComposition:\n\n[Tamsulosin (0.4mg)](https://x)\n\nUses"),
+             page("https://www.apollopharmacy.in/b", "Veltam 0.4 Tablet 15's Substitute"),                      # says nothing readable
+             page("https://www.1mg.com/c", "Buy Veltam Plus Tablet MR Online", "Dutasteride (0.5mg) + Tamsulosin (0.4mg)")]   # other product
+    ev = webcheck.gather(pages, desc="VELTAM 0.4MG TAB")
+    assert ev.skipped == 1 and ev.consensus is None
+    assert ev.best == frozenset({("tamsulosin", "0.4mg")}) and "Only one site" in ev.note        # a suggestion, labelled as such
+
+
+def test_the_composition_paragraph_of_a_full_page_is_read_when_the_snippet_leaves_it_out():
+    raw = "Home > Drugs\nComposition:\n\n[Bisoprolol (5mg) + Telmisartan (40mg)](https://www.1mg.com/generics/x)\n\nMarketer detail"
+    assert "Bisoprolol (5mg) + Telmisartan (40mg)" in webcheck.composition_text(raw)
+    ev = webcheck.gather([page("https://www.1mg.com/a", "Buy Concor T 5mg/40mg Tablet Online", raw=raw),
+                          page("https://www.truemeds.in/b", "Concor T 5 Tablet 10's: Uses", "bisoprolol (5mg) + telmisartan (40mg)")], desc="TAB.CONCOR T 5MG/40")
+    assert ev.consensus == frozenset({("bisoprolol", "5mg"), ("telmisartan", "40mg")})
+
+
+def test_disagreement_and_empty_results_are_worded_differently():
+    d = webcheck.gather([page("https://www.1mg.com/a", "Telma 40 Tablet", "Telmisartan (40mg)"), page("https://pharmeasy.in/b", "Telma 40 Tablet", "Telmisartan (80mg)")], desc="TELMA 40 TAB")
+    assert d.best is None and "disagree" in d.note
+    n = webcheck.gather([page("https://www.1mg.com/a", "Telma 40 Tablet")], desc="TELMA 40 TAB")
+    assert n.best is None and "No page for this exact product" in n.note

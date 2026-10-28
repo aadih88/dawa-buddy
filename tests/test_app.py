@@ -293,3 +293,55 @@ def test_verdict_sentence_does_not_claim_a_legal_limit_was_exceeded_when_none_wa
     at.run()
     page = html_blocks(at)
     assert "Some lines are above a legal price limit" not in page and "above legal limits" in page
+
+
+def _identify_app(monkeypatch, desc="TAB.CONCOR T 5MG"):
+    import pandas as pd
+    monkeypatch.setenv("DAWA_PROVIDER", "offline")
+    at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
+    at.session_state["df"] = pd.DataFrame([{"description": desc, "qty": 26, "rate": 18.0, "amount": 468.0, "unit": "tab", "pack": None, "mrp": None, "unsure": False}])
+    at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "results"
+    at.run()
+    return at
+
+
+def test_typing_an_ingredient_updates_the_result_in_the_same_step(monkeypatch):
+    """Before: the cards and lists stayed stale until the next click, so typing seemed to do nothing."""
+    at = _identify_app(monkeypatch)
+    assert "cheaper generic" not in html_blocks(at).lower()
+    [t for t in at.text_input if t.label.startswith("Ingredients")][0].set_value("bisoprolol 5 mg").run()          # one interaction, no extra click
+    page = html_blocks(at)
+    assert "cheaper generic" in page.lower() and "Compared as bisoprolol 5 mg" in page
+    assert "Not covered by a price list" not in [e.label for e in at.expander][0]
+
+
+def test_a_confirmed_item_says_what_the_confirmation_did_and_an_unconfirmed_one_says_nothing_was_judged(monkeypatch):
+    at = _identify_app(monkeypatch)
+    assert "Not confirmed yet" in " ".join(c.value for c in at.caption)
+    [t for t in at.text_input if t.label.startswith("Ingredients")][0].set_value("bisoprolol 5 mg + telmisartan 40 mg").run()
+    assert "Compared as" in html_blocks(at) and "No price list covers this" in html_blocks(at)       # an honest outcome, not silence
+
+
+def test_not_covered_items_say_why_and_how_they_were_judged(monkeypatch):
+    import pandas as pd
+    monkeypatch.setenv("DAWA_PROVIDER", "offline")
+    at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
+    at.session_state["df"] = pd.DataFrame([{"description": "VELTAM 0.4MG TAB", "qty": 15, "rate": 12.66, "amount": 189.9, "unit": "tab", "pack": 15, "mrp": 210.94, "unsure": False}])
+    at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "results"
+    at.run()
+    page = html_blocks(at)
+    assert "Identified as tamsulosin 0.4 mg" in page and "We hold no NPPA ceiling or Jan Aushadhi price" in page
+    assert "Charged 90% of the printed MRP" in page
+
+
+def test_the_checked_percentage_says_what_it_was_checked_against():
+    src = (ROOT / "bill_app.py").read_text()
+    assert "of the bill checked against an MRP or a price list" in src
+
+
+def test_the_identify_box_stays_open_after_a_confirmation_so_the_outcome_is_visible(monkeypatch):
+    at = _identify_app(monkeypatch)
+    assert not [e for e in at.expander if e.label.startswith("Help us identify")][0].proto.expanded
+    [t for t in at.text_input if t.label.startswith("Ingredients")][0].set_value("bisoprolol 5 mg").run()
+    box = [e for e in at.expander if e.label.startswith("Help us identify")][0]
+    assert box.proto.expanded and "Compared as bisoprolol 5 mg" in " ".join(m.value for m in at.markdown)
