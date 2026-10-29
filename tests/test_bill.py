@@ -78,7 +78,7 @@ def test_supplements_are_labelled_no_ceiling_not_unbenchmarked():
 def test_mrp_check_applies_to_every_product_including_supplements():
     assert one("ZINCOVIT TAB | 1 | 120 | 120 | strip | 15 | 100").tier == b.TIER_ABOVE_MRP
     f = one("ZINCOVIT TAB | 1 | 100 | 100 | strip | 15 | 100")
-    assert f.tier == b.TIER_SUPPLEMENT and "within the printed MRP" in f.note
+    assert f.tier == b.TIER_SUPPLEMENT and "within the MRP on your bill" in f.note
     f = one("AMLONG 5 TAB | 10 | 9.00 | 90.00 | tab | 10 | 80.00")        # MRP printed per strip of 10 = 8.00 per tab
     assert f.tier == b.TIER_ABOVE_MRP and f.possible_saving == 10.0
     assert b.summary([f])["possible_saving_above_mrp"] == 10.0
@@ -151,7 +151,7 @@ def test_liquid_without_pack_size_or_volume_in_strength_is_never_judged():
 def test_mrp_is_per_pack_as_bills_print_it_and_needs_tablets_per_strip_for_per_tablet_rates():
     # Real layout: MRP 163.45 per strip of 15, sale price 9.81 per tablet (10% discount)
     f = one("SHELCAL 500MG TAB | 30 | 9.81 | 294.21 | tab | 15 | 163.45")
-    assert f.tier == b.TIER_SUPPLEMENT and abs(f.mrp_pct - 90.0) < 0.1 and "within the printed MRP" in f.note
+    assert f.tier == b.TIER_SUPPLEMENT and abs(f.mrp_pct - 90.0) < 0.1 and "within the MRP on your bill" in f.note
     f = one("SHELCAL 500MG TAB | 30 | 9.81 | 294.21 | tab | | 163.45")          # no pack: cannot compare, must not guess
     assert f.mrp_pct is None and "tablets per strip are missing" in f.note
     assert one("SHELCAL 500MG TAB | 30 | 12.00 | 360.00 | tab | 15 | 163.45").tier == b.TIER_ABOVE_MRP   # 12.00 > 10.90
@@ -441,6 +441,14 @@ def test_reference_rows_show_what_the_verdict_used():
     rows, _ = t.reference(over, rupees)
     assert "NPPA ceiling" in dict(rows) and "with GST" in dict(rows)["NPPA ceiling"]
     iv = b.audit_line(b.BillLine("x", "IV SET", 2, 265.0, 530.0, "each", None, 11.0))
-    assert "Printed MRP (per piece)" in dict(t.reference(iv, rupees, lambda u: "piece")[0]) and any(k.startswith("You were charged") for k, _ in t.reference(iv, rupees, lambda u: "piece")[0])
+    assert "MRP on your bill (per piece)" in dict(t.reference(iv, rupees, lambda u: "piece")[0]) and any(k.startswith("You were charged") for k, _ in t.reference(iv, rupees, lambda u: "piece")[0])
     nm = b.audit_line(b.BillLine("x", "BED CHARGES", 1, 1000.0, 1000.0, "each", None, None))
     assert not any(k == "NPPA ceiling" for k, _ in t.reference(nm, rupees)[0])                  # a room is not a medicine: no ceiling line
+
+
+def test_the_questions_ask_the_patient_to_compare_the_bill_mrp_with_the_strip():
+    from dawa_buddy import report
+    f = b.audit_line(b.BillLine("x", "PAN 40MG TAB", 6, 11.0, 66.0, "tab", 1, 11.0))
+    text = report.questions([f])
+    assert "## Check the MRP on the strip" in text and "the seller's own figure" in text and "PAN 40MG TAB" in text and "MRP of 11.00" in text
+    assert "## Check the MRP on the strip" not in report.questions([b.audit_line(b.BillLine("x", "PAN 40MG TAB", 6, 11.0, 66.0, "tab", None, None))])      # no MRP printed, nothing to compare

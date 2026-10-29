@@ -19,8 +19,14 @@ def questions(findings: list[b.Finding], flags: list[Flag] | None = None, peer_l
     unclear = [f for f in findings if f.tier in (b.TIER_UNIT_UNCLEAR, b.TIER_NEEDS_CONFIRM)]
     if mrp:
         out += ["## Charged above the printed MRP", ""]
-        out += [f"- **{f.line.desc}**: charged {f.line.rate:.2f}, MRP on the pack {f.line.mrp:.2f}. Ask to see the pack and get a corrected bill."
+        out += [f"- **{f.line.desc}**: charged {f.line.rate:.2f}, MRP on the bill {f.line.mrp:.2f}. Ask to see the pack and get a corrected bill."
                 for f in mrp]
+        out.append("")
+    shown = [f for f in findings if f.line.mrp and f.tier != b.TIER_ABOVE_MRP]
+    if shown:
+        out += ["## Check the MRP on the strip", "",
+                "The MRP on a bill is the seller's own figure, so a bill can agree with itself and still print the wrong MRP. The pack in your hand is the check.", ""]
+        out += [f"- **{f.line.desc}**: the bill prints an MRP of {f.line.mrp:.2f}. Is it the same as the MRP printed on the strip or box?" for f in shown]
         out.append("")
     if ceil:
         out += ["## Ask the pharmacy or hospital billing desk", ""]

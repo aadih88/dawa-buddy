@@ -24,7 +24,7 @@ LANGS = {"English": "en", "हिन्दी": "hi", "ಕನ್ನಡ": "kn"}
 RED, ORANGE, AMBER, GREEN, GREY = "#d64545", "#e8883a", "#d4a017", "#2e9e6b", "#8a94a0"
 # tier -> (colour, short label, group). Groups decide what is shown up front and what is folded away.
 RESULT = {
-    b.TIER_ABOVE_MRP: (RED, "Above the MRP printed on the pack", "attention"),
+    b.TIER_ABOVE_MRP: (RED, "Above the MRP on your bill", "attention"),
     b.TIER_ABOVE_CEILING: (RED, "Above the legal ceiling price", "attention"),
     b.TIER_NEEDS_CONFIRM: (ORANGE, "Please confirm what this is", "attention"),
     b.TIER_UNIT_UNCLEAR: (ORANGE, "Needs the unit or pack size", "attention"),
@@ -274,7 +274,7 @@ def lines_form(df: pd.DataFrame, scope: str) -> pd.DataFrame:
             if status == rt.OK:
                 st.caption("Reads correctly. Open only to change how it was sold, the strip size or a number.")
             else:
-                st.markdown(ui.line_head(name, calc_text(qty, rate, amount), f"MRP on pack {rupees(mrp)}" if mrp else "", bool(r.get("unsure")), mismatch), unsafe_allow_html=True)
+                st.markdown(ui.line_head(name, calc_text(qty, rate, amount), f"MRP on bill {rupees(mrp)}" if mrp else "", bool(r.get("unsure")), mismatch), unsafe_allow_html=True)
                 st.markdown(ui.message("red" if status == rt.FIX else "amber", why), unsafe_allow_html=True)
             unit = st.segmented_control("Sold", unit_options(r), format_func=UNIT_LABEL.get, key=f"{k}_unit", label_visibility="collapsed", default=unit_default)
             if unit is None:
@@ -288,7 +288,7 @@ def lines_form(df: pd.DataFrame, scope: str) -> pd.DataFrame:
                 if g and pack == g[0]:
                     st.caption(f"Suggested from {g[1]}. Check it on your strip.")
                 elif needs_strip_size(unit, mrp, pack):
-                    st.markdown(ui.need(f"Needed: the MRP of {rupees(mrp)} on the pack is for a whole strip. Enter the tablets per strip (printed on the strip or box) to check it."
+                    st.markdown(ui.need(f"Needed: the MRP of {rupees(mrp)} on your bill is for a whole strip. Enter the tablets per strip (printed on the strip or box) to check it."
                                         if mrp else "Needed: the tablets per strip, to turn the strip price into a price per tablet."), unsafe_allow_html=True)
             memo[k] = {"unit": unit, "pack": pack or 0.0}
             with st.popover("Fix a number", width="stretch"):
@@ -298,7 +298,7 @@ def lines_form(df: pd.DataFrame, scope: str) -> pd.DataFrame:
                     c1, c2 = st.columns(2)
                     new_qty = c1.number_input("Quantity", min_value=0.0, value=float(qty), key=f"{k}_fq{v}")
                     new_rate = c2.number_input("Price each (₹)", min_value=0.0, value=float(rate), step=0.01, key=f"{k}_fr{v}")
-                    new_mrp = st.number_input("MRP printed on the pack (optional)", min_value=0.0, value=float(mrp), step=0.01, key=f"{k}_fm{v}")
+                    new_mrp = st.number_input("MRP printed on the bill (optional)", min_value=0.0, value=float(mrp), step=0.01, key=f"{k}_fm{v}")
                     st.caption("The total is worked out as quantity × price.")
                     saved = st.form_submit_button("Save changes", type="primary")
                 if saved:
@@ -336,7 +336,7 @@ def add_line():
             c1, c2 = st.columns(2)
             qty = c1.number_input("Quantity", min_value=0.0, value=1.0, key=f"new_qty{v}")
             rate = c2.number_input("Price each (₹)", min_value=0.0, step=0.01, key=f"new_rate{v}")
-            mrp = st.number_input("MRP printed on the pack (optional)", min_value=0.0, step=0.01, key=f"new_mrp{v}")
+            mrp = st.number_input("MRP printed on the bill (optional)", min_value=0.0, step=0.01, key=f"new_mrp{v}")
             st.caption("The total is worked out as quantity × price. Choose how it was sold on its card afterwards.")
             added = st.form_submit_button("Add this line", type="primary")
         if added and (not name.strip() or qty <= 0 or rate <= 0):
@@ -367,7 +367,7 @@ def review_gaps(df: pd.DataFrame) -> tuple[list[str], list[str]]:
     no_unit = [r["description"] for r in recs if not r["unit"]]
     no_pack = [r for r in recs if needs_strip_size(r["unit"], r["mrp"], r["pack"])]
     items = ([(d, "Choose how it was sold (per tablet, per strip…): we cannot compare the price without it.") for d in no_unit]
-             + [(r["description"], f"Enter the tablets per strip: the MRP of {rupees(r['mrp'])} on the pack is for a whole strip." if r["mrp"]
+             + [(r["description"], f"Enter the tablets per strip: the MRP of {rupees(r['mrp'])} on your bill is for a whole strip." if r["mrp"]
                  else "Enter the tablets per strip, to turn the strip price into a price per tablet.") for r in no_pack])
     if items:
         n = len(items)
@@ -446,7 +446,7 @@ def verdict(n_viol, n_ask, excess, generic):
     st.markdown(ui.verdict(kind, head, body, stats), unsafe_allow_html=True)
 
 
-def check_rows(fs, flags, wrong, unidentified, generic) -> list[tuple[str, str, str]]:
+def check_rows(fs, flags, wrong, unidentified, generic, listed_ok: int = 0, looked_up: bool = False) -> list[tuple[str, str, str]]:
     """'What we checked': what was verified and found fine, what was not and why. Each row says what was done, so a clean bill reads as protection."""
     n = len(fs)
     plural = lambda k, word: f"{k} {word}{'' if k == 1 else 's'}"
@@ -459,15 +459,18 @@ def check_rows(fs, flags, wrong, unidentified, generic) -> list[tuple[str, str, 
     named = lambda items: "; ".join(items[:3]) + (f"; and {len(items) - 3} more" if len(items) > 3 else "")
     rows = []
     if over:     # name the line and both prices, so the reader can see what is wrong without opening anything
-        what = named([f"{f.line.desc}: charged {rupees(f.line.rate)} per {billed_word(f.line.unit)}, the pack says {rupees(f.mrp_unit)}" for f in over_fs])
-        rows.append(("red", "Printed MRP", f"{plural(over, 'line')} {'is' if over == 1 else 'are'} priced above the MRP printed on the pack. {what}."
+        what = named([f"{f.line.desc}: charged {rupees(f.line.rate)} per {billed_word(f.line.unit)}, the MRP on the bill is {rupees(f.mrp_unit)}" for f in over_fs])
+        rows.append(("red", "MRP on your bill", f"{plural(over, 'line')} {'is' if over == 1 else 'are'} priced above the MRP printed on the bill. {what}."
                      + (f" {plural(ok, 'other line')} {'is' if ok == 1 else 'are'} priced at or below {'its' if ok == 1 else 'their'} MRP." if ok else "")
                      + (f" {gap}" if gap else "")))
     elif ok:
-        rows.append(("green", "Printed MRP", ("All " + plural(n, "line") + " are" if ok == n and n > 1 else "This line is" if ok == n else f"{ok} of {n} lines are")
-                     + " priced at or below the MRP printed on the pack. Selling above the printed MRP is not allowed for any product." + (f" {gap}" if gap else "")))
+        rows.append(("green", "MRP on your bill", ("All " + plural(n, "line") + " are" if ok == n and n > 1 else "This line is" if ok == n else f"{ok} of {n} lines are")
+                     + " priced at or below the MRP printed on the bill. That MRP is the seller's own figure, so it proves the bill agrees with itself, not that the MRP is right: "
+                     + (f"pharmacy websites list a consistent MRP for {plural(listed_ok, 'line')}; compare the strip for the rest." if listed_ok else
+                        "we found no pharmacy-website listing to compare." if looked_up else "compare the MRP on each strip with the bill.")
+                     + (f" {gap}" if gap else "")))
     else:
-        rows.append(("grey", "Printed MRP", "Could not be compared: add the MRP printed on the pack and the tablets per strip (Edit the numbers)."))
+        rows.append(("grey", "MRP on your bill", "Could not be compared: add the MRP printed on the bill and the tablets per strip (Edit the numbers)."))
     capped = [f for f in fs if f.ceiling is not None]
     above_fs = [f for f in fs if f.tier == b.TIER_ABOVE_CEILING]
     if above_fs:
@@ -501,10 +504,10 @@ def mini(f) -> str:
         reason = {b.TIER_NO_BENCHMARK: "We hold no NPPA ceiling or Jan Aushadhi price for this salt, strength and form.",
                   b.TIER_NOT_MEDICINE: "Consumables and devices have no price list here.",
                   b.TIER_SUPPLEMENT: "Supplements have no government price limit."}[f.tier]
-        mrp = f" Charged {f.mrp_pct:.0f}% of the printed MRP." if f.mrp_pct is not None else ""
+        mrp = f" Charged {f.mrp_pct:.0f}% of the MRP on your bill (that MRP is the seller's own figure: compare it with the strip)." if f.mrp_pct is not None else ""
         why = f"<br><span class='small'>{html.escape(known + reason + mrp)}</span>"
     elif f.mrp_pct is not None and f.tier == b.TIER_OK:
-        why = f"<br><span class='small'>Charged {f.mrp_pct:.0f}% of the printed MRP.</span>"
+        why = f"<br><span class='small'>Charged {f.mrp_pct:.0f}% of the MRP on your bill.</span>"
     rows, foot = transparency.reference(f, rupees, billed_word)
     how = f"<details class='how'><summary>How we checked this</summary>{ui.facts(rows)}</details>" if len(rows) > 1 else ""
     return f"<div class='minibox'><div class='mini'><span class='l'>{html.escape(f.line.desc)}<br><span class='small'>{label}</span>{why}</span><span class='r'>{right}</span></div>{how}</div>"
@@ -522,10 +525,19 @@ def results(df, total):
     rows = [vision.Row(**{k: (None if pd.isna(v) else v) for k, v in rec.items() if k in COLS}) for rec in df.to_dict("records")]
     lines = vision.rows_to_lines(rows)
     fs = [b.audit_line(l, confirmed) for l in lines]
+    if webcheck.available() and not st.session_state.get("auto_listed") and not st.session_state.get("sample"):
+        # The MRP on a bill is the seller's own figure; pharmacy websites are the only independent check on it. Look them up once, without a button the patient
+        # has to understand. Not for the samples (their results must not change from one run to the next) and not for a locked visitor (webcheck is off then).
+        st.session_state.auto_listed = True
+        todo = eligible_for_listing(fs, everything=True)[:6]
+        if todo:
+            run_listing_lookup(df, [f.line.desc for f in todo])
     tot = sum(f.line.amount for f in fs) or 1
     s = b.summary(fs)
     group = lambda g: sorted([f for f in fs if RESULT[f.tier][2] == g], key=lambda f: list(RESULT).index(f.tier))
     attention, fine, unchecked = group("attention"), group("fine"), group("unchecked")
+    mrp_only = [f for f in unchecked if f.mrp_pct is not None]               # no price list covers them: the only comparison is the bill's own MRP
+    unchecked = [f for f in unchecked if f.mrp_pct is None]
     n_viol = sum(f.tier in POSSIBLE_VIOLATION for f in fs)
     n_ask = len(attention) - n_viol
 
@@ -542,7 +554,8 @@ def results(df, total):
     st.markdown(ui.header(3, "Result"), unsafe_allow_html=True)
     unidentified = [f.line.desc for f in {f.line.desc.lower(): f for f in fs if needs_identifying(f)}.values()]
     verdict(n_viol_total, n_ask, s["possible_saving_above_ceiling"] + s["possible_saving_above_mrp"], s["possible_saving_generic"])
-    st.markdown(ui.checks(check_rows(fs, flags, wrong, unidentified, s["possible_saving_generic"])), unsafe_allow_html=True)
+    listed_ok = len({x["f"].line.desc.lower() for x in listed if x["kind"] in ("agrees", "within_listed_mrp")})
+    st.markdown(ui.checks(check_rows(fs, flags, wrong, unidentified, s["possible_saving_generic"], listed_ok, bool(st.session_state.get("listings")))), unsafe_allow_html=True)
 
     needs_pack = [f for f in fs if f.line.mrp and f.mrp_unit is None and (f.line.unit or "").lower() in ("tab", "strip") and not f.line.pack]
     if needs_pack and not (webcheck.available() and eligible_for_listing(fs)):
@@ -565,11 +578,15 @@ def results(df, total):
     if fine:
         with st.expander(f"Within the limits ({len(fine)})"):
             st.markdown("".join(mini(f) for f in fine), unsafe_allow_html=True)
+    if mrp_only:
+        with st.expander(f"Checked only against the MRP on your bill ({len(mrp_only)})"):
+            st.markdown("".join(mini(f) for f in mrp_only), unsafe_allow_html=True)
+            st.caption("No government or generic price applies to these. The MRP is the seller's own figure: compare it with the one on each strip.")
     if unchecked:
         with st.expander(f"Not covered by a price list ({len(unchecked)})"):
             st.markdown("".join(mini(f) for f in unchecked), unsafe_allow_html=True)
             if s["no_price_control_value"]:
-                st.caption(f"Supplements have no government price limit; only the MRP printed on the pack limits them.")
+                st.caption(f"Supplements have no government price limit; only the MRP limits them (compare the strip with your bill).")
     if other:
         with st.expander(f"Other differences from the prescription ({len(other)})"):
             st.markdown("\n".join(f"- **{x.subject}**: {x.note}" for x in other))
@@ -631,13 +648,14 @@ def peer_cards(found: list[dict]) -> list[str]:
     return lines_out
 
 
-def eligible_for_listing(fs) -> list:
-    """Tablet-type lines still missing a pack size or a printed MRP, and not looked up yet."""
+def eligible_for_listing(fs, everything: bool = False) -> list:
+    """Tablet-type lines still missing a pack size or a printed MRP, and not looked up yet. `everything` drops the 'missing' condition: the websites are also
+    the only independent check on an MRP the bill prints, so a line whose MRP is present is worth looking up too."""
     done = st.session_state.get("listings", {})
     seen, out = set(), []
     for f in fs:
         key = f.line.desc.lower()
-        if (f.tier != b.TIER_NOT_MEDICINE and (f.line.unit or "").lower() in ("tab", "strip") and (not f.line.pack or not f.line.mrp)
+        if (f.tier != b.TIER_NOT_MEDICINE and (f.line.unit or "").lower() in ("tab", "strip") and (everything or not f.line.pack or not f.line.mrp)
                 and key not in done and key not in seen):
             seen.add(key)
             out.append(f)
@@ -859,7 +877,7 @@ def footer():
             "**What this is.** Dawa Buddy compares a medicine bill with your prescription and with public price lists, then lists what to ask. "
             "It never accuses anyone, never diagnoses and is not medical advice. 'No price list' never means 'no limit exists'.\n\n"
             f"**Price lists.** NPPA legal ceilings effective {dates['nppa_ceiling']}, Jan Aushadhi prices ({dates['jan_aushadhi']}), "
-            "and the MRP printed on the pack.\n\n"
+            "and the MRP printed on your bill (the seller's own figure, checked against pharmacy-website listings where we can).\n\n"
             "**Privacy.** Photos are sent to Nebius Token Factory (NVIDIA Nemotron) to be read. Nothing is stored. "
             "The look-up buttons search the web for the medicine name and strength (or the ingredients you typed) only: never your photos, name or amounts. "
             "Cover your name, phone and address before uploading.")

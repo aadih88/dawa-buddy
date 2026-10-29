@@ -34,5 +34,5 @@ def reference(f: b.Finding, fmt, billed_word=lambda u: "unit") -> tuple[list[tup
     if f.generic_unit:
         rows.append(("Jan Aushadhi generic", fmt(f.generic_unit)))
     if f.mrp_unit:
-        rows.append((f"Printed MRP (per {billed_word(f.line.unit)})", fmt(f.mrp_unit)))
+        rows.append((f"MRP on your bill (per {billed_word(f.line.unit)})", fmt(f.mrp_unit)))
     return rows, (CEILING_NOTE if shown_ceiling else "")

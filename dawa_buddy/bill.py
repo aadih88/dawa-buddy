@@ -259,12 +259,12 @@ def audit_line(line: BillLine, confirmed: dict | None = None) -> Finding:
     f.mrp_unit = mrp_unit
     if mrp_unit is not None and line.rate > mrp_unit * MRP_TOLERANCE:
         f.tier, f.possible_saving = TIER_ABOVE_MRP, round((line.rate - mrp_unit) * line.qty, 2)
-        f.note = (f"Charged {line.rate:.2f} but the MRP printed on the pack works out to {mrp_unit:.2f} on the same basis. Selling "
+        f.note = (f"Charged {line.rate:.2f} but the MRP printed on your bill works out to {mrp_unit:.2f} on the same basis. Selling "
                   "above the printed MRP is not allowed for any product. Ask for the pack and the corrected bill.")
     elif mrp_unit is not None:
         pct = 100 * line.rate / mrp_unit
         if f.tier in (TIER_SUPPLEMENT, TIER_NO_BENCHMARK, TIER_NOT_MEDICINE):
-            f.note += f" Charged {line.rate:.2f} is within the printed MRP ({pct:.0f}% of {mrp_unit:.2f})."
+            f.note += f" Charged {line.rate:.2f} is within the MRP on your bill ({pct:.0f}% of {mrp_unit:.2f}); that MRP is the seller's own figure."
         f.mrp_pct = round(pct, 1)
     elif line.mrp:
         f.note += " MRP given but tablets per strip are missing, so the MRP check could not be made."

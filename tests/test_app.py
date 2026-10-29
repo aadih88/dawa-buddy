@@ -51,7 +51,7 @@ def test_outpatient_sample_leads_with_a_verdict_then_plain_english_cards(app):
     page = html_blocks(app)
     assert "4 things to ask about" in page
     assert page.index("4 things to ask about") < page.index("Above the legal ceiling price")      # verdict first
-    for text in ("Check before taking", "Above the MRP printed on the pack", "Above the legal ceiling price",
+    for text in ("Check before taking", "Above the MRP on your bill", "Above the legal ceiling price",
                  "A cheaper generic exists: ask your doctor", "You paid ₹12.40 per tablet", "Legal limit ₹6.92", "Printed MRP ₹8", "Generic ₹0.91"):
         assert text in page, text
     assert page.count('class="db-meter"') == 3 and page.count('class="db-diff"') == 1                    # three price meters (MRP, ceiling, generic) and the Prescribed -> On the bill comparison
@@ -67,7 +67,7 @@ def test_hospital_sample_asks_which_saline_pack_instead_of_accusing(app):
     labels = [e.label for e in app.expander]
     assert not any("needs your confirmation" in l or l.endswith("· confirmed") for l in labels)       # a bag is not an unknown medicine: no ingredient row
     assert "Within the limits (2)" in labels and "Not covered by a price list (1)" in labels      # the IV set moved up: it is billed far above its printed MRP
-    assert "Above the MRP printed on the pack" in page and "IV SET NOVOFUSION" in page
+    assert "Above the MRP on your bill" in page and "IV SET NOVOFUSION" in page
 
 
 def test_detail_sections_start_folded_away(app):
@@ -153,25 +153,37 @@ def _listing(per_strip, pack):
     return L.combine("q", pages)
 
 
-def test_one_button_fills_pack_sizes_and_checks_the_mrp_against_pharmacy_listings(monkeypatch):
+def test_pharmacy_listings_are_looked_up_by_themselves_and_check_the_bill_mrp(monkeypatch):
+    # the MRP on a bill is the seller's own figure: the websites are the only independent check, so the result runs the look-up once without a button
     monkeypatch.setenv("DAWA_PROVIDER", "offline")
     monkeypatch.setenv("TAVILY_API_KEY", "test")
     from dawa_buddy import listings
-    monkeypatch.setattr(listings, "search", lambda desc: _listing(174.75, 10))
+    calls = []
+    monkeypatch.setattr(listings, "search", lambda desc: calls.append(desc) or _listing(174.75, 10))
     at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
     at.session_state["df"] = _bill([("CONCOR T 5MG TAB", 30, 15.73, 471.82, "tab", None, 174.75)])      # MRP printed, strip size not
     at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "results"
     at.run()
-    page = html_blocks(at)
-    assert "Strip size and listed price" in page and "CONCOR T 5MG TAB" in page                       # says what the look-up is for and which medicine it covers
-    btn = [b for b in at.button if b.label.startswith("Look up 1 line on pharmacy websites")][0]
-    assert btn.proto.type == "primary"                                                              # the same action colour as the other main buttons
-    btn.click().run()
-    assert not at.exception
-    assert at.session_state["df"].loc[0, "pack"] == 10                                              # filled in as a suggestion
+    assert not at.exception and calls == ["CONCOR T 5MG TAB"]                                          # looked up once, by itself
+    assert at.session_state["df"].loc[0, "pack"] == 10                                              # strip size filled in as a suggestion
     assert at.session_state["pack_guess"]["CONCOR T 5MG TAB"][0] == 10 and "pharmacy websites" in at.session_state["pack_guess"]["CONCOR T 5MG TAB"][1]
     assert "consistent with this bill" in " ".join(c.value for c in at.caption)                       # printed 174.75 per 10 = listed
-    assert "This line is priced at or below the MRP printed on the pack" in html_blocks(at)             # the MRP check is now possible, and the page says what it checked
+    page = html_blocks(at)
+    assert "This line is priced at or below the MRP printed on the bill" in page and "pharmacy websites list a consistent MRP for 1 line" in page
+    assert "the seller's own figure" in page                                                         # says what the bill's own MRP does and does not prove
+
+
+def test_the_samples_never_trigger_the_automatic_look_up(monkeypatch):
+    # sample results must not change from one run to the next (a live page could add a card), so only a real photo reading looks things up by itself
+    monkeypatch.setenv("DAWA_PROVIDER", "offline")
+    monkeypatch.setenv("TAVILY_API_KEY", "test")
+    from dawa_buddy import listings
+    monkeypatch.setattr(listings, "search", lambda desc: (_ for _ in ()).throw(AssertionError("looked up")))
+    at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
+    at.session_state["df"] = _bill([("CONCOR T 5MG TAB", 30, 15.73, 471.82, "tab", None, 174.75)])
+    at.session_state["rx"], at.session_state["total"], at.session_state["stage"], at.session_state["sample"] = "", 0.0, "results", "Outpatient pharmacy bill"
+    at.run()
+    assert not at.exception
 
 
 def test_a_bill_without_mrp_charging_above_the_listed_mrp_gets_a_question_not_a_violation(monkeypatch):
@@ -182,11 +194,10 @@ def test_a_bill_without_mrp_charging_above_the_listed_mrp_gets_a_question_not_a_
     at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
     at.session_state["df"] = _bill([("CONCOR T 5MG TAB", 10, 20.00, 200.00, "tab", None, None)])        # Rs 20 per tablet; listed 17.475
     at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "results"
-    at.run()
-    [b for b in at.button if b.label.startswith("Look up")][0].click().run()
+    at.run()                                                                                           # the look-up runs by itself
     page = html_blocks(at)
     assert not at.exception and "Above the MRP listed online" in page and "ask to see the MRP on the strip" in page
-    assert "Above the MRP printed on the pack" not in page                                            # never the violation label
+    assert "Above the MRP on your bill" not in page                                            # never the violation label
     assert "a few questions" in page                                                                  # counted in the verdict
 
 
@@ -322,7 +333,7 @@ def test_not_covered_items_say_why_and_how_they_were_judged(monkeypatch):
     at.run()
     page = html_blocks(at)
     assert "Identified as tamsulosin 0.4 mg" in page and "We hold no NPPA ceiling or Jan Aushadhi price" in page
-    assert "Charged 90% of the printed MRP" in page
+    assert "Charged 90% of the MRP on your bill" in page
 
 
 
@@ -346,6 +357,7 @@ def _bill_app(monkeypatch, rows, rx=""):
     at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
     at.session_state["df"] = pd.DataFrame([{"description": d, "qty": q, "rate": r, "amount": round(q * r, 2), "unit": "tab", "pack": pk, "mrp": m, "unsure": False} for d, q, r, pk, m in rows])
     at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = rx, 0.0, "results"
+    at.session_state["auto_listed"] = True        # these tests are about the result screen, not the automatic pharmacy-website look-up (tested below)
     at.run()
     return at
 
@@ -356,7 +368,7 @@ REAL4 = [("SHELCAL 500MG TAB", 30, 9.81, 15, 163.45), ("VELTAM 0.4MG TAB", 15, 1
 def test_a_clean_bill_reads_as_protection_not_as_zeros(monkeypatch):
     """No tiles that say 0: tiles appear only when there is news. The page lists what was checked and found fine, and says when a check does not apply."""
     page = re.sub(r"<style>.*?</style>", "", html_blocks(_bill_app(monkeypatch, REAL4)), flags=re.S)          # what the user sees, not the stylesheet
-    assert "All 3 lines are priced at or below the MRP printed on the pack" in page and "Selling above the printed MRP is not allowed" in page
+    assert "All 3 lines are priced at or below the MRP printed on the bill" in page and "the seller's own figure" in page
     assert "Not applicable: none of these has a government ceiling" in page           # a neutral grey row, not an alarming 0%
     assert "₹0" not in page and not re.search(r"(?<!\d)0%", page) and "possible saving" not in page    # no zero tiles, no 0%, no empty generic saving
     assert 'class="db-stats"' not in page and 'class="db-check"' in page
@@ -394,10 +406,10 @@ def test_the_mrp_row_reads_correctly_with_one_other_line_and_lines_that_could_no
     at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
     at.run(); click(at, "Hospital pharmacy bill")
     page = html_blocks(at)
-    assert ("1 line is priced above the MRP printed on the pack. IV SET NOVOFUSION 30115: charged ₹265 per piece, the pack says ₹11. "
+    assert ("1 line is priced above the MRP printed on the bill. IV SET NOVOFUSION 30115: charged ₹265 per piece, the MRP on the bill is ₹11. "
             "1 other line is priced at or below its MRP. 5 lines could not be compared because the MRP or the strip size is missing.") in page
     ok = html_blocks(_bill_app(monkeypatch, [("SHELCAL 500MG TAB", 30, 9.81, 15, 163.45), ("DOLO 650 TAB", 10, 2.1, None, None)]))
-    assert "1 of 2 lines are priced at or below the MRP printed on the pack" in ok and "1 line could not be compared because the MRP or the strip size is missing" in ok
+    assert "1 of 2 lines are priced at or below the MRP printed on the bill" in ok and "1 line could not be compared because the MRP or the strip size is missing" in ok
 
 
 def _fake_web(monkeypatch):
@@ -680,7 +692,7 @@ def test_lines_that_need_a_strip_size_are_named_at_the_top_and_flagged_on_the_ca
     at = _review(monkeypatch, ROWS2)
     page = html_blocks(at)
     assert "1 line needs a number before we can check it" in page and "SHELCAL 500MG TAB" in page.split("needs a number")[1]
-    assert "Needed: the MRP of ₹163.45 on the pack is for a whole strip" in page
+    assert "Needed: the MRP of ₹163.45 on your bill is for a whole strip" in page
     assert "1 line will not be checked against its printed MRP" in " ".join(c.value for c in at.caption)
     assert "TELMA 40 TAB" not in page.split("needs a number")[1].split("</div></div>")[0]          # Telma has its pack size: not listed
 
@@ -779,7 +791,7 @@ def test_a_wrong_code_does_not_unlock_and_the_right_one_does(monkeypatch):
 def test_unlocking_survives_starting_another_bill(monkeypatch):
     at = _gated(monkeypatch, unlocked=True)
     at.session_state["df"] = __import__("dawa_buddy.samples", fromlist=["frame"]).frame("Outpatient pharmacy bill")
-    at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "results"
+    at.session_state["rx"], at.session_state["total"], at.session_state["stage"], at.session_state["sample"] = "", 0.0, "results", "Outpatient pharmacy bill"
     at.run()
     [b for b in at.button if b.label == "Check another bill"][0].click().run()
     assert "Read my bill" in [b.label for b in at.button] and at.session_state["unlocked"] is True
