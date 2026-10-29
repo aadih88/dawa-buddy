@@ -20,13 +20,18 @@ def click(app, name):
     """Tap a sample and carry on to its result, the way a person does: sample -> check the numbers -> see the result."""
     [b for b in app.button if b.key == f"sample_{name}"][0].click().run()
     assert app.title[0].value == "Check the numbers"
-    [b for b in app.button if b.label == "See the result"][0].click().run()          # first run: the button disables itself ...
+    [b for b in app.button if b.label in ("See the result", "Looks right, see the result")][0].click().run()          # first run: the button disables itself ...
     app.run()                                                                       # ... the next run shows the result
     return app
 
 
 def html_blocks(app):
     return " ".join(m.value for m in app.markdown)
+
+
+def page_text(app):
+    """Everything readable on the page: the markdown blocks and the labels of folded rows (a line that reads correctly is a folded row on the review screen)."""
+    return html_blocks(app) + " " + " ".join(e.label for e in app.expander)
 
 
 def test_start_screen_is_just_a_question_and_two_samples(app):
@@ -84,8 +89,8 @@ def test_review_screen_shows_one_readable_card_per_line_not_a_wide_table(monkeyp
     at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "review"
     at.run()
     assert not at.exception and at.title[0].value == "Check the numbers"
-    assert {"Start over", "See the result"} <= {b.label for b in at.button}
-    page = html_blocks(at)
+    assert "Start over" in {b.label for b in at.button} and {b.label for b in at.button} & {"See the result", "Looks right, see the result"}
+    page = page_text(at)
     assert "SHELCAL 500MG TAB" in page and "30 × ₹9.81 = ₹294.21" in page                  # what we read, in one line, to compare with the paper
     assert not [d for d in at.dataframe]                                                     # no wide table to scroll sideways on a phone
 
@@ -98,7 +103,7 @@ def test_changing_a_number_on_a_card_changes_the_result(monkeypatch):
     at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "review"
     at.run()
     assert "legal limit ₹6.92" not in html_blocks(at)
-    [b for b in at.button if b.label == "See the result"][0].click().run()
+    [b for b in at.button if b.label in ("See the result", "Looks right, see the result")][0].click().run()
     assert not at.exception and "Above the legal ceiling price" in html_blocks(at)
 
 
@@ -262,7 +267,7 @@ def test_samples_take_the_same_road_as_a_photo_through_the_review_screen():
     at.run()
     [b for b in at.button if b.key == "sample_Hospital pharmacy bill"][0].click().run()
     assert at.title[0].value == "Check the numbers" and "Sample:" in " ".join(c.value for c in at.caption)
-    assert {"See the result", "Start over"} <= {b.label for b in at.button}
+    assert "Start over" in {b.label for b in at.button} and {b.label for b in at.button} & {"See the result", "Looks right, see the result"}
 
 
 def test_help_text_in_identify_section_is_for_users_not_about_vendors(monkeypatch):
@@ -612,13 +617,13 @@ ROWS2 = [("TELMA 40 TAB", 10, 12.4, "tab", 30, None), ("SHELCAL 500MG TAB", 30, 
 
 def test_fix_a_number_is_staged_until_save_changes_is_pressed(monkeypatch):
     at = _review(monkeypatch, ROWS2)
-    assert "10 × ₹12.40 = ₹124" in html_blocks(at)
+    assert "10 × ₹12.40 = ₹124" in page_text(at)
     at.number_input(key="r0_0_fq0").set_value(20).run()                         # typed, not saved: nothing changes
-    assert "10 × ₹12.40 = ₹124" in html_blocks(at) and "20 × ₹12.40" not in html_blocks(at)
+    assert "10 × ₹12.40 = ₹124" in page_text(at) and "20 × ₹12.40" not in page_text(at)
     at = _review(monkeypatch, ROWS2)
     at.number_input(key="r0_0_fq0").set_value(20)
     [b for b in at.button if b.label == "Save changes"][0].click().run()          # typed and saved: the card changes and the total follows
-    assert "20 × ₹12.40 = ₹248" in html_blocks(at)
+    assert "20 × ₹12.40 = ₹248" in page_text(at)
 
 
 def test_the_total_is_always_quantity_times_price_and_is_not_an_input(monkeypatch):
@@ -627,7 +632,7 @@ def test_the_total_is_always_quantity_times_price_and_is_not_an_input(monkeypatc
     assert not [l for l in labels if l.startswith("Total") and "bill" not in l]    # no per-line Total field (the bill-level 'Total printed' stays)
     at.number_input(key="r0_0_fr0").set_value(10.0)
     [b for b in at.button if b.label == "Save changes"][0].click().run()
-    assert "10 × ₹10 = ₹100" in html_blocks(at)
+    assert "10 × ₹10 = ₹100" in page_text(at)
 
 
 def test_a_line_whose_total_does_not_add_up_is_marked(monkeypatch):
@@ -645,13 +650,13 @@ def test_a_removed_line_can_be_put_back(monkeypatch):
     assert "TELMA 40 TAB" not in page.split("Removed lines")[0] if "Removed lines" in page else True
     assert "Removed lines (1)" in [e.label for e in at.expander]
     [b for b in at.button if b.label == "Put back"][0].click().run()
-    assert "Removed lines" not in " ".join(e.label for e in at.expander) and "TELMA 40 TAB" in html_blocks(at)
+    assert "Removed lines" not in " ".join(e.label for e in at.expander) and "TELMA 40 TAB" in page_text(at)
 
 
 def test_a_removed_line_is_not_in_the_result_but_can_still_be_restored_after_moving_on(monkeypatch):
     at = _review(monkeypatch, ROWS2)
     [b for b in at.button if b.key == "r0_0_rm"][0].click().run()
-    [b for b in at.button if b.label == "See the result"][0].click().run()
+    [b for b in at.button if b.label in ("See the result", "Looks right, see the result")][0].click().run()
     assert len(at.session_state["df"]) == 1                                         # the result is built without it
     assert "Removed lines (1)" in [e.label for e in at.expander]                    # ... but it is still recoverable
     [b for b in at.button if b.label == "Put back"][0].click().run()
@@ -790,7 +795,7 @@ def test_a_locked_visitor_cannot_make_any_model_or_web_call(monkeypatch):
     monkeypatch.setattr(webcheck, "lookup_orders", _boom)
     at = _gated(monkeypatch)
     [b for b in at.button if b.key == "sample_Hospital pharmacy bill"][0].click().run()
-    [b for b in at.button if b.label == "See the result"][0].click().run()
+    [b for b in at.button if b.label in ("See the result", "Looks right, see the result")][0].click().run()
     at.run()
     assert not at.exception
     labels = [b.label for b in at.button]

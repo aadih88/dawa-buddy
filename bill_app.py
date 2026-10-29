@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 import pandas as pd
 import streamlit as st
 
-from dawa_buddy import bill as b, explainer, i18n, listings, llm, nppa_orders, pipeline, samples, scheduler, ui, vision, webcheck
+from dawa_buddy import bill as b, explainer, i18n, listings, llm, nppa_orders, pipeline, review_triage as rt, samples, scheduler, ui, vision, webcheck
 from dawa_buddy.reader import read_prescription
 from dawa_buddy.reconcile import reconcile
 from dawa_buddy.report import questions
@@ -186,7 +186,8 @@ def read_photos(bill_img, rx_img):
         st.rerun()
     reset()
     df = pd.DataFrame([r.__dict__ for r in rows]).drop(columns=["notes"], errors="ignore")
-    st.session_state.update(df=enrich(df), rx=rx, total=total, stage="review", photo_reads=reads, load_id=1)
+    st.session_state.update(df=enrich(df), rx=rx, total=total, stage="review", photo_reads=reads, load_id=1,
+                            line_notes={r.description: list(r.notes) for r in rows})
     st.rerun()
 
 
@@ -263,9 +264,16 @@ def lines_form(df: pd.DataFrame, scope: str) -> pd.DataFrame:
         name, qty, rate, mrp = ed.get("name", str(r["description"])), ed.get("qty", num(r["qty"])), ed.get("rate", num(r["rate"])), ed.get("mrp", num(r["mrp"]))
         amount = ed.get("amount", num(r["amount"]))
         mismatch = abs(qty * rate - amount) > max(0.51, 0.005 * amount)
-        with st.container(border=True, key=f"card_{k}"):
-            st.markdown(ui.line_head(name, calc_text(qty, rate, amount), f"MRP on pack {rupees(mrp)}" if mrp else "", bool(r.get("unsure")), mismatch), unsafe_allow_html=True)
-            unit_default = memo.get(k, {}).get("unit", r["unit"] if r["unit"] in UNIT_LABEL else None)
+        unit_default = memo.get(k, {}).get("unit", r["unit"] if r["unit"] in UNIT_LABEL else None)
+        status, why = rt.line_status(qty, rate, amount, unit_default, bool(r.get("unsure")), st.session_state.get("line_notes", {}).get(str(r["description"]), []))
+        # a line whose numbers multiply out and that needed no guess is approved by looking at one row; the rest open so the eyes go where they are needed
+        shell = st.expander(f"✓ {name}: {calc_text(qty, rate, amount)}", expanded=False) if status == rt.OK else st.container(border=True, key=f"card_{k}")
+        with shell:
+            if status == rt.OK:
+                st.caption("Reads correctly. Open only to change how it was sold, the strip size or a number.")
+            else:
+                st.markdown(ui.line_head(name, calc_text(qty, rate, amount), f"MRP on pack {rupees(mrp)}" if mrp else "", bool(r.get("unsure")), mismatch), unsafe_allow_html=True)
+                st.markdown(ui.message("red" if status == rt.FIX else "amber", why), unsafe_allow_html=True)
             unit = st.segmented_control("Sold", unit_options(r), format_func=UNIT_LABEL.get, key=f"{k}_unit", label_visibility="collapsed", default=unit_default)
             if unit is None:
                 st.markdown(ui.need("How was this sold? Choose one so we can compare the price."), unsafe_allow_html=True)
@@ -376,7 +384,7 @@ def review_gaps(df: pd.DataFrame) -> tuple[list[str], list[str]]:
 def review():
     st.markdown(ui.header(2, "Step 2 of 3 · Check the numbers"), unsafe_allow_html=True)
     st.title("Check the numbers")
-    st.markdown("<p class='db-sub'>Compare each line with your paper. Choose how it was sold, and fix anything that is wrong.</p>", unsafe_allow_html=True)
+    st.markdown("<p class='db-sub'>Lines that read correctly are folded up: open only the ones that need a look. You approve the numbers; nothing is judged before that.</p>", unsafe_allow_html=True)
     if st.session_state.get("sample"):
         st.caption(f"Sample: {samples.SAMPLES[st.session_state.sample]['about']}")
     unclear = dose_warning(st.session_state.get("rx", ""))      # first: it is the thing most likely to be missed, so it must not sit below six cards
@@ -386,14 +394,26 @@ def review():
     total = st.number_input("Total printed on the bill (optional)", value=float(st.session_state.get("total") or 0.0))
     with st.expander("Prescription lines", expanded=unclear):
         st.text_area("One medicine per line, as written", key="rx", height=130, label_visibility="collapsed")
+    notes = st.session_state.get("line_notes", {})
+    sts = [rt.line_status(r["qty"], r["rate"], r["amount"], r["unit"] if r["unit"] in UNIT_LABEL else None, bool(r.get("unsure")), notes.get(str(r["description"]), []))[0]
+           for r in df.to_dict("records")]
+    tie, line_sum = rt.bill_tie(df["amount"].tolist(), total)
+    sm = rt.summary(sts)
+    all_clear = sm[rt.FIX] == 0 and sm[rt.CHECK] == 0 and tie != "mismatch"
     with top:
+        n = sm["lines"]
+        head = f"{n} line{'s' if n != 1 else ''} read." + (f" {sm[rt.FIX]} need{'s' if sm[rt.FIX] == 1 else ''} a correction." if sm[rt.FIX] else "") + \
+               (f" {sm[rt.CHECK]} to compare with your paper." if sm[rt.CHECK] else "") + (" Every line multiplies out." if all_clear or (not sm[rt.FIX] and not sm[rt.CHECK]) else "")
+        tie_text = {"match": f" The lines add up to the printed total, {rupees(total)}.", "none": "",
+                    "mismatch": f" The lines add up to {rupees(line_sum)} but the total on the bill is {rupees(total)}: look at the open lines."}[tie]
+        st.markdown(ui.message("green" if all_clear else "red" if sm[rt.FIX] else "amber", head + tie_text), unsafe_allow_html=True)
         no_unit, no_pack = review_gaps(df)
     checking = st.session_state.get("checking", False)
     if no_unit or no_pack:
         parts = ([f"{len(no_pack)} line{'s' if len(no_pack) > 1 else ''} will not be checked against {'their' if len(no_pack) > 1 else 'its'} printed MRP"] if no_pack else []) \
               + ([f"{len(no_unit)} line{'s' if len(no_unit) > 1 else ''} will get no price judgement"] if no_unit else [])
         st.caption(" and ".join(parts) + " until the numbers above are filled in. You can still continue.")
-    if st.button("See the result", type="primary", width="stretch", disabled=checking):
+    if st.button("Looks right, see the result" if all_clear else "See the result", type="primary", width="stretch", disabled=checking):
         st.session_state.checking = True
         st.rerun()
     if st.button("Start over", width="stretch", disabled=checking):
