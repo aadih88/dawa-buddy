@@ -195,7 +195,7 @@ def read_photos(bill_img, rx_img):
 
 # ---------------------------------------------------------------- the lines: one card per line, readable on a phone
 UNIT_LABEL = {"tab": "per tablet", "strip": "per strip", "bottle": "per bottle", "tube": "per tube", "vial": "per vial", "each": "per piece"}
-PACK_LABEL = {"tab": "Tablets per strip (to compare with the MRP)", "strip": "Tablets per strip", "bottle": "ml in the bottle",
+PACK_LABEL = {"tab": "Tablets per strip", "strip": "Tablets per strip", "bottle": "ml in the bottle",
               "tube": "gm in the tube", "vial": "ml in the vial (optional)"}
 
 
@@ -274,71 +274,67 @@ def readout(unit, rate, mrp, mrp_each, pack) -> str:
     return f"{sold}. {m}."
 
 
+SHORT = {"tab": "tablet", "strip": "strip", "bottle": "bottle", "tube": "tube", "vial": "vial", "each": "piece"}
+
+
 def lines_form(df: pd.DataFrame, scope: str) -> pd.DataFrame:
-    """One card per bill line: what we read (to compare with the paper), how it was sold, pack size, and a popover to fix a number.
-    Edits are STAGED in a small form and apply only on 'Save changes'; the total is always quantity x price; a removed line goes to 'Removed lines' and can be put back."""
+    """One panel per bill line, all of it live: what the bill says it was billed per (tablet or strip), the number billed, the price charged, the MRP and what that MRP is
+    per, plus the strip size only when a conversion needs it. A line that multiplies out is folded into one row. The total is always quantity x price; a removed line goes
+    to 'Removed lines' and can be put back. Nothing is judged until the patient presses the result button."""
     guesses = st.session_state.get("pack_guess", {})
     removed = st.session_state.setdefault("removed", set())
-    edits, memo, ver = (st.session_state.setdefault(n, {}) for n in ("edits", "memo", "ver"))
     trash = st.session_state.setdefault("trash", [])
+    ss = st.session_state
     rows = []
     for i, r in enumerate(df.to_dict("records")):
-        k = f"{scope}{st.session_state.get('load_id', 0)}_{i}"
+        k = f"{scope}{ss.get('load_id', 0)}_{i}"
         if k in removed:
             continue
-        ed = edits.get(k, {})
-        name, qty, rate, mrp = ed.get("name", str(r["description"])), ed.get("qty", num(r["qty"])), ed.get("rate", num(r["rate"])), ed.get("mrp", num(r["mrp"]))
-        amount = ed.get("amount", num(r["amount"]))
+        read = {"name": str(r["description"]), "qty": num(r["qty"]), "rate": num(r["rate"]), "mrp": num(r["mrp"]), "pack": num(r["pack"]),
+                "unit": r["unit"] if r["unit"] in UNIT_LABEL else None, "basis": "tab" if flag(r.get("mrp_each")) else "strip"}
+        now = {key: ss.get(f"{k}_{key}", default) for key, default in read.items()}        # the live value of each field (what is on screen), else what was read
+        name, qty, rate, mrp, unit = now["name"] or read["name"], now["qty"], now["rate"], now["mrp"], now["unit"]
+        amount = round(qty * rate, 2) if (qty, rate) != (read["qty"], read["rate"]) else num(r["amount"])      # edit a number and the total follows; untouched, the printed total stays
         mismatch = abs(qty * rate - amount) > max(0.51, 0.005 * amount)
-        unit_default = memo.get(k, {}).get("unit", r["unit"] if r["unit"] in UNIT_LABEL else None)
-        status, why = rt.line_status(qty, rate, amount, unit_default, bool(r.get("unsure")), st.session_state.get("line_notes", {}).get(str(r["description"]), []))
-        # a line whose numbers multiply out and that needed no guess is approved by looking at one row; the rest open so the eyes go where they are needed
+        status, why = rt.line_status(qty, rate, amount, unit, bool(r.get("unsure")), ss.get("line_notes", {}).get(str(r["description"]), []))
         shell = st.expander(f"✓ {name}: {calc_text(qty, rate, amount)}", expanded=False) if status == rt.OK else st.container(border=True, key=f"card_{k}")
         with shell:
             if status != rt.OK:
                 st.markdown(ui.line_head(name, calc_text(qty, rate, amount), f"MRP on bill {rupees(mrp)}" if mrp else "", bool(r.get("unsure")), mismatch), unsafe_allow_html=True)
                 st.markdown(ui.message("red" if status == rt.FIX else "amber", why), unsafe_allow_html=True)
-            unit = st.segmented_control("Sold", unit_options(r), format_func=UNIT_LABEL.get, key=f"{k}_unit", label_visibility="collapsed", default=unit_default)
-            if unit is None:
-                st.markdown(ui.need("How was this sold? Choose one so we can compare the price."), unsafe_allow_html=True)
-            pack = ed.get("pack", memo.get(k, {}).get("pack", num(r["pack"]) if r.get("pack") is not None and not pd.isna(r.get("pack")) else 0.0)) or None
-            g = guesses.get(str(r["description"]))
-            mrp_each = False
+            name = st.text_input("Item", value=read["name"], key=f"{k}_name").strip() or read["name"]
+            unit = st.segmented_control("Billed per", unit_options(r), format_func=SHORT.get, key=f"{k}_unit", default=read["unit"])
+            w = SHORT.get(unit, "unit")
+            c1, c2 = st.columns(2)
+            qty = c1.number_input(f"Number of {w}s", min_value=0.0, value=read["qty"], step=1.0, key=f"{k}_qty")
+            rate = c2.number_input(f"Price charged per {w} (₹)", min_value=0.0, value=read["rate"], step=0.01, key=f"{k}_rate")
+            c3, c4 = st.columns(2)
+            mrp = c3.number_input("MRP on the bill (₹)", min_value=0.0, value=read["mrp"], step=0.01, key=f"{k}_mrp")
+            basis = None
             if mrp and unit in ("tab", "strip"):
-                # which way the bill's MRP is printed is its own fact: per tablet (MRP/Unit) or per whole strip. It is not the same question as how the line was sold.
-                basis = st.segmented_control("MRP on the bill is for", list(MRP_BASIS), format_func=MRP_BASIS.get, key=f"{k}_mb", default=memo.get(k, {}).get("basis", "tab" if flag(r.get("mrp_each")) else "strip"))
-                mrp_each = basis == "tab"
-            else:
-                basis = None
+                basis = c4.segmented_control("MRP is per", list(MRP_BASIS), format_func=MRP_BASIS.get, key=f"{k}_basis", default=read["basis"])
+            mrp_each = basis == "tab"
+            g = guesses.get(str(r["description"]))
+            needs = needs_strip_size(unit, mrp, ss.get(f"{k}_pack", read["pack"]) or None, mrp_each)
+            pack = ss.get(f"{k}_pack", read["pack"]) or 0.0
+            if unit in ("bottle", "tube", "vial") or (unit in ("tab", "strip") and (needs or pack)):
+                if needs:
+                    st.markdown(ui.need("Needed: the tablets per strip, to compare a tablet price with a strip price."
+                                        + (f" Suggested {g[0]:g} from {g[1]}: check your strip." if g else "")), unsafe_allow_html=True)
+                pack = st.number_input(PACK_LABEL.get(unit, "Tablets per strip"), min_value=0.0, value=read["pack"], step=1.0, key=f"{k}_pack",
+                                       help="From the strip or box. Only needed to convert between a tablet price and a strip price.")
             if unit in ("tab", "strip"):
                 st.caption(readout(unit, rate, mrp, mrp_each, pack or 0))
                 if g and pack and pack == g[0]:
                     st.caption(f"Strip size of {g[0]:g} suggested from {g[1]}. Check it on your strip.")
-            if needs_strip_size(unit, mrp, pack, mrp_each):
-                st.markdown(ui.need("Needed: the tablets per strip, to compare a tablet price with a strip price. Enter it under “Fix a number”" + (f" (suggested {g[0]:g} from {g[1]}: check your strip)" if g else "") + "."), unsafe_allow_html=True)
-            memo[k] = {"unit": unit, "pack": pack or 0.0, "basis": basis}
-            with st.popover("Fix a number", width="stretch"):
-                v = ver.get(k, 0)
-                with st.form(f"fix_{k}_{v}", border=False):         # nothing changes until the user presses Save
-                    new_name = st.text_input("Item", value=name, key=f"{k}_fn{v}")
-                    c1, c2 = st.columns(2)
-                    new_qty = c1.number_input("Quantity", min_value=0.0, value=float(qty), key=f"{k}_fq{v}")
-                    new_rate = c2.number_input("Price each (₹)", min_value=0.0, value=float(rate), step=0.01, key=f"{k}_fr{v}")
-                    new_mrp = st.number_input("MRP printed on the bill (optional)", min_value=0.0, value=float(mrp), step=0.01, key=f"{k}_fm{v}")
-                    new_pack = st.number_input(PACK_LABEL.get(unit, "Tablets per strip"), min_value=0.0, step=1.0, value=float(pack or 0), key=f"{k}_fp{v}",
-                                               help="From the strip or box. Only needed to convert between a tablet price and a strip price.")
-                    st.caption("The total is worked out as quantity × price.")
-                    saved = st.form_submit_button("Save changes", type="primary")
-                if saved:
-                    edits[k] = {"name": new_name.strip() or name, "qty": new_qty, "rate": new_rate, "mrp": new_mrp, "pack": new_pack,
-                                "amount": round(new_qty * new_rate, 2) if (new_qty, new_rate) != (qty, rate) else amount}
-                    ver[k] = v + 1
-                    st.rerun()
-                if st.button("Remove this line", key=f"{k}_rm", help="It goes to “Removed lines” below, where you can put it back."):
-                    removed.add(k)
-                    trash.append({"k": k, "row": {"description": name, "qty": qty, "rate": rate, "amount": amount, "unit": unit, "pack": pack or None,
-                                                  "mrp": mrp or None, "unsure": bool(r.get("unsure")), "mrp_each": mrp_each}})
-                    st.rerun()
+            elif unit is None:
+                st.markdown(ui.need("How was this billed? Choose one so we can compare the price."), unsafe_allow_html=True)
+            amount = round(qty * rate, 2) if (qty, rate) != (read["qty"], read["rate"]) else num(r["amount"])
+            if st.button("Remove this line", key=f"{k}_rm", help="It goes to “Removed lines” below, where you can put it back."):
+                removed.add(k)
+                trash.append({"k": k, "row": {"description": name, "qty": qty, "rate": rate, "amount": amount, "unit": unit, "pack": pack or None,
+                                              "mrp": mrp or None, "unsure": bool(r.get("unsure")), "mrp_each": mrp_each}})
+                st.rerun()
         rows.append({"description": name, "qty": qty, "rate": rate, "amount": amount, "unit": unit, "pack": (pack or None),
                      "mrp": (mrp or None), "unsure": bool(r.get("unsure")), "mrp_each": mrp_each})
     if trash:
