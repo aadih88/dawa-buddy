@@ -58,7 +58,7 @@ def parse_rx(text: str):
 def default_units(df: pd.DataFrame) -> pd.DataFrame:
     """Fill the unit only where the description makes it certain; tablets stay blank (per tablet or per strip is the user's call)."""
     def guess(r):
-        if r.get("unit"):
+        if isinstance(r.get("unit"), str) and r["unit"]:         # a missing unit is None here but NaN on newer pandas, and NaN is truthy
             return r["unit"]
         d = str(r["description"]).lower()
         return ("vial" if re.search(r"\binj", d) else "each" if injectables.iv_fluid(d) else "bottle" if re.search(r"\b(syp|syrup|susp|suspension|drops?)\b", d) else

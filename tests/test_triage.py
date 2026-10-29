@@ -100,3 +100,16 @@ def test_both_samples_open_on_a_clean_review_screen_not_a_wall_of_amber(monkeypa
         assert "Every line multiplies out." in page and "add up to the printed total" in page, name
         assert "need a number" not in page and "could not read the dose" not in page and "to compare with your paper" not in page, name
         assert [b for b in at.button if b.label == "Looks right, see the result"], name
+
+
+def test_a_missing_unit_is_missing_whether_pandas_makes_it_none_or_nan():
+    # the deployed app runs a newer pandas than the tests did: a missing unit became NaN, which is truthy, so no unit was ever defaulted (found 29 Oct 2026)
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("bill_app_ns", ROOT / "bill_app.py")
+    src = (ROOT / "bill_app.py").read_text()
+    start = src.index("def default_units"); end = src.index("def billed_word")
+    ns = {"pd": pd, "re": __import__("re"), "b": __import__("dawa_buddy.bill", fromlist=["x"]), "injectables": __import__("dawa_buddy.injectables", fromlist=["x"])}
+    exec(src[start:end], ns)
+    for missing in (None, float("nan")):
+        df = pd.DataFrame({"description": ["SYRINGE 10ML WITH NEEDLE", "NS 0.9% 100ML", "AACEF 250 INJ", "TELMA 40 TAB"], "unit": [missing] * 4})
+        assert list(ns["default_units"](df)["unit"]) == ["each", "each", "vial", None], missing
