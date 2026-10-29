@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 import pandas as pd
 import streamlit as st
 
-from dawa_buddy import bill as b, explainer, i18n, listings, llm, nppa_orders, pipeline, review_triage as rt, samples, scheduler, ui, vision, webcheck
+from dawa_buddy import bill as b, explainer, i18n, listings, llm, nppa_orders, pipeline, review_triage as rt, samples, scheduler, transparency, ui, vision, webcheck
 from dawa_buddy.reader import read_prescription
 from dawa_buddy.reconcile import reconcile
 from dawa_buddy.report import questions
@@ -92,7 +92,9 @@ def finding_html(f: b.Finding) -> str:
     else:
         body = first_sentence(f.note)
     why = f.note + (" Tip: under 'Edit the numbers', add the maker or 'glass' / 'non-glass' to the item name to settle this." if f.basis == "bag" else "")
-    return ui.card(kind, f.line.desc, RESULT[f.tier][1], total=f"{rupees(f.line.amount)} total", body=body, visual=visual, why=why)
+    rows, foot = transparency.reference(f, rupees, billed_word)
+    return ui.card(kind, f.line.desc, RESULT[f.tier][1], total=f"{rupees(f.line.amount)} total", body=body, visual=visual, why=why,
+                   why_label="How we checked this", facts_html=ui.facts(rows) if rows else "")
 
 
 def msg(kind: str, text: str) -> None:
@@ -503,7 +505,9 @@ def mini(f) -> str:
         why = f"<br><span class='small'>{html.escape(known + reason + mrp)}</span>"
     elif f.mrp_pct is not None and f.tier == b.TIER_OK:
         why = f"<br><span class='small'>Charged {f.mrp_pct:.0f}% of the printed MRP.</span>"
-    return f"<div class='mini'><span class='l'>{html.escape(f.line.desc)}<br><span class='small'>{label}</span>{why}</span><span class='r'>{right}</span></div>"
+    rows, foot = transparency.reference(f, rupees, billed_word)
+    how = f"<details class='how'><summary>How we checked this</summary>{ui.facts(rows)}</details>" if len(rows) > 1 else ""
+    return f"<div class='minibox'><div class='mini'><span class='l'>{html.escape(f.line.desc)}<br><span class='small'>{label}</span>{why}</span><span class='r'>{right}</span></div>{how}</div>"
 
 
 def needs_identifying(f) -> bool:
@@ -556,6 +560,8 @@ def results(df, total):
     peers = peer_cards(peer_found)
     online = listing_cards(listed)
 
+    if any(transparency.reference(f, rupees, billed_word)[1] for f in fs):
+        st.caption(transparency.CEILING_NOTE)                  # said once for the page: the same sentence under every card is noise
     if fine:
         with st.expander(f"Within the limits ({len(fine)})"):
             st.markdown("".join(mini(f) for f in fine), unsafe_allow_html=True)

@@ -60,6 +60,7 @@ class Finding:
     mrp_pct: Optional[float] = None    # charged rate as % of the printed MRP, when checkable
     basis: str = ""                    # what unit_price is per: tablet, ml, gm, vial or bag (for display)
     mrp_unit: Optional[float] = None   # the printed MRP on the same basis as the billed rate, when checkable
+    source: str = ""                   # where the identification came from, in words for the reader ("the public brand table and your bill")
 
 
 NON_MEDICINE = re.compile(r"\b(syringe|cannula|iv set|drip set|gloves?|mask|gown|catheter|stent|implant|"
@@ -267,7 +268,23 @@ def audit_line(line: BillLine, confirmed: dict | None = None) -> Finding:
         f.mrp_pct = round(pct, 1)
     elif line.mrp:
         f.note += " MRP given but tablets per strip are missing, so the MRP check could not be made."
+    f.source = source_label(line, confirmed, f)
     return f
+
+
+def source_label(line: BillLine, confirmed: dict | None, f: Finding) -> str:
+    """Where the ingredient came from, so a patient can judge how far to trust it. Empty when nothing was identified."""
+    if not f.ingredients:
+        return ""
+    if (confirmed or {}).get(line.desc.lower()):
+        return "you confirmed it from your strip"
+    if f.via_model:
+        return "an AI suggestion that you have not confirmed"
+    r = resolve(line.desc)
+    src = r[6] if r else ""
+    if src.startswith("brand_table"):
+        return "the public brand table" + (" and the composition printed on your bill" if composition_stated(line.desc, f.ingredients) else "")
+    return {"curated": "our checked list of common brands", "generic": "the generic name printed on your bill"}.get(src, "")
 
 
 def line_unit_price(line: BillLine) -> Optional[float]:

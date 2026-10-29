@@ -426,3 +426,21 @@ def test_online_matching_ignores_the_composition_and_maker_printed_after_the_for
     assert w.desc_brand("HIFENAC P TAB ACECLOFENAC +PARACETAMOL INTAS") == "HIFENAC P"
     assert w.same_product("Hifenac P Tablet - Uses, Side Effects, Price", "HIFENAC P TAB ACECLOFENAC +PARACETAMOL INTAS")
     assert not w.same_product("Hifenac Plus Tablet", "HIFENAC P TAB ACECLOFENAC +PARACETAMOL INTAS")                               # a different brand is still refused
+
+
+def test_reference_rows_show_what_the_verdict_used():
+    from dawa_buddy import transparency as t
+    rupees = lambda x: f"₹{x:g}"
+    f = b.audit_line(b.BillLine("x", "HIFENAC P TAB ACECLOFENAC +PARACETAMOL INTAS", 15, 5.53, 82.95, "tab", 1, 5.53))
+    rows, foot = t.reference(f, rupees)
+    d = dict(rows)
+    assert d["Identified as"].startswith("aceclofenac+paracetamol") and "brand table" in d["Taken from"] and "your bill" in d["Taken from"]
+    assert "Jan Aushadhi generic" in d
+    assert d["NPPA ceiling"] == "none applies" and "1 April 2026" in foot                  # a missing ceiling is said out loud, with the date of the list
+    over = b.audit_line(b.BillLine("x", "PARACETAMOL 500MG TAB", 10, 5.0, 50.0, "tab", 10, 50.0))
+    rows, _ = t.reference(over, rupees)
+    assert "NPPA ceiling" in dict(rows) and "with GST" in dict(rows)["NPPA ceiling"]
+    iv = b.audit_line(b.BillLine("x", "IV SET", 2, 265.0, 530.0, "each", None, 11.0))
+    assert "Printed MRP (per piece)" in dict(t.reference(iv, rupees, lambda u: "piece")[0]) and any(k.startswith("You were charged") for k, _ in t.reference(iv, rupees, lambda u: "piece")[0])
+    nm = b.audit_line(b.BillLine("x", "BED CHARGES", 1, 1000.0, 1000.0, "each", None, None))
+    assert not any(k == "NPPA ceiling" for k, _ in t.reference(nm, rupees)[0])                  # a room is not a medicine: no ceiling line

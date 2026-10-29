@@ -157,6 +157,9 @@ label[data-testid="stWidgetLabel"] p {{color:var(--muted); font-size:.9rem;}}
 .db-card details {{margin-top:11px;}} .db-card summary {{cursor:pointer; color:var(--brand); font-size:.85rem; font-weight:600;}}
 .db-body {{margin-top:8px; font-size:.95rem; line-height:1.45; overflow-wrap:anywhere;}}
 .db-why {{margin-top:6px; font-size:.9rem; line-height:1.5; overflow-wrap:anywhere;}}
+.db-facts {{margin-top:8px; padding-top:6px; border-top:1px dashed var(--hair); font-size:.88rem;}}
+.db-fact {{display:flex; justify-content:space-between; gap:12px; padding:2px 0;}} .db-fact span {{color:#6b7480;}} .db-fact b {{font-weight:600; text-align:right; overflow-wrap:anywhere;}}
+.db-factfoot {{margin-top:4px; color:#6b7480; font-size:.82rem; line-height:1.4;}}
 .db-found {{display:inline-flex; align-items:center; gap:6px; background:{S['green']['bg']}; color:{S['green']['fg']}; border-radius:999px; padding:4px 10px 4px 8px; font-size:.78rem; font-weight:600;}}
 .db-callout {{margin:12px 0; border-radius:18px; padding:14px 16px; display:flex; align-items:center; gap:12px; font-size:.88rem; line-height:1.55;}}
 .db-dose {{border-radius:14px; padding:12px 13px; background:var(--brand-tint);}}
@@ -202,6 +205,8 @@ div[class*="st-key-card_"] {{background:var(--card); border:1px solid var(--line
 .mini {{display:flex; justify-content:space-between; gap:12px; padding:7px 0; border-bottom:1px solid var(--hair); font-size:.95rem;}}
 .mini .l {{overflow-wrap:anywhere;}} .mini .r {{color:var(--muted); white-space:nowrap;}}
 .small {{color:#6b7480; font-size:.85rem;}}
+.minibox {{border-bottom:1px solid var(--hair);}} .minibox .mini {{border-bottom:none; padding-bottom:2px;}}
+.minibox details.how {{border:none; background:none; padding:0 0 8px; margin:0;}} .minibox details.how summary {{color:#6b7480; font-size:.85rem; cursor:pointer; padding:0;}} .minibox .db-facts {{border-top:none; margin-top:2px;}}
 </style>
 """
 
@@ -262,10 +267,16 @@ def diff(prescribed: str, billed: str) -> str:
             f'{icon("arrow", 22, T["faint"], 2)}<div style="background:{S["red"]["bg"]}"><small style="color:{S["red"]["fg"]}">On the bill</small><b>{esc(billed)}</b></div></div>')
 
 
-def card(kind: str, name: str, chip_text: str, *, total: str = "", body: str = "", visual: str = "", why: str = "", why_label: str = "Why this matters", icon_name: str | None = None) -> str:
+def facts(rows: list[tuple[str, str]], foot: str = "") -> str:
+    """The reference numbers behind a verdict, as short label/value rows, so a patient can check them: what it was identified as, what was charged, the limits."""
+    body = "".join(f'<div class="db-fact"><span>{esc(k)}</span><b>{esc(v)}</b></div>' for k, v in rows)
+    return f'<div class="db-facts">{body}' + (f'<div class="db-factfoot">{esc(foot)}</div>' if foot else "") + "</div>"
+
+
+def card(kind: str, name: str, chip_text: str, *, total: str = "", body: str = "", visual: str = "", why: str = "", why_label: str = "Why this matters", icon_name: str | None = None, facts_html: str = "") -> str:
     """A finding: status chip, item name (and its total), then a visual (meter or diff) and an optional folded explanation."""
     right = f'<span class="db-amt">{esc(total)}</span>' if total else ""
-    why_html = f'<details><summary>{esc(why_label)}</summary><div class="db-why">{esc(why)}</div></details>' if why else ""
+    why_html = f'<details><summary>{esc(why_label)}</summary><div class="db-why">{esc(why)}</div>{facts_html}</details>' if (why or facts_html) else ""
     body_html = f'<div class="db-body">{esc(body)}</div>' if body else ""
     return (f'<div class="db-card">{chip(kind, chip_text, icon_name)}<div class="db-row"><span class="db-name">{esc(name)}</span>{right}</div>'
             f'{body_html}{visual}{why_html}</div>')
