@@ -363,3 +363,48 @@ def test_vision_cleaning_handles_tax_inclusive_per_unit_bills():
 def test_bill_prompt_names_the_tax_inclusive_column():
     from dawa_buddy import vision
     assert "Taxable" in vision.BILL_PROMPT and "Val In-GST" in vision.BILL_PROMPT and "mrp_per" in vision.BILL_PROMPT
+
+
+# --- arithmetic: pick the numbers that multiply out, as a person would (no model involved) ---
+def test_solver_finds_quantity_price_and_value_on_a_two_value_cell_row():
+    from dawa_buddy import vision as v
+    cells = [2.24, 6, 12.0, 6, 0.72, 6, 0.72, 0, 0.0, 13.44, 2.24, 0]          # Dolo, second real bill: the Taxable column (12.00) is not the value
+    best = v.row_candidates(cells, (6, 2.24))[0]
+    assert best[:3] == (6.0, 2.24, 13.44)
+
+
+def test_solver_uses_the_model_labels_to_break_a_6_by_11_tie():
+    from dawa_buddy import vision as v
+    assert v.row_candidates([11.0, 6, 58.92, 66.0, 11.0], (6, 11.0))[0][:3] == (6.0, 11.0, 66.0)
+
+
+def test_solver_makes_the_lines_add_up_to_the_printed_total():
+    from dawa_buddy import vision as v
+    a = [(2.0, 5.0, 10.0, 0), (5.0, 2.0, 10.0, 0), (1.0, 12.0, 12.0, 1)]      # row 1 is ambiguous
+    b = [(3.0, 4.0, 12.0, 0)]
+    assert [c[2] for c in v.choose_rows([a, b], 22.0)] == [10.0, 12.0]
+    assert [c[2] for c in v.choose_rows([a, b], 24.0)] == [12.0, 12.0]
+
+
+def test_amount_before_tax_is_replaced_by_the_value_with_tax():
+    from dawa_buddy import vision as v
+    rows, _ = v.clean_bill({"items": [{"description": "X TAB", "qty": 6, "rate": 13.14, "amount": 88.3, "unit": "tab", "cells": [1, 6, 13.14, 78.84, 4.73, 4.73, 88.3]}]})
+    assert rows[0].amount == 88.3 and rows[0].qty == 6 and abs(rows[0].rate * 6 - 88.3) < 0.01
+    ok, _ = v.clean_bill({"items": [{"description": "Y TAB", "qty": 15, "rate": 5.53, "amount": 82.95, "unit": "tab", "cells": [5.53, 15, 0.0, 12, 8.89, 82.95]}]})
+    assert ok[0].amount == 82.95                                                  # already the value with tax: left alone
+
+
+def test_missing_rate_is_worked_out_and_mrp_per_tablet_or_per_strip_is_told_from_the_numbers():
+    from dawa_buddy import vision as v
+    rows, _ = v.clean_bill({"items": [
+        {"description": "A TAB", "qty": 10, "rate": None, "amount": 50.0, "unit": "tab"},
+        {"description": "B TAB", "qty": 30, "rate": 9.81, "amount": 294.3, "unit": "tab", "mrp": 163.45},       # strip MRP: many times a tablet's price
+        {"description": "C TAB", "qty": 6, "rate": 11.0, "amount": 66.0, "unit": "tab", "mrp": 11.0}]})        # per-tablet MRP: about the price of one tablet
+    assert rows[0].rate == 5.0
+    assert rows[1].pack is None and rows[1].mrp == 163.45
+    assert rows[2].pack == 1.0
+
+
+def test_a_batch_code_or_date_in_the_numbers_list_does_not_break_the_json():
+    from dawa_buddy import llm
+    assert llm._extract_json('{"items":[{"cells":[1,K2100680,MAR-23,15.00]}]}')["items"][0]["cells"] == [1, "K2100680", "MAR-23", 15.0]

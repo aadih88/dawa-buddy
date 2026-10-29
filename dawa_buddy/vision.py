@@ -11,11 +11,12 @@ from .bill import form_of_desc, BillLine, TAB_UNITS, STRIP_UNITS, BOTTLE_UNITS, 
 
 BILL_PROMPT = """You are transcribing a photo of an Indian pharmacy or hospital bill. Reply with ONLY JSON:
 {"items":[{"description":str,"qty":number|null,"rate":number|null,"amount":number|null,
-"unit":"tab"|"strip"|"bottle"|"tube"|"vial"|null,"pack":number|null,"mrp":number|null,"mrp_per":"unit"|"pack"|null,"unsure":bool}],"total":number|null}
+"unit":"tab"|"strip"|"bottle"|"tube"|"vial"|null,"pack":number|null,"mrp":number|null,"mrp_per":"unit"|"pack"|null,"cells":[number],"unsure":bool}],"total":number|null}
 Rules: copy text exactly as printed; one object per bill line; do not calculate or correct any number;
 amount is the final value of the line as charged, TAX INCLUDED: the column called Net Amt, Amount, Total, Value or Val In-GST. Never use a column called Taxable or Taxable Value.
 qty is the number of units sold; rate is the price per unit as printed (MRP/Unit or Rate or MRP). Some bills print two values in one cell, one above the other (for example qty above discount %, or MRP above net rate): take the top value for qty and the MRP, and ignore the discount %.
 mrp_per: "unit" if the printed MRP is for ONE tablet/unit (the column says MRP/Unit, or the bill prints one per-unit price, labelled MRP, which is also the rate); "pack" if it is for a strip, bottle or box; null if unclear. If the only per-unit price column is labelled MRP, set both rate and mrp to it.
+cells: EVERY number printed in that line's row (skip batch codes, dates and HSN codes: they are text, not numbers), left to right, one entry per printed value, copied exactly (include tax and discount percentages as plain numbers: write 12 for "GST 12 %", never text inside the list; and list both values of a cell that holds two stacked values, top first). Do not skip any column, and do not work anything out: the numbers are checked afterwards.
 description is only the medicine name and strength: leave out manufacturer names, HSN codes, batch numbers and codes like "H/30049061/Aristo".
 use null for anything you cannot read or that is not printed; set unit ONLY if the bill states it (e.g. "STRIP", "TAB", "10's", "BOTTLE", "TUBE"); pack is tablets per strip, ml per bottle or gm per tube;
 set mrp ONLY if an MRP is printed for that line, copied exactly as printed (it is usually per strip, even when the sale price is per tablet); set unsure true if any digit on that line is hard to read. Include non-medicine lines (rooms, consumables) too.
@@ -91,7 +92,140 @@ def clean_bill(data) -> tuple[list[Row], float | None]:
             r.unsure = True
             r.notes.append("Missing number.")
         rows.append(r)
-    return rows, _num(data.get("total")) if isinstance(data, dict) else None
+    total = _num(data.get("total")) if isinstance(data, dict) else None
+    _settle_numbers(rows, [d for d in items if isinstance(d, dict) and str(d.get("description") or "").strip()], total)
+    for r in rows:
+        settle_mrp(r)
+    return rows, total
+
+
+# ----------------------------------------------------------------------------- arithmetic: which printed numbers are quantity, price and line value
+def _close(a: float, b: float) -> bool:
+    return abs(a - b) <= max(0.06, 0.006 * max(a, b))      # a rate printed to 2 decimals times a quantity can be a few paise off the printed value
+
+
+def consistent(r) -> bool:
+    return None not in (r.qty, r.rate, r.amount) and _close(r.qty * r.rate, r.amount)
+
+
+def row_candidates(cells, hint: tuple = (None, None)) -> list[tuple[float, float, float, int]]:
+    """Every (qty, price, line value, penalty) among the numbers printed in a row where qty x price equals the value. Which columns they are does not matter:
+    a human also looks for the numbers that multiply out. The penalty prefers whole quantities and no discount, and numbers the reader itself labelled
+    quantity or price (`hint`): 6 x 11 and 11 x 6 multiply alike, so the column labels it saw break the tie."""
+    vals = [float(v) for v in cells if isinstance(v, (int, float)) and v > 0]
+    out = {}
+    for i, q in enumerate(vals):
+        if q > 999 or not float(q * 2).is_integer():
+            continue
+        for j, p in enumerate(vals):
+            if j == i:
+                continue
+            for k, a in enumerate(vals):
+                if k in (i, j):
+                    continue
+                pen = (0 if float(q).is_integer() else 1) + (3 if q > 200 else 0) + (2 if p == a and q != 1 else 0) \
+                    - (3 if q == hint[0] else 0) - (3 if p == hint[1] else 0)
+                if _close(q * p, a):
+                    out.setdefault((q, p, a), pen)
+                else:               # a discount printed as a percentage: value = qty x price x (1 - d/100)
+                    for m, d in enumerate(vals):
+                        if m not in (i, j, k) and 0 < d <= 60 and _close(q * p * (1 - d / 100), a):
+                            out.setdefault((q, p, a), pen + 3)
+    return sorted(((q, p, a, pen) for (q, p, a), pen in out.items()), key=lambda t: (t[3], -t[2]))
+
+
+def choose_rows(cands: list[list[tuple]], target: float | None) -> list[tuple | None]:
+    """One candidate per row. With a printed total, take the combination whose line values add up to it (nearest, then fewest penalties)."""
+    import itertools
+    lists = [c[:4] for c in cands]
+    live = [i for i, l in enumerate(lists) if l]
+    space = 1
+    for i in live:
+        space *= len(lists[i])
+    if not live or target is None or space > 60000:
+        return [l[0] if l else None for l in lists]
+    best, best_key = None, None
+    for combo in itertools.product(*[lists[i] for i in live]):
+        key = (round(abs(sum(c[2] for c in combo) - target), 2), sum(c[3] for c in combo))
+        if best_key is None or key < best_key:
+            best, best_key = combo, key
+    out = [None] * len(lists)
+    for i, c in zip(live, best):
+        out[i] = c
+    return out
+
+
+def _with_tax(amount, cells) -> float | None:
+    """A number in the row equal to `amount` plus a printed tax percentage (once, or twice for CGST + SGST printed separately), if there is one."""
+    if not amount:
+        return None
+    vals = [v for v in cells if isinstance(v, float) and v > 0]
+    top = max(vals, default=0)             # the final value is the biggest number on the row
+    if top <= amount * 1.02:
+        return None
+    by_percent = any(0 < g <= 28 and g == int(g) and _close(amount * (1 + k * g / 100), top) for g in vals for k in (1, 2))
+    by_amounts = any(0 < x <= 0.3 * amount and _close(amount + k * x, top) for x in vals for k in (1, 2))      # CGST and SGST printed as amounts
+    return top if by_percent or by_amounts else None
+
+
+def _derive(r, cells) -> None:
+    """No numbers multiply out. A bill that prints no rate: the price is the value over the quantity. A bill that prints the price before tax and a taxable
+    amount, the tax and a total with tax: the line value is the total (taxable plus its tax), which is what the patient paid."""
+    vals = [v for v in cells if isinstance(v, float) and v > 0]
+    if r.qty and r.amount and not r.rate:
+        r.rate = round(r.amount / r.qty, 4)
+        r.unsure, r.notes = False, [n for n in r.notes if n != "Missing number."] + ["Price per unit worked out as the line value divided by the quantity."]
+        return
+    best = None
+    for t in vals:
+        for g in vals:
+            if 0 < g <= 28 and g == int(g):
+                for a in vals:
+                    if a > t and any(_close(t * (1 + k * g / 100), a) for k in (1, 2)) and (best is None or a > best):
+                        best = a
+    if best and r.qty:
+        r.amount, r.rate = best, round(best / r.qty, 4)
+        r.unsure, r.notes = False, [n for n in r.notes if "does not equal" not in n and n != "Missing number."] + \
+            ["The line value is the total with tax; the price per unit is that value divided by the quantity."]
+
+
+def settle_mrp(r) -> None:
+    """A bill's MRP may be per tablet or per strip; say which from the numbers, as a person would. A per-strip MRP is several times the price of one tablet,
+    so one that is under twice the price is per tablet. The audit divides a printed MRP by the strip size, so a per-tablet MRP is carried as a strip of one."""
+    if r.unit != "tab" or not r.mrp or not r.rate:
+        return
+    if r.mrp < 2 * r.rate and not (r.pack and r.pack > 1):
+        r.pack, r.notes = 1.0, r.notes + ["MRP read as per tablet (it is under twice the price of a tablet), tax included."]
+
+
+def _solve_bad(rows, items, bad, total) -> None:
+    """Rows whose quantity x price is not the value: find the printed numbers that do multiply out, and make the lines add up to the printed total."""
+    cands = [row_candidates([_num(c) for c in (items[i].get("cells") or [])], (rows[i].qty, rows[i].rate))
+             if isinstance(items[i].get("cells"), list) else [] for i in bad]
+    kept = sum(r.amount or 0 for i, r in enumerate(rows) if i not in bad)
+    picks = choose_rows(cands, None if total is None else total - kept)
+    for i, c, it in zip(bad, picks, [items[i] for i in bad]):
+        if not c:
+            _derive(rows[i], [_num(x) for x in (it.get("cells") or []) if isinstance(it.get("cells"), list)])
+        if c:
+            rows[i].qty, rows[i].rate, rows[i].amount = c[0], c[1], c[2]
+            rows[i].unsure = False
+            rows[i].notes = [n for n in rows[i].notes if "does not equal" not in n and n != "Missing number."] + \
+                ["Quantity, price and value were picked from the printed numbers so that they multiply out."]
+
+
+
+def _settle_numbers(rows, items, total) -> None:
+    """Keep the model's qty/rate/amount where they multiply out; otherwise find the numbers in the row that do, and make the lines add up to the printed total."""
+    bad = [i for i, r in enumerate(rows) if not consistent(r)]
+    if bad:
+        _solve_bad(rows, items, bad, total)
+    for r, it in zip(rows, items):          # a "value" that is only the taxable amount: the same row holds that amount plus its tax, and that is what was paid
+        cells = [_num(x) for x in it.get("cells")] if isinstance(it.get("cells"), list) else []
+        up = _with_tax(r.amount, cells)
+        if up and r.qty:
+            r.amount, r.rate = up, round(up / r.qty, 4)
+            r.notes = [n for n in r.notes if "does not equal" not in n] + ["The amount before tax was on the bill; the line value with tax is used, as that is what was paid."]
 
 
 def clean_rx(data) -> str:

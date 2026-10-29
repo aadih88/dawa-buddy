@@ -78,7 +78,14 @@ def _extract_json(text: str) -> Any:
     start = min([i for i in (text.find("{"), text.find("[")) if i >= 0], default=-1)
     if start > 0:
         text = text[start:]
-    return json.loads(text)
+    try:
+        return json.loads(text)
+    except ValueError:
+        # a "cells" list may hold a batch code or a date unquoted (K2100680, MAR-23): quote what is not a number, then try again
+        def quote(m):
+            items = [t.strip() for t in m.group(1).split(",") if t.strip()]
+            return '"cells":[' + ",".join(t if re.fullmatch(r"-?\d+(?:\.\d+)?", t) or t.startswith('"') else json.dumps(t) for t in items) + "]"
+        return json.loads(re.sub(r'"cells"\s*:\s*\[([^\]]*)\]', quote, text))
 
 
 def chat_json(system: str, user: str, model: Optional[str] = None, retries: int = 2) -> Any:
@@ -135,7 +142,17 @@ def chat_vision_json(image_b64: str, mime: str, instruction: str) -> Any:
                 {"type": "text", "text": instruction},
                 {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}"}}]}])
         content = resp.choices[0].message.content or ""
-    return _extract_json(content)
+    try:
+        return _extract_json(content)
+    except ValueError:                       # json.JSONDecodeError: one automatic retry with the problem named, before the user ever sees an error
+        if provider() == "ollama":
+            raise
+        resp = _nebius_create(
+            model=vm, temperature=0, max_tokens=3000,
+            messages=[{"role": "user", "content": [
+                {"type": "text", "text": instruction + "\nYour last answer was not valid JSON. Reply with ONLY valid JSON: every number a plain number (write 12 for 'GST 12 %'), every text in quotes."},
+                {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}"}}]}])
+        return _extract_json(resp.choices[0].message.content or "")
 
 
 def chat_vision_text(image_b64: str, mime: str, instruction: str) -> str:
