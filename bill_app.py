@@ -245,9 +245,33 @@ def calc_text(qty, rate, amount) -> str:
     return f"{qty:g} × {rupees(rate)} = {rupees(amount)}"
 
 
-def needs_strip_size(unit, mrp, pack) -> bool:
-    """A printed MRP is per strip: comparing it with a per-tablet price needs tablets per strip. (A per-strip price needs it too.)"""
-    return (unit == "strip" and not pack) or (unit == "tab" and bool(mrp) and not pack)
+def flag(v) -> bool:
+    """A yes/no cell of the table: a missing one (None or NaN, which is truthy) is a no."""
+    return False if v is None or (isinstance(v, float) and pd.isna(v)) else bool(v)
+
+
+def needs_strip_size(unit, mrp, pack, mrp_each=False) -> bool:
+    """Tablets per strip are needed only to convert: a per-strip MRP against a per-tablet price, or a per-strip price into a per-tablet one. A per-tablet MRP on a
+    per-tablet price needs no strip size at all."""
+    return (unit == "strip" and not pack) or (unit == "tab" and bool(mrp) and not mrp_each and not pack)
+
+
+MRP_BASIS = {"tab": "one tablet", "strip": "a whole strip"}
+
+
+def readout(unit, rate, mrp, mrp_each, pack) -> str:
+    """What the numbers on the card mean, in one sentence, recomputed whenever the choices change: it is the visible effect of choosing per tablet or per strip."""
+    if unit not in ("tab", "strip"):
+        return ""
+    paid, mrp_t = b.per_tablet_view(unit, rate, mrp, mrp_each, pack)
+    sold = f"You paid {rupees(rate)} per {'tablet' if unit == 'tab' else 'strip'}"
+    if unit == "strip":
+        sold += f" ({rupees(paid)} per tablet)" if paid else " (the price per tablet needs the tablets per strip)"
+    if not mrp:
+        return sold + "."
+    m = f"MRP on the bill {rupees(mrp)} for {'one tablet' if mrp_each else 'a whole strip'}"
+    m += f" ({rupees(mrp_t)} per tablet)" if (mrp_t and not mrp_each) else (f" ({rupees(mrp * pack)} per strip)" if mrp_each and pack else "")
+    return f"{sold}. {m}."
 
 
 def lines_form(df: pd.DataFrame, scope: str) -> pd.DataFrame:
@@ -271,26 +295,28 @@ def lines_form(df: pd.DataFrame, scope: str) -> pd.DataFrame:
         # a line whose numbers multiply out and that needed no guess is approved by looking at one row; the rest open so the eyes go where they are needed
         shell = st.expander(f"✓ {name}: {calc_text(qty, rate, amount)}", expanded=False) if status == rt.OK else st.container(border=True, key=f"card_{k}")
         with shell:
-            if status == rt.OK:
-                st.caption("Reads correctly. Open only to change how it was sold, the strip size or a number.")
-            else:
+            if status != rt.OK:
                 st.markdown(ui.line_head(name, calc_text(qty, rate, amount), f"MRP on bill {rupees(mrp)}" if mrp else "", bool(r.get("unsure")), mismatch), unsafe_allow_html=True)
                 st.markdown(ui.message("red" if status == rt.FIX else "amber", why), unsafe_allow_html=True)
             unit = st.segmented_control("Sold", unit_options(r), format_func=UNIT_LABEL.get, key=f"{k}_unit", label_visibility="collapsed", default=unit_default)
             if unit is None:
                 st.markdown(ui.need("How was this sold? Choose one so we can compare the price."), unsafe_allow_html=True)
-            pack = None
-            if unit and unit != "each" and (unit != "tab" or mrp):
-                pack_default = memo.get(k, {}).get("pack", num(r["pack"]) if r.get("pack") is not None and not pd.isna(r.get("pack")) else 0.0)
-                pack = st.number_input(PACK_LABEL[unit], min_value=0.0, step=1.0, key=f"{k}_pack", value=pack_default,
-                                       help="From the strip or box" + ("; suggested: check yours" if guesses.get(str(r["description"])) else ""))
-                g = guesses.get(str(r["description"]))
-                if g and pack == g[0]:
-                    st.caption(f"Suggested from {g[1]}. Check it on your strip.")
-                elif needs_strip_size(unit, mrp, pack):
-                    st.markdown(ui.need(f"Needed: the MRP of {rupees(mrp)} on your bill is for a whole strip. Enter the tablets per strip (printed on the strip or box) to check it."
-                                        if mrp else "Needed: the tablets per strip, to turn the strip price into a price per tablet."), unsafe_allow_html=True)
-            memo[k] = {"unit": unit, "pack": pack or 0.0}
+            pack = ed.get("pack", memo.get(k, {}).get("pack", num(r["pack"]) if r.get("pack") is not None and not pd.isna(r.get("pack")) else 0.0)) or None
+            g = guesses.get(str(r["description"]))
+            mrp_each = False
+            if mrp and unit in ("tab", "strip"):
+                # which way the bill's MRP is printed is its own fact: per tablet (MRP/Unit) or per whole strip. It is not the same question as how the line was sold.
+                basis = st.segmented_control("MRP on the bill is for", list(MRP_BASIS), format_func=MRP_BASIS.get, key=f"{k}_mb", default=memo.get(k, {}).get("basis", "tab" if flag(r.get("mrp_each")) else "strip"))
+                mrp_each = basis == "tab"
+            else:
+                basis = None
+            if unit in ("tab", "strip"):
+                st.caption(readout(unit, rate, mrp, mrp_each, pack or 0))
+                if g and pack and pack == g[0]:
+                    st.caption(f"Strip size of {g[0]:g} suggested from {g[1]}. Check it on your strip.")
+            if needs_strip_size(unit, mrp, pack, mrp_each):
+                st.markdown(ui.need("Needed: the tablets per strip, to compare a tablet price with a strip price. Enter it under “Fix a number”" + (f" (suggested {g[0]:g} from {g[1]}: check your strip)" if g else "") + "."), unsafe_allow_html=True)
+            memo[k] = {"unit": unit, "pack": pack or 0.0, "basis": basis}
             with st.popover("Fix a number", width="stretch"):
                 v = ver.get(k, 0)
                 with st.form(f"fix_{k}_{v}", border=False):         # nothing changes until the user presses Save
@@ -299,20 +325,22 @@ def lines_form(df: pd.DataFrame, scope: str) -> pd.DataFrame:
                     new_qty = c1.number_input("Quantity", min_value=0.0, value=float(qty), key=f"{k}_fq{v}")
                     new_rate = c2.number_input("Price each (₹)", min_value=0.0, value=float(rate), step=0.01, key=f"{k}_fr{v}")
                     new_mrp = st.number_input("MRP printed on the bill (optional)", min_value=0.0, value=float(mrp), step=0.01, key=f"{k}_fm{v}")
+                    new_pack = st.number_input(PACK_LABEL.get(unit, "Tablets per strip"), min_value=0.0, step=1.0, value=float(pack or 0), key=f"{k}_fp{v}",
+                                               help="From the strip or box. Only needed to convert between a tablet price and a strip price.")
                     st.caption("The total is worked out as quantity × price.")
                     saved = st.form_submit_button("Save changes", type="primary")
                 if saved:
-                    edits[k] = {"name": new_name.strip() or name, "qty": new_qty, "rate": new_rate, "mrp": new_mrp,
+                    edits[k] = {"name": new_name.strip() or name, "qty": new_qty, "rate": new_rate, "mrp": new_mrp, "pack": new_pack,
                                 "amount": round(new_qty * new_rate, 2) if (new_qty, new_rate) != (qty, rate) else amount}
                     ver[k] = v + 1
                     st.rerun()
                 if st.button("Remove this line", key=f"{k}_rm", help="It goes to “Removed lines” below, where you can put it back."):
                     removed.add(k)
                     trash.append({"k": k, "row": {"description": name, "qty": qty, "rate": rate, "amount": amount, "unit": unit, "pack": pack or None,
-                                                  "mrp": mrp or None, "unsure": bool(r.get("unsure"))}})
+                                                  "mrp": mrp or None, "unsure": bool(r.get("unsure")), "mrp_each": mrp_each}})
                     st.rerun()
         rows.append({"description": name, "qty": qty, "rate": rate, "amount": amount, "unit": unit, "pack": (pack or None),
-                     "mrp": (mrp or None), "unsure": bool(r.get("unsure"))})
+                     "mrp": (mrp or None), "unsure": bool(r.get("unsure")), "mrp_each": mrp_each})
     if trash:
         with st.expander(f"Removed lines ({len(trash)})"):
             for j, t in enumerate(list(trash)):
@@ -342,7 +370,7 @@ def add_line():
         if added and (not name.strip() or qty <= 0 or rate <= 0):
             st.caption("Give the item a name, a quantity and a price first.")
         elif added:
-            row = {"description": name.strip(), "qty": qty, "rate": rate, "amount": round(qty * rate, 2), "unit": None, "pack": None, "mrp": mrp or None, "unsure": False}
+            row = {"description": name.strip(), "qty": qty, "rate": rate, "amount": round(qty * rate, 2), "unit": None, "pack": None, "mrp": mrp or None, "unsure": False, "mrp_each": False}
             st.session_state.df = pd.DataFrame(st.session_state.df.to_dict("records") + [row], columns=st.session_state.df.columns)
             st.session_state.add_ver = v + 1
             st.rerun()
@@ -363,9 +391,9 @@ def dose_warning(text: str) -> bool:
 def review_gaps(df: pd.DataFrame) -> tuple[list[str], list[str]]:
     """One amber note at the top for the numbers a line still needs before it can be checked, with a button to find strip sizes online right where they are needed."""
     blank = lambda v: None if v is None or (isinstance(v, float) and pd.isna(v)) else v          # a missing number reaches us as NaN, which is truthy
-    recs = [{**r, "unit": blank(r["unit"]), "pack": blank(r["pack"]), "mrp": blank(r["mrp"])} for r in df.to_dict("records")]
+    recs = [{**r, "unit": blank(r["unit"]), "pack": blank(r["pack"]), "mrp": blank(r["mrp"]), "mrp_each": flag(r.get("mrp_each"))} for r in df.to_dict("records")]
     no_unit = [r["description"] for r in recs if not r["unit"]]
-    no_pack = [r for r in recs if needs_strip_size(r["unit"], r["mrp"], r["pack"])]
+    no_pack = [r for r in recs if needs_strip_size(r["unit"], r["mrp"], r["pack"], r["mrp_each"])]
     items = ([(d, "Choose how it was sold (per tablet, per strip…): we cannot compare the price without it.") for d in no_unit]
              + [(r["description"], f"Enter the tablets per strip: the MRP of {rupees(r['mrp'])} on your bill is for a whole strip." if r["mrp"]
                  else "Enter the tablets per strip, to turn the strip price into a price per tablet.") for r in no_pack])
@@ -715,7 +743,7 @@ def listing_findings(fs) -> list[dict]:
         lst = st.session_state.get("listings", {}).get(f.line.desc.lower())
         if not lst or not lst.per_tablet_max:
             continue
-        printed = f.line.mrp / f.line.pack if f.line.mrp and f.line.pack else None
+        printed = b.mrp_per_tablet(f.line) if f.line.mrp else None
         verdict = listings.judge(lst, b.line_unit_price(f.line), printed)
         if verdict:
             out.append({"f": f, "lst": lst, **verdict})

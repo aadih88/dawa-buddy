@@ -43,11 +43,11 @@ INJ NS 100ML IV with each dose x 7 days""",
     },
 }
 
-COLS = ["description", "qty", "rate", "amount", "unit", "pack", "mrp", "unsure"]
+COLS = ["description", "qty", "rate", "amount", "unit", "pack", "mrp", "unsure", "mrp_each"]
 
 
 def frame(name: str) -> pd.DataFrame:
     """The sample's bill as the editable table the app shows."""
     lines, _ = b.parse_bill_ex(SAMPLES[name]["bill"])
     return pd.DataFrame([{"description": l.desc, "qty": l.qty, "rate": l.rate, "amount": l.amount, "unit": l.unit,
-                          "pack": l.pack, "mrp": l.mrp, "unsure": False} for l in lines], columns=COLS)
+                          "pack": l.pack, "mrp": l.mrp, "unsure": False, "mrp_each": l.mrp_each} for l in lines], columns=COLS)

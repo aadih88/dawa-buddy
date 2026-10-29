@@ -692,7 +692,7 @@ def test_lines_that_need_a_strip_size_are_named_at_the_top_and_flagged_on_the_ca
     at = _review(monkeypatch, ROWS2)
     page = html_blocks(at)
     assert "1 line needs a number before we can check it" in page and "SHELCAL 500MG TAB" in page.split("needs a number")[1]
-    assert "Needed: the MRP of ₹163.45 on your bill is for a whole strip" in page
+    assert "Needed: the tablets per strip, to compare a tablet price with a strip price. Enter it under “Fix a number”" in page
     assert "1 line will not be checked against its printed MRP" in " ".join(c.value for c in at.caption)
     assert "TELMA 40 TAB" not in page.split("needs a number")[1].split("</div></div>")[0]          # Telma has its pack size: not listed
 
@@ -712,7 +712,7 @@ def test_find_strip_sizes_online_sits_on_the_review_screen_names_the_medicines_a
     btn.click().run()
     assert not at.exception and at.session_state["df"].loc[1, "pack"] == 15
     assert "needs a number" not in html_blocks(at)                                              # the gap is closed; the suggestion is labelled for checking
-    assert "Suggested from pharmacy websites" in " ".join(c.value for c in at.caption)
+    assert "suggested from pharmacy websites" in " ".join(c.value for c in at.caption)
 
 
 def test_results_lookup_callout_names_the_medicines_it_will_look_up(monkeypatch):
@@ -849,3 +849,42 @@ def test_a_generic_below_the_flag_ratio_is_still_said_out_loud(monkeypatch):
     assert "We flag a generic only at 2× or more." in page and "you paid 1.6× that" in page          # in the folded row of the line itself
     only_mild = html_blocks(_bill_app(monkeypatch, rows[:2]))
     assert "None flagged (we flag a generic at 2× the price or more). 2 lines have a generic listed too" in only_mild
+
+
+# --- per tablet / per strip: the choice must visibly change what the numbers mean, and the strip size lives in the fix form ---
+def _card_app(monkeypatch, row):
+    import pandas as pd
+    monkeypatch.setenv("DAWA_PROVIDER", "offline")
+    at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
+    cols = ["description", "qty", "rate", "amount", "unit", "pack", "mrp", "unsure", "mrp_each"]
+    at.session_state["df"] = pd.DataFrame([dict(zip(cols, row))], columns=cols)
+    at.session_state["rx"], at.session_state["total"], at.session_state["stage"] = "", 0.0, "review"
+    at.run()
+    return at
+
+
+def _captions(at):
+    return " | ".join(c.value for c in at.caption)
+
+
+def test_choosing_per_strip_changes_what_the_card_says(monkeypatch):
+    at = _card_app(monkeypatch, ("SHELCAL 500MG TAB", 30, 9.81, 294.3, "tab", 15, 163.45, False, False))
+    assert "You paid ₹9.81 per tablet" in _captions(at) and "MRP on the bill ₹163.45 for a whole strip (₹10.90 per tablet)" in _captions(at)
+    at.segmented_control(key="r0_0_unit").set_value("strip").run()                                   # the same numbers, read as strips
+    assert "You paid ₹9.81 per strip (₹0.65 per tablet)" in _captions(at) and "per tablet)" in _captions(at)
+    at.segmented_control(key="r0_0_mb").set_value("tab").run()                                       # and the MRP as per tablet: a different strip price
+    assert "MRP on the bill ₹163.45 for one tablet (₹2,451.75 per strip)" in _captions(at)
+
+
+def test_the_strip_size_is_asked_for_only_when_a_conversion_needs_it_and_in_the_fix_form(monkeypatch):
+    # a per-tablet MRP on a per-tablet price needs no strip size, so nothing is asked and no number is invented
+    at = _card_app(monkeypatch, ("DOLO 650MG TAB", 6, 2.24, 13.44, "tab", None, 2.24, False, True))
+    assert "Needed" not in html_blocks(at) and "tablets per strip" not in html_blocks(at)
+    assert "You paid ₹2.24 per tablet. MRP on the bill ₹2.24 for one tablet" in _captions(at)
+    # a per-strip MRP on a per-tablet price does: the card says so and points at the fix form, which holds the field
+    at = _card_app(monkeypatch, ("SHELCAL 500MG TAB", 30, 9.81, 294.3, "tab", None, 163.45, False, False))
+    assert "Enter it under “Fix a number”" in html_blocks(at)
+    assert at.number_input(key="r0_0_fp0") is not None and at.number_input(key="r0_0_fp0").label.startswith("Tablets per strip")
+    at.number_input(key="r0_0_fp0").set_value(15)
+    [b for b in at.button if b.label == "Save changes"][0].click().run()
+    assert "Needed" not in html_blocks(at) and "₹10.90 per tablet" in _captions(at)                   # filled in, and now the conversion is shown

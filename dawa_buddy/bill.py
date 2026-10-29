@@ -42,7 +42,8 @@ class BillLine:
     amount: float
     unit: Optional[str] = None      # 'tab' or 'strip' (explicit: bills are ambiguous and a wrong guess would accuse falsely)
     pack: Optional[float] = None    # tablets per strip, ml per bottle or gm per tube
-    mrp: Optional[float] = None     # MRP printed on the PACK (per strip / bottle / tube), as bills print it
+    mrp: Optional[float] = None     # MRP as the bill prints it: per strip / bottle / tube, or per tablet when mrp_each
+    mrp_each: bool = False          # the printed MRP is for ONE tablet (the column says MRP/Unit), not for a strip
 
 
 @dataclass
@@ -298,6 +299,19 @@ def line_unit_price(line: BillLine) -> Optional[float]:
     return None
 
 
+def per_tablet_view(unit, rate, mrp, mrp_each, pack) -> tuple[Optional[float], Optional[float]]:
+    """(price paid per tablet, MRP per tablet) from what the card says. Either is None while the strip size it needs is missing. The card shows these live,
+    so choosing 'per tablet' or 'per strip' visibly changes what the numbers mean."""
+    u = (unit or "").lower()
+    paid = rate if u in TAB_UNITS else (rate / pack if u in STRIP_UNITS and pack else None)
+    per_tab_mrp = None if not mrp else (mrp if mrp_each else (mrp / pack if pack else None))
+    return paid, per_tab_mrp
+
+
+def mrp_per_tablet(line: BillLine) -> Optional[float]:
+    return per_tablet_view(line.unit, line.rate, line.mrp, line.mrp_each, line.pack)[1]
+
+
 def suggest_pack(desc: str) -> Optional[int]:
     """Tablets per strip the brand table lists for this brand: only a SUGGESTION for the user to confirm from the strip."""
     low = desc.lower()
@@ -314,8 +328,10 @@ def _mrp_on_billed_basis(line: BillLine) -> Optional[float]:
     if u in EACH_UNITS:
         return line.mrp
     if u in TAB_UNITS:
-        return line.mrp / line.pack if line.pack else None
-    return line.mrp if u in STRIP_UNITS | BOTTLE_UNITS | TUBE_UNITS | VIAL_UNITS and u not in ("ml", "gm", "g") else None
+        return line.mrp if line.mrp_each else (line.mrp / line.pack if line.pack else None)
+    if u in STRIP_UNITS:
+        return (line.mrp * line.pack if line.pack else None) if line.mrp_each else line.mrp
+    return line.mrp if u in BOTTLE_UNITS | TUBE_UNITS | VIAL_UNITS else None
 
 
 def _audit_core(line: BillLine, confirmed: dict | None = None) -> Finding:

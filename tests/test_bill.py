@@ -354,9 +354,9 @@ def test_vision_cleaning_handles_tax_inclusive_per_unit_bills():
         {"description": "LACTIHEP SYP", "qty": 1, "rate": 278, "amount": 278, "unit": None, "mrp": 278},
         {"description": "LOX 2% JELLY", "qty": 1, "rate": 35.5, "amount": 35.5, "unit": None},
         {"description": "X 10MG TAB", "qty": 2, "rate": 3, "amount": 6, "unit": "tab", "pack": 10, "mrp": 3, "mrp_per": "unit"}]})
-    assert rows[0].description == "DOLO 650MG TAB" and rows[0].pack == 1.0 and rows[0].mrp == 2.24      # per-tablet MRP: the audit divides by the pack, so pack 1
+    assert rows[0].description == "DOLO 650MG TAB" and rows[0].mrp_each and rows[0].pack is None and rows[0].mrp == 2.24      # per-tablet MRP kept as printed, no strip size invented
     assert rows[1].unit == "bottle" and rows[2].unit == "tube"                                      # the name states the form
-    assert rows[3].mrp == 30.0 and rows[3].pack == 10                                              # known strip size: per-tablet MRP expressed per strip
+    assert rows[3].mrp == 3.0 and rows[3].mrp_each and rows[3].pack == 10                          # known strip size: still the per-tablet MRP as printed
     f = b.audit_line(vision.rows_to_lines(rows)[0])
     assert f.tier != b.TIER_ABOVE_MRP                                                            # charged = MRP, never "above"
 
@@ -403,7 +403,7 @@ def test_missing_rate_is_worked_out_and_mrp_per_tablet_or_per_strip_is_told_from
         {"description": "C TAB", "qty": 6, "rate": 11.0, "amount": 66.0, "unit": "tab", "mrp": 11.0}]})        # per-tablet MRP: about the price of one tablet
     assert rows[0].rate == 5.0
     assert rows[1].pack is None and rows[1].mrp == 163.45
-    assert rows[2].pack == 1.0
+    assert rows[2].mrp_each and rows[2].pack is None and not rows[1].mrp_each
 
 
 def test_a_batch_code_or_date_in_the_numbers_list_does_not_break_the_json():

@@ -38,6 +38,7 @@ class Row:
     unit: str | None = None          # 'tab' | 'strip' | 'bottle' | 'tube' | None (user must choose)
     pack: float | None = None
     mrp: float | None = None
+    mrp_each: bool = False           # the printed MRP is for one tablet, not a strip
     unsure: bool = False
     notes: list = field(default_factory=list)
 
@@ -79,9 +80,7 @@ def clean_bill(data) -> tuple[list[Row], float | None]:
         pk = _num(d.get("pack"))
         r.pack = pk if pk and pk > 0 else None
         if r.unit == "tab" and r.mrp and str(d.get("mrp_per") or "").lower() == "unit":
-            # The bill prints the MRP per tablet (tax included). The audit divides a printed MRP by tablets per strip, so express it per
-            # strip when the strip size is known; otherwise treat the "pack" as one tablet, which gives the same per-tablet MRP.
-            r.mrp, r.pack = (r.mrp * r.pack, r.pack) if r.pack else (r.mrp, 1.0)
+            r.mrp_each = True        # kept as printed (per tablet, tax included); the audit does not need a strip size for it
             r.notes.append("The bill prints the MRP per tablet, tax included.")
         if r.unit is None:
             r.notes.append("Unit not read: choose tab, strip, bottle, tube or vial.")
@@ -191,11 +190,11 @@ def _derive(r, cells) -> None:
 
 def settle_mrp(r) -> None:
     """A bill's MRP may be per tablet or per strip; say which from the numbers, as a person would. A per-strip MRP is several times the price of one tablet,
-    so one that is under twice the price is per tablet. The audit divides a printed MRP by the strip size, so a per-tablet MRP is carried as a strip of one."""
+    so one that is under twice the price is per tablet. The result is kept as its own fact (mrp_each); no strip size is invented for it."""
     if r.unit != "tab" or not r.mrp or not r.rate:
         return
-    if r.mrp < 2 * r.rate and not (r.pack and r.pack > 1):
-        r.pack, r.notes = 1.0, r.notes + ["MRP read as per tablet (it is under twice the price of a tablet), tax included."]
+    if r.mrp < 2 * r.rate and not r.mrp_each:
+        r.mrp_each, r.notes = True, r.notes + ["MRP read as per tablet (it is under twice the price of a tablet), tax included."]
 
 
 def _solve_bad(rows, items, bad, total) -> None:
@@ -269,5 +268,5 @@ def rows_to_lines(rows: list[Row]) -> list[BillLine]:
         if r.qty is None or r.rate is None or r.amount is None or not r.description:
             continue
         out.append(BillLine(raw=r.description, desc=r.description, qty=r.qty, rate=r.rate, amount=r.amount,
-                            unit=r.unit, pack=r.pack, mrp=r.mrp))
+                            unit=r.unit, pack=r.pack, mrp=r.mrp, mrp_each=bool(r.mrp_each)))
     return out
