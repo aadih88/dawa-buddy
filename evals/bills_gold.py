@@ -7,7 +7,7 @@ BILLS = [
 ATORVA 10 TAB | 30 | 4.90 | 147.00 | tab
 ECOSPRIN 75 TAB | 30 | 0.40 | 12.00 | tab
 CLOPITAB 75 TAB | 30 | 6.50 | 195.00 | tab
-DOLO 650 TAB | 6 | 2.10 | 12.60 | tab
+DOLO 650 TAB | 6 | 1.90 | 11.40 | tab
 PHENYTOIN 100 TAB | 30 | 1.90 | 57.00 | tab
 IV SET DISPOSABLE | 4 | 85.00 | 340.00
 ROOM RENT GENERAL WARD | 3 | 1500.00 | 4500.00""",
@@ -23,7 +23,7 @@ GLIMEPIRIDE 1 TAB | 20 | 6.50 | 130.00 | tab""",
  {"id": "synthetic_ambiguous", "text": """PANTOP 40 | 10 | 120.00 | 1200.00
 TELMA 40 TAB | 10 | 8.00 | 90.00""",
   "expected": {"PANTOP 40": b.TIER_UNIT_UNCLEAR, "TELMA 40 TAB": b.TIER_UNIT_UNCLEAR}},
- {"id": "synthetic_injections", "text": """AACEF 250 INJ | 1 | 29.50 | 29.50 | vial
+ {"id": "synthetic_injections", "text": """AACEF 250 INJ | 1 | 26.00 | 26.00 | vial
 LASIX INJ | 5 | 25.00 | 125.00 | vial | 2
 AMICAP 500 INJ | 1 | 150.00 | 150.00 | vial
 LASIX 20 INJ | 1 | 30.00 | 30.00 | vial""",
