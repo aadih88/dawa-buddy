@@ -465,3 +465,34 @@ def test_the_shelcal_prescription_is_compared_with_the_bill_even_with_a_dose_pat
     assert "Shelcal-Xt 0" not in f.note and "cannot say how they differ" not in f.note        # the dose pattern's 0 is not a strength
     assert "prescribed is calcium 500 mg + vitamin d3 2000 iu" in f.note and "billed is calcium 500 mg + vitamin d3 250 iu" in f.note
     assert b.audit_line(lines[0]).tier == b.TIER_SUPPLEMENT                                   # knowing its composition does not turn a supplement into a price-listed medicine
+
+
+# --- a rate printed per strip while the quantity counts tablets, and a discount on the whole bill (the third real bill, 29 Oct 2026) ---
+def test_a_rate_printed_per_strip_with_a_quantity_in_tablets_is_read_the_way_a_person_reads_it():
+    from dawa_buddy import vision as v
+    rows, total, meta = v.clean_bill_ex({"items": [
+        {"description": "CIFRAN CT TAB", "qty": 6, "rate": 191.0, "amount": 114.6, "unit": "tab", "pack": None, "mrp": 191.0, "mrp_per": "unit", "cells": [1, 6, 191.0, 114.6]},
+        {"description": "SHDICLO SP TAB", "qty": 6, "rate": 125.0, "amount": 75.0, "unit": "tab", "pack": 10, "mrp": 125.0, "mrp_per": "unit", "cells": [2, 6, 125.0, 75.0]}],
+        "subtotal": 189.6, "discount": 20, "total": 170})
+    for r, price, strip in zip(rows, (19.1, 12.5), (191.0, 125.0)):
+        assert (r.qty, r.rate, round(r.amount, 2), r.pack, r.mrp, r.mrp_each, r.unit) == (6.0, price, round(price * 6, 2), 10.0, strip, False, "tab")      # per tablet, strip of 10, the strip price kept as the MRP
+        assert any("rate per strip of 10" in n for n in r.notes)
+    assert total == 170.0 and meta == {"discount": 20.0, "subtotal": 189.6}
+    # a rate that is simply wrong stays wrong: 7 tablets at 191 per strip of 10 is not 114.60
+    bad, _, _ = v.clean_bill_ex({"items": [{"description": "X TAB", "qty": 7, "rate": 191.0, "amount": 114.6, "unit": "tab", "cells": [7, 191.0, 114.6]}]})
+    assert bad[0].rate == 191.0 and not bad[0].pack
+
+
+def test_a_discount_on_the_whole_bill_never_turns_a_legal_price_into_an_accusation():
+    # ceftriaxone 250 mg: ceiling 29.02 (32.50 with GST). 36 a vial is above it, but 15% off the whole bill makes 30.60: a legal price
+    ns = {}
+    src = open(__import__("pathlib").Path(__file__).resolve().parent.parent / "bill_app.py").read()
+    start = src.index("def spread_discount"); end = src.index("def results(")
+    exec(src[start:end], {"b": b}, ns)
+    lines, _ = b.parse_bill_ex("AACEF 250 INJ | 1 | 36.00 | 36.00 | vial")
+    assert b.audit_line(lines[0]).tier == b.TIER_ABOVE_CEILING
+    spread = ns["spread_discount"](lines, 5.4)
+    f = b.audit_line(spread[0])
+    assert f.tier != b.TIER_ABOVE_CEILING and abs(spread[0].rate - 30.6) < 0.01 and spread[0].list_rate == 36.0 and spread[0].shown_amount == 36.0
+    from dawa_buddy import transparency as t
+    assert "before the discount on the whole bill" in dict(t.reference(f, lambda x: f"₹{x:g}")[0])["You were charged (per vial)"]

@@ -44,6 +44,13 @@ class BillLine:
     pack: Optional[float] = None    # tablets per strip, ml per bottle or gm per tube
     mrp: Optional[float] = None     # MRP as the bill prints it: per strip / bottle / tube, or per tablet when mrp_each
     mrp_each: bool = False          # the printed MRP is for ONE tablet (the column says MRP/Unit), not for a strip
+    list_rate: Optional[float] = None   # the rate before a discount on the whole bill was spread over the lines (None when there was none)
+    list_amount: Optional[float] = None # the amount as printed on the bill, before that
+
+    @property
+    def shown_amount(self) -> float:
+        """The line total as the patient sees it on the paper."""
+        return self.list_amount if self.list_amount is not None else self.amount
 
 
 @dataclass

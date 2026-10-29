@@ -11,12 +11,13 @@ from .bill import form_of_desc, BillLine, TAB_UNITS, STRIP_UNITS, BOTTLE_UNITS, 
 
 BILL_PROMPT = """You are transcribing a photo of an Indian pharmacy or hospital bill. Reply with ONLY JSON:
 {"items":[{"description":str,"qty":number|null,"rate":number|null,"amount":number|null,
-"unit":"tab"|"strip"|"bottle"|"tube"|"vial"|null,"pack":number|null,"mrp":number|null,"mrp_per":"unit"|"pack"|null,"cells":[number],"unsure":bool}],"total":number|null}
+"unit":"tab"|"strip"|"bottle"|"tube"|"vial"|null,"pack":number|null,"mrp":number|null,"mrp_per":"unit"|"pack"|null,"cells":[number],"unsure":bool}],"subtotal":number|null,"discount":number|null,"total":number|null}
 Rules: copy text exactly as printed; one object per bill line; do not calculate or correct any number;
 amount is the final value of the line as charged, TAX INCLUDED: the column called Net Amt, Amount, Total, Value or Val In-GST. Never use a column called Taxable or Taxable Value.
 qty is the number of units sold; rate is the price per unit as printed (MRP/Unit or Rate or MRP). Some bills print two values in one cell, one above the other (for example qty above discount %, or MRP above net rate): take the top value for qty and the MRP, and ignore the discount %.
 mrp_per: "unit" if the printed MRP is for ONE tablet/unit (the column says MRP/Unit, or the bill prints one per-unit price, labelled MRP, which is also the rate); "pack" if it is for a strip, bottle or box; null if unclear. If the only per-unit price column is labelled MRP, set both rate and mrp to it.
 cells: EVERY number printed in that line's row (skip batch codes, dates and HSN codes: they are text, not numbers), left to right, one entry per printed value, copied exactly (include tax and discount percentages as plain numbers: write 12 for "GST 12 %", never text inside the list; and list both values of a cell that holds two stacked values, top first). Do not skip any column, and do not work anything out: the numbers are checked afterwards.
+A line named Discount, Less Dis, Rebate, Round off, Delivery, Packing or similar is NOT an item: leave it out of the items. discount is the rupee amount taken off the WHOLE bill (a positive number), subtotal is the total before it, and total is the final amount payable (Net Amt). pack is the Pack column ("10TAB" means 10).
 description is only the medicine name and strength: leave out manufacturer names, HSN codes, batch numbers and codes like "H/30049061/Aristo".
 use null for anything you cannot read or that is not printed; set unit ONLY if the bill states it (e.g. "STRIP", "TAB", "10's", "BOTTLE", "TUBE"); pack is tablets per strip, ml per bottle or gm per tube;
 set mrp ONLY if an MRP is printed for that line, copied exactly as printed (it is usually per strip, even when the sale price is per tablet); set unsure true if any digit on that line is hard to read. Include non-medicine lines (rooms, consumables) too.
@@ -61,6 +62,11 @@ def _name_only(desc: str) -> str:
 
 
 def clean_bill(data) -> tuple[list[Row], float | None]:
+    return clean_bill_ex(data)[:2]
+
+
+def clean_bill_ex(data) -> tuple[list[Row], float | None, dict]:
+    """(rows, printed total, bill-level facts). The facts are the discount taken off the whole bill and the subtotal before it, when the bill prints them."""
     rows: list[Row] = []
     items = data.get("items", []) if isinstance(data, dict) else []
     for d in items:
@@ -95,7 +101,9 @@ def clean_bill(data) -> tuple[list[Row], float | None]:
     _settle_numbers(rows, [d for d in items if isinstance(d, dict) and str(d.get("description") or "").strip()], total)
     for r in rows:
         settle_mrp(r)
-    return rows, total
+    disc = _num(data.get("discount")) if isinstance(data, dict) else None
+    sub_total = _num(data.get("subtotal")) if isinstance(data, dict) else None
+    return rows, total, {"discount": disc if disc and disc > 0 else None, "subtotal": sub_total}
 
 
 # ----------------------------------------------------------------------------- arithmetic: which printed numbers are quantity, price and line value
@@ -214,8 +222,29 @@ def _solve_bad(rows, items, bad, total) -> None:
 
 
 
+PACK_SIZES = {2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 15, 16, 20, 24, 25, 28, 30, 32, 40, 50, 60, 100}
+
+
+def _per_pack_rate(r) -> None:
+    """A rate printed per STRIP while the quantity counts TABLETS ('6 | 10TAB | CIFRAN CT | rate 191.00 | amount 114.60'): quantity x rate is ten times the amount, because
+    six tablets are six tenths of a strip. A person divides by the strip size. The printed rate is then the strip's price (taken as its MRP when none is printed) and
+    the price per tablet is the amount over the quantity."""
+    if None in (r.qty, r.rate, r.amount) or not r.qty or not r.amount or consistent(r):
+        return
+    ratio = r.qty * r.rate / r.amount
+    k = round(ratio)
+    if k in PACK_SIZES and abs(ratio - k) <= 0.01 * k and (not r.pack or r.pack == k):
+        r.pack, r.mrp, r.mrp_each, r.unit = float(k), r.mrp or r.rate, False, "tab"
+        r.rate = round(r.amount / r.qty, 4)
+        r.unsure = False
+        r.notes = [n for n in r.notes if "does not equal" not in n and "MRP per tablet" not in n] + \
+            [f"The bill prints the rate per strip of {k}; the price per tablet is the amount divided by the quantity."]
+
+
 def _settle_numbers(rows, items, total) -> None:
     """Keep the model's qty/rate/amount where they multiply out; otherwise find the numbers in the row that do, and make the lines add up to the printed total."""
+    for r in rows:
+        _per_pack_rate(r)
     bad = [i for i, r in enumerate(rows) if not consistent(r)]
     if bad:
         _solve_bad(rows, items, bad, total)
@@ -252,8 +281,13 @@ def prepare(img: bytes, mime: str, max_side: int = 1800) -> tuple[bytes, str]:
 
 
 def read_bill_photo(img: bytes, mime: str):
+    return read_bill_photo_ex(img, mime)[:2]
+
+
+def read_bill_photo_ex(img: bytes, mime: str):
+    """(rows, printed total, bill-level facts such as a discount on the whole bill)."""
     img, mime = prepare(img, mime)
-    return clean_bill(llm.chat_vision_json(_b64(img), mime, BILL_PROMPT))
+    return clean_bill_ex(llm.chat_vision_json(_b64(img), mime, BILL_PROMPT))
 
 
 def read_rx_photo(img: bytes, mime: str) -> str:

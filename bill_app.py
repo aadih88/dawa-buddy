@@ -93,7 +93,7 @@ def finding_html(f: b.Finding) -> str:
         body = first_sentence(f.note)
     why = f.note + (" Tip: under 'Edit the numbers', add the maker or 'glass' / 'non-glass' to the item name to settle this." if f.basis == "bag" else "")
     rows, foot = transparency.reference(f, rupees, billed_word)
-    return ui.card(kind, f.line.desc, RESULT[f.tier][1], total=f"{rupees(f.line.amount)} total", body=body, visual=visual, why=why,
+    return ui.card(kind, f.line.desc, RESULT[f.tier][1], total=f"{rupees(f.line.shown_amount)} total", body=body, visual=visual, why=why,
                    why_label="How we checked this", facts_html=ui.facts(rows) if rows else "")
 
 
@@ -178,7 +178,7 @@ def read_photos(bill_img, rx_img):
     reads = st.session_state.get("photo_reads", 0) + 1
     with st.spinner("Reading your bill..."):
         try:
-            rows, total = vision.read_bill_photo(bill_img.getvalue(), bill_img.type)
+            rows, total, meta = vision.read_bill_photo_ex(bill_img.getvalue(), bill_img.type)
             rx = vision.read_rx_photo(rx_img.getvalue(), rx_img.type) if rx_img else ""
         except Exception as e:
             st.session_state.update(reading=False, start_msg=("red", f"We could not read that photo ({type(e).__name__}). Try a sharper, flatter photo."))
@@ -188,7 +188,8 @@ def read_photos(bill_img, rx_img):
         st.rerun()
     reset()
     df = pd.DataFrame([r.__dict__ for r in rows]).drop(columns=["notes"], errors="ignore")
-    st.session_state.update(df=enrich(df), rx=rx, total=total, stage="review", photo_reads=reads, load_id=1,
+    disc, _ = rt.settle_discount([r.amount for r in rows], total, meta.get("discount"))
+    st.session_state.update(df=enrich(df), rx=rx, total=total, stage="review", photo_reads=reads, load_id=1, discount0=disc,
                             line_notes={r.description: list(r.notes) for r in rows})
     st.rerun()
 
@@ -417,21 +418,30 @@ def review():
     top = st.container()                                        # filled after the cards are drawn: the note depends on what the cards now say
     df = lines_form(st.session_state.df, "r")
     add_line()
-    total = st.number_input("Total printed on the bill (optional)", value=float(st.session_state.get("total") or 0.0))
+    total = st.number_input("Total payable on the bill (optional)", value=float(st.session_state.get("total") or 0.0))
+    d0 = float(st.session_state.get("discount0", 0.0))
+    with st.expander("Discount on the whole bill" + (f": {rupees(d0)}" if d0 else " (if any)"), expanded=bool(d0)):
+        discount = st.number_input("Discount on the whole bill (₹)", min_value=0.0, value=d0, step=1.0, key="discount_in",
+                                   help="Some bills take a discount off the final total instead of off each line (“Less dis”). It is spread over the lines when prices are compared.")
     with st.expander("Prescription lines", expanded=unclear):
         st.text_area("One medicine per line, as written", key="rx", height=130, label_visibility="collapsed")
     notes = st.session_state.get("line_notes", {})
     sts = [rt.line_status(r["qty"], r["rate"], r["amount"], r["unit"] if r["unit"] in UNIT_LABEL else None, bool(r.get("unsure")), notes.get(str(r["description"]), []))[0]
            for r in df.to_dict("records")]
-    tie, line_sum = rt.bill_tie(df["amount"].tolist(), total)
+    tie, line_sum = rt.bill_tie(df["amount"].tolist(), total, discount)
     sm = rt.summary(sts)
     all_clear = sm[rt.FIX] == 0 and sm[rt.CHECK] == 0 and tie != "mismatch"
     with top:
         n = sm["lines"]
         head = f"{n} line{'s' if n != 1 else ''} read." + (f" {sm[rt.FIX]} need{'s' if sm[rt.FIX] == 1 else ''} a correction." if sm[rt.FIX] else "") + \
                (f" {sm[rt.CHECK]} to compare with your paper." if sm[rt.CHECK] else "") + (" Every line multiplies out." if all_clear or (not sm[rt.FIX] and not sm[rt.CHECK]) else "")
-        tie_text = {"match": f" The lines add up to the printed total, {rupees(total)}.", "none": "",
-                    "mismatch": f" The lines add up to {rupees(line_sum)} but the total on the bill is {rupees(total)}: look at the open lines."}[tie]
+        if discount:
+            tie_text = {"match": f" The lines add up to {rupees(line_sum)}; less the {rupees(discount)} discount on the whole bill, that is the printed total, {rupees(total)}.", "none": "",
+                        "mismatch": f" The lines add up to {rupees(line_sum)}; less the {rupees(discount)} discount that is {rupees(line_sum - discount)}, but the total on the bill is "
+                                    f"{rupees(total)}: look at the open lines or the discount."}[tie]
+        else:
+            tie_text = {"match": f" The lines add up to the printed total, {rupees(total)}.", "none": "",
+                        "mismatch": f" The lines add up to {rupees(line_sum)} but the total on the bill is {rupees(total)}: look at the open lines, or add a discount on the whole bill if there is one."}[tie]
         st.markdown(ui.message("green" if all_clear else "red" if sm[rt.FIX] else "amber", head + tie_text), unsafe_allow_html=True)
         no_unit, no_pack = review_gaps(df)
     checking = st.session_state.get("checking", False)
@@ -447,7 +457,7 @@ def review():
     if checking:
         with st.spinner("Checking prices..."):
             refresh_lines(df)
-            st.session_state.update(total=total, stage="results", checking=False)
+            st.session_state.update(total=total, discount=discount, stage="results", checking=False)
             st.rerun()
 
 
@@ -530,7 +540,7 @@ def mild_generic(f) -> bool:
 
 def mini(f) -> str:
     """One line per folded-away item: what it is, how it was judged, and (for 'not covered') why there is nothing to compare with."""
-    right = rupees(f.line.amount)
+    right = rupees(f.line.shown_amount)
     label = html.escape(RESULT[f.tier][1])
     why = ""
     if f.tier in (b.TIER_NO_BENCHMARK, b.TIER_NOT_MEDICINE, b.TIER_SUPPLEMENT):
@@ -557,10 +567,21 @@ def needs_identifying(f) -> bool:
     return f.basis != "bag" and (f.tier == b.TIER_NEEDS_CONFIRM or (f.tier == b.TIER_NO_BENCHMARK and not f.ingredients))
 
 
-def results(df, total):
+def spread_discount(lines, discount):
+    """A discount on the whole bill lowers what was paid for every line, so the price checks must use the price after it: spread over the lines in proportion to
+    their amounts. Judging the price before the discount could call a line overpriced that the patient in fact paid a legal price for. The rate before it is kept."""
+    s = sum(l.amount for l in lines)
+    if discount and 0 < discount < s:
+        for l in lines:
+            l.list_rate, l.list_amount = l.rate, l.amount
+            l.rate, l.amount = round(l.rate * (s - discount) / s, 4), round(l.amount * (s - discount) / s, 2)
+    return lines
+
+
+def results(df, total, discount=0.0):
     confirmed = st.session_state.setdefault("confirmed", {})
     rows = [vision.Row(**{k: (None if pd.isna(v) else v) for k, v in rec.items() if k in COLS}) for rec in df.to_dict("records")]
-    lines = vision.rows_to_lines(rows)
+    lines = spread_discount(vision.rows_to_lines(rows), discount)
     fs = [b.audit_line(l, confirmed) for l in lines]
     if webcheck.available() and not st.session_state.get("auto_listed") and not st.session_state.get("sample"):
         # The MRP on a bill is the seller's own figure; pharmacy websites are the only independent check on it. Look them up once, without a button the patient
@@ -677,7 +698,7 @@ def peer_cards(found: list[dict]) -> list[str]:
         kind = "amber" if x["higher"] else "green"
         visual = ui.meter(paid, hi, kind, f"You paid {rupees(paid)} per tablet", f"NPPA-priced up to {rupees(hi)} (before GST)")
         st.markdown(ui.card(kind, f.line.desc, "Same combination, price-controlled lower elsewhere" if x["higher"] else "In line with NPPA-priced versions",
-                            total=f"{rupees(f.line.amount)} total", body=f"{n} other compan{'ies' if n > 1 else 'y'}: {rupees(lo)} to {rupees(hi)} per tablet before GST",
+                            total=f"{rupees(f.line.shown_amount)} total", body=f"{n} other compan{'ies' if n > 1 else 'y'}: {rupees(lo)} to {rupees(hi)} per tablet before GST",
                             visual=visual, why=why), unsafe_allow_html=True)
         st.caption("Sources: " + " · ".join(f"[NPPA order]({u})" for u in urls[:4]))
         if x["higher"]:
@@ -756,14 +777,14 @@ def listing_cards(found: list[dict]) -> list[str]:
             meta = (f"Bill prints MRP {rupees(value * (f.line.pack or 1))} per strip ({rupees(value)} per tablet) · listed online: {rupees(ref)} per tablet ({sites})")
             why = ("MRP can differ by batch and listings can lag, so this is a question, not a finding. Ask to see the MRP printed on the strip. "
                    "NPPA lets the MRP of a non-scheduled medicine rise by at most 10% a year.")
-            st.markdown(ui.card("amber", f.line.desc, "Printed MRP is higher than the pharmacy-website listings", total=f"{rupees(f.line.amount)} total",
+            st.markdown(ui.card("amber", f.line.desc, "Printed MRP is higher than the pharmacy-website listings", total=f"{rupees(f.line.shown_amount)} total",
                                 visual=ui.meter(value, ref, "amber", f"Bill prints {rupees(value)} per tablet", f"Listed online {rupees(ref)} ({sites})"), why=why), unsafe_allow_html=True)
             lines_out.append(f"{f.line.desc}: the bill prints an MRP of {rupees(value)} per tablet; pharmacy websites ({sites}) list {rupees(ref)}. Can I see the MRP on the strip?")
         elif x["kind"] == "charged_above_listed_mrp":
             meta = f"You paid {rupees(value)} per tablet · MRP listed online: {rupees(ref)} per tablet ({sites})"
             why = ("No MRP is printed on your bill, so we compared with the MRP the pharmacy websites list today. A seller may not charge above the MRP printed on the pack, "
                    "and an older pack usually has a lower MRP, not a higher one. This is a question: ask to see the MRP on the strip.")
-            st.markdown(ui.card("amber", f.line.desc, "Above the MRP listed online", total=f"{rupees(f.line.amount)} total",
+            st.markdown(ui.card("amber", f.line.desc, "Above the MRP listed online", total=f"{rupees(f.line.shown_amount)} total",
                                 visual=ui.meter(value, ref, "amber", f"You paid {rupees(value)} per tablet", f"Listed MRP {rupees(ref)} ({sites})"), why=why), unsafe_allow_html=True)
             lines_out.append(f"{f.line.desc}: charged {rupees(value)} per tablet; pharmacy websites ({sites}) list an MRP of {rupees(ref)}. Can I see the MRP on the strip?")
     ok = list(dict.fromkeys(x["f"].line.desc for x in found if x["kind"] in ("agrees", "within_listed_mrp")))
@@ -939,10 +960,11 @@ def main():
                     st.caption(f"Sample: {samples.SAMPLES[st.session_state.sample]['about']}")
                 df = lines_form(st.session_state.df, "e")
                 add_line()
-                total = st.number_input("Total printed on the bill (optional)", value=float(st.session_state.get("total") or 0.0), key="total_e")
+                total = st.number_input("Total payable on the bill (optional)", value=float(st.session_state.get("total") or 0.0), key="total_e")
+                discount = st.number_input("Discount on the whole bill (₹)", min_value=0.0, value=float(st.session_state.get("discount", 0.0)), step=1.0, key="discount_e")
                 st.text_area("Prescription lines (one medicine per line)", key="rx", height=120)
         with top:
-            results(df, total)
+            results(df, total, discount)
     footer()
 
 

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 OK, CHECK, FIX = "ok", "check", "fix"
 # notes from the reader that mean "we chose between numbers": the patient should compare with the paper. Others (MRP per tablet) are information only.
-CHOSEN = ("picked from the printed numbers", "before tax was on the bill", "worked out as the line value")
+CHOSEN = ("picked from the printed numbers", "before tax was on the bill", "worked out as the line value", "prints the rate per strip")
 
 
 def _has(v) -> bool:
@@ -34,12 +34,28 @@ def line_status(qty, rate, amount, unit, unsure=False, notes=()) -> tuple[str, s
     return OK, ""
 
 
-def bill_tie(amounts, total) -> tuple[str, float]:
-    """('match' | 'mismatch' | 'none', lines sum). The sum of the lines against the total printed on the bill."""
+def bill_tie(amounts, total, discount=0.0) -> tuple[str, float]:
+    """('match' | 'mismatch' | 'none', lines sum). The lines, less any discount on the whole bill, against the total printed on the bill. A rupee of round-off is allowed."""
     s = round(sum(a for a in amounts if _has(a)), 2)
     if not _has(total):
         return "none", s
-    return ("match" if abs(s - total) <= max(1.0, 0.005 * total) else "mismatch"), s
+    return ("match" if abs(s - (discount or 0.0) - total) <= max(1.0, 0.005 * total) else "mismatch"), s
+
+
+def settle_discount(amounts, total, read=None) -> tuple[float, str]:
+    """(discount on the whole bill, 'read' | 'inferred' | ''). The discount the bill prints if it explains the gap between the lines and the total; if the lines already
+    add up to the total, none; if the bill prints no discount but the total is lower than the lines by more than rounding, the difference, said to be inferred."""
+    s = sum(a for a in amounts if _has(a))
+    if not _has(total):
+        return (float(read) if read else 0.0), ("read" if read else "")
+    tol = max(1.0, 0.005 * total)
+    if read and abs(s - read - total) <= tol:
+        return float(read), "read"
+    if abs(s - total) <= tol:
+        return 0.0, ""
+    if 0 < s - total <= 0.6 * s:
+        return round(s - total, 2), "inferred"
+    return (float(read) if read else 0.0), ("read" if read else "")
 
 
 def summary(statuses: list[str]) -> dict:

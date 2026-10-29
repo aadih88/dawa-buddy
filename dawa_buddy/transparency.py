@@ -20,7 +20,8 @@ def reference(f: b.Finding, fmt, billed_word=lambda u: "unit") -> tuple[list[tup
         if f.source:
             rows.append(("Taken from", f.source))
     if f.unit_price:
-        rows.append((f"You were charged (per {per})", fmt(f.unit_price)))
+        before = f" ({fmt(f.unit_price * f.line.list_rate / f.line.rate)} before the discount on the whole bill)" if f.line.list_rate and f.line.rate and abs(f.line.list_rate - f.line.rate) > 0.005 else ""
+        rows.append((f"You were charged (per {per})", fmt(f.unit_price) + before))
     elif f.mrp_unit:             # a printed-MRP finding has no per-unit price of its own: the rate on the bill is what was charged
         rows.append((f"You were charged (per {billed_word(f.line.unit)})", fmt(f.line.rate)))
     covered = f.tier not in (b.TIER_NOT_MEDICINE, b.TIER_UNIT_UNCLEAR, b.TIER_NEEDS_CONFIRM) and (f.ingredients or f.tier == b.TIER_SUPPLEMENT)

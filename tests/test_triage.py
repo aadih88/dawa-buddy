@@ -65,3 +65,24 @@ def test_numbers_chosen_by_the_reader_are_shown_open_with_a_reason(monkeypatch):
     page = _banner(at)
     assert "1 to compare with your paper." in page and "We chose these numbers so they multiply out" in page
     assert not any(e.label.startswith("✓ PAN") for e in at.expander) and any(e.label.startswith("✓ DOLO") for e in at.expander)
+
+
+def test_a_discount_on_the_whole_bill_explains_the_gap_between_the_lines_and_the_total():
+    lines = [114.60, 75.00]                                                                  # the real WhatsApp bill: TOTAL AMT 189.60, LESS DIS 20.00, Net Amt (R/O) 170.00
+    assert rt.settle_discount(lines, 170.0, 20.0) == (20.0, "read")
+    assert rt.settle_discount(lines, 170.0, None) == (19.6, "inferred")                         # no discount printed: the gap is named, and said to be inferred
+    assert rt.settle_discount(lines, 189.6, 20.0) == (0.0, "")                                  # the lines already add up: a "discount" the reader invented is ignored
+    assert rt.settle_discount(lines, None, 20.0) == (20.0, "read") and rt.settle_discount(lines, 50.0, None) == (0.0, "")     # 74% off is not a discount, it is a misread
+    assert rt.bill_tie(lines, 170.0, 20.0)[0] == "match" and rt.bill_tie(lines, 170.0)[0] == "mismatch"      # a rupee of round-off is fine, the whole discount is not
+
+
+def test_the_review_banner_names_the_discount_and_the_lines_it_applies_to(monkeypatch):
+    monkeypatch.setenv("DAWA_PROVIDER", "offline")
+    at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
+    rows = [("CIFRAN CT TAB", 6, 19.1, 114.6, "tab"), ("SHDICLO SP TAB", 6, 12.5, 75.0, "tab")]
+    at.session_state["df"] = pd.DataFrame([{"description": d, "qty": q, "rate": r, "amount": a, "unit": u, "pack": 10, "mrp": 191.0, "unsure": False, "mrp_each": False} for d, q, r, a, u in rows])
+    at.session_state["rx"], at.session_state["total"], at.session_state["stage"], at.session_state["discount0"] = "", 170.0, "review", 20.0      # as read_photos sets them
+    at.run()
+    page = _banner(at)
+    assert "less the ₹20 discount on the whole bill, that is the printed total, ₹170" in page
+    assert "Discount on the whole bill: ₹20" in [e.label for e in at.expander]

@@ -64,19 +64,29 @@ def layout(name, rng):
             base = round(q * u / (1 + g / 100), 2); half = round(q * u - base, 2) / 2
             hd = ["#", "Item (Mfr)", "MRP/Unit (Net/Unit)", "Qty / Disc%", "Taxable", "CGST", "SGST", "Val In-GST"]
             rows.append([i, [nm, "H/3004/Maker Ltd"], [f(u), f(u)], [q, "0 %"], base, [f"{g/2:g} %", f(half)], [f"{g/2:g} %", f(half)], amt])
+        elif name == "per_pack":        # qty counts tablets, the rate printed is per strip of `pk`: amount = qty x rate / pack
+            hd = ["Sr.", "Qty", "Pack", "Description", "Batch", "Rate", "Amount"]
+            rows.append([i, q, f"{pk}TAB", nm, "GK%04d" % rng.randint(0, 9999), f(round(u * pk, 2)), f(amt)])
+        elif name == "bill_discount":   # lines as printed, then TOTAL AMT, LESS DIS and a rounded Net Amt
+            hd = ["#", "Item", "Qty", "Rate", "Amount"]; rows.append([i, nm, q, f(u), f(amt)])
         elif name == "photo":
             hd = ["S.No", "Item", "Qty", "MRP", "Disc", "Tax", "NetAmt"]; rows.append([i, nm, f(q), f(u), "0.00", f(amt * g / (100 + g)), f(amt)])
         truth.append({"name": nm, "qty": q, "amount": amt})
-    return hd, rows, truth, round(sum(t["amount"] for t in truth), 2)
+    total = round(sum(t["amount"] for t in truth), 2)
+    if name == "bill_discount":
+        disc = float(rng.choice([10, 20, 25]))
+        net = float(round(total - disc))                                    # Net Amt (R/O): rounded to the rupee
+        return hd, rows, truth, net, {"subtotal": total, "discount": disc, "net": net}
+    return hd, rows, truth, total, None
 
 
-NAMES_LAYOUT = ["simple", "mrp_tax", "strip_mrp", "tab_with_strip_mrp", "discount", "scrambled", "taxable_split", "no_rate", "stacked", "photo"]
+NAMES_LAYOUT = ["simple", "mrp_tax", "strip_mrp", "tab_with_strip_mrp", "discount", "scrambled", "taxable_split", "no_rate", "stacked", "photo", "per_pack", "bill_discount"]
 
 
-def draw(hd, rows, total, photo=False):
+def draw(hd, rows, total, photo=False, extra=None):
     fn, fb = ImageFont.truetype(FONT, 26), ImageFont.truetype(FONT, 26)
     w, rh = 2200, 74
-    img = Image.new("RGB", (w, 220 + rh * (len(rows) + 3)), (236, 234, 228))
+    img = Image.new("RGB", (w, 220 + rh * (len(rows) + (5 if extra else 3))), (236, 234, 228))
     d = ImageDraw.Draw(img)
     d.text((40, 30), "CITY MEDICAL STORE   Invoice", fill=(20, 20, 20), font=fb)
     colw = [(w - 80) * wt / sum(ws) for ws in [[3 if h in ("Item", "Item Description", "Particulars", "Medicine", "Item (Mfr)") else 1.4 for h in hd]] for wt in ws]
@@ -93,8 +103,12 @@ def draw(hd, rows, total, photo=False):
                 d.text((x, y), str(c), fill=(10, 10, 10), font=fn)
         y += rh
     d.line((40, y, w - 40, y), fill=(0, 0, 0), width=2)
-    d.text((xs[-1], y + 14), f"Total  {f(total)}" if len(hd) < 5 else f(total), fill=(0, 0, 0), font=fb)
-    d.text((40, y + 64), f"Net payable: Rs {total:.0f}", fill=(0, 0, 0), font=fb)
+    if extra:
+        for n, (label, val) in enumerate([("TOTAL AMT:", extra["subtotal"]), ("LESS DIS :", extra["discount"]), ("Net Amt.(R/O):", extra["net"])]):
+            d.text((w - 700, y + 14 + 44 * n), label, fill=(0, 0, 0), font=fb); d.text((w - 260, y + 14 + 44 * n), f(val), fill=(0, 0, 0), font=fb)
+    else:
+        d.text((xs[-1], y + 14), f"Total  {f(total)}" if len(hd) < 5 else f(total), fill=(0, 0, 0), font=fb)
+        d.text((40, y + 64), f"Net payable: Rs {total:.0f}", fill=(0, 0, 0), font=fb)
     if photo:
         img = img.rotate(2.2, expand=True, fillcolor=(228, 226, 220)).filter(ImageFilter.GaussianBlur(1.1))
     return img
@@ -104,9 +118,9 @@ def gen():
     OUT.mkdir(parents=True, exist_ok=True)
     for k, name in enumerate(NAMES_LAYOUT):
         rng = random.Random(100 + k)
-        hd, rows, truth, total = layout(name, rng)
-        draw(hd, rows, total, photo=(name == "photo")).save(OUT / f"{name}.png")
-        (OUT / f"{name}.json").write_text(json.dumps({"layout": name, "rows": truth, "total": total}, indent=1))
+        hd, rows, truth, total, extra = layout(name, rng)
+        draw(hd, rows, total, photo=(name == "photo"), extra=extra).save(OUT / f"{name}.png")
+        (OUT / f"{name}.json").write_text(json.dumps({"layout": name, "rows": truth, "total": total, "discount": (extra or {}).get("discount")}, indent=1))
     print(f"{len(NAMES_LAYOUT)} bills -> {OUT}")
 
 
@@ -117,7 +131,7 @@ def evaluate(names):
     for name in names or NAMES_LAYOUT:
         gt = json.loads((OUT / f"{name}.json").read_text())
         try:
-            rows, total = vision.read_bill_photo((OUT / f"{name}.png").read_bytes(), "image/png")
+            rows, total, meta = vision.read_bill_photo_ex((OUT / f"{name}.png").read_bytes(), "image/png")
         except Exception as e:
             print(f"{name:20} read failed: {e}"); tot_rows += len(gt["rows"]); continue
         ok = 0
@@ -128,7 +142,8 @@ def evaluate(names):
                 print(f"   {name}: wanted {t['name']} qty {t['qty']} amount {t['amount']}  got {r.description} qty {r.qty} amount {r.amount}")
         n = len(gt["rows"]); tot_rows += n; tot_ok += ok
         extra = "" if len(rows) == n else f"  (rows read {len(rows)}, expected {n})"
-        print(f"{name:20} {ok}/{n} rows right; printed total {'ok' if total is not None and abs(total - gt['total']) <= 1 else 'WRONG ' + str(total) + ' vs ' + str(gt['total'])}{extra}")
+        disc = "" if not gt.get("discount") else f"; discount {'ok' if meta.get('discount') == gt['discount'] else 'WRONG ' + str(meta.get('discount')) + ' vs ' + str(gt['discount'])}"
+        print(f"{name:20} {ok}/{n} rows right; printed total {'ok' if total is not None and abs(total - gt['total']) <= 1 else 'WRONG ' + str(total) + ' vs ' + str(gt['total'])}{disc}{extra}")
     print(f"TOTAL {tot_ok}/{tot_rows} rows")
 
 
