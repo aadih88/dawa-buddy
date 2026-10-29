@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 import pandas as pd
 import streamlit as st
 
-from dawa_buddy import bill as b, explainer, i18n, listings, llm, nppa_orders, pipeline, review_triage as rt, samples, scheduler, transparency, ui, vision, webcheck
+from dawa_buddy import injectables, bill as b, explainer, i18n, listings, llm, nppa_orders, pipeline, review_triage as rt, samples, scheduler, transparency, ui, vision, webcheck
 from dawa_buddy.reader import read_prescription
 from dawa_buddy.reconcile import reconcile
 from dawa_buddy.report import questions
@@ -61,7 +61,7 @@ def default_units(df: pd.DataFrame) -> pd.DataFrame:
         if r.get("unit"):
             return r["unit"]
         d = str(r["description"]).lower()
-        return ("vial" if re.search(r"\binj", d) else "bottle" if re.search(r"\b(syp|syrup|susp|suspension|drops?)\b", d) else
+        return ("vial" if re.search(r"\binj", d) else "each" if injectables.iv_fluid(d) else "bottle" if re.search(r"\b(syp|syrup|susp|suspension|drops?)\b", d) else
                 "tube" if re.search(r"\b(cream|gel|oint|ointment|lotion)\b", d) else
                 "each" if b.NON_MEDICINE.search(d) else None)
     out = df.copy()
@@ -164,7 +164,7 @@ def start():
         if col.button(name, key=f"sample_{name}", width="stretch", disabled=reading):
             smp = samples.SAMPLES[name]
             reset()          # a sample takes the same road as a photo: confirm the numbers, then see the result
-            st.session_state.update(df=samples.frame(name), rx=smp["rx"], total=smp["total"], sample=name, stage="review")
+            st.session_state.update(df=default_units(samples.frame(name)), rx=smp["rx"], total=smp["total"], sample=name, stage="review")
             st.rerun()
     if reading and bill_img is not None:      # last, so every control above is already drawn (disabled) while the photo is read
         read_photos(bill_img, rx_img)
@@ -328,8 +328,6 @@ def lines_form(df: pd.DataFrame, scope: str) -> pd.DataFrame:
                 st.caption(readout(unit, rate, mrp, mrp_each, pack or 0))
                 if g and pack and pack == g[0]:
                     st.caption(f"Strip size of {g[0]:g} suggested from {g[1]}. Check it on your strip.")
-            elif unit is None:
-                st.markdown(ui.need("How was this billed? Choose one so we can compare the price."), unsafe_allow_html=True)
             amount = round(qty * rate, 2) if (qty, rate) != (read["qty"], read["rate"]) else num(r["amount"])
             if st.button("Remove this line", key=f"{k}_rm", help="It goes to “Removed lines” below, where you can put it back."):
                 removed.add(k)

@@ -86,3 +86,17 @@ def test_the_review_banner_names_the_discount_and_the_lines_it_applies_to(monkey
     page = _banner(at)
     assert "less the ₹20 discount on the whole bill, that is the printed total, ₹170" in page
     assert "Discount on the whole bill: ₹20" in [e.label for e in at.expander]
+
+
+def test_both_samples_open_on_a_clean_review_screen_not_a_wall_of_amber(monkeypatch):
+    # the first thing a demo viewer sees: a bill that multiplies out and adds up must not raise warnings about its own sample
+    # (found 29 Oct 2026: IV fluids and a syringe had no unit, and an unreadable sample dose, each reported up to three times)
+    monkeypatch.setenv("DAWA_PROVIDER", "offline")
+    for name in ("Hospital pharmacy bill", "Outpatient pharmacy bill"):
+        at = AppTest.from_file(str(ROOT / "bill_app.py"), default_timeout=60)
+        at.run()
+        [b for b in at.button if b.key == f"sample_{name}"][0].click().run()
+        page = _banner(at)
+        assert "Every line multiplies out." in page and "add up to the printed total" in page, name
+        assert "need a number" not in page and "could not read the dose" not in page and "to compare with your paper" not in page, name
+        assert [b for b in at.button if b.label == "Looks right, see the result"], name

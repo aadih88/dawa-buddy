@@ -38,7 +38,7 @@ SYRINGE 10ML WITH NEEDLE | 13 | 43.99 | 571.87
 IV SET NOVOFUSION 30115 | 2 | 265.00 | 530.00 | each | | 11.00""",
         "rx": """INJ.ACYCLOVIR 500MG IV 1-1-1 AFTER FOOD X 7 DAYS
 INJ.CEFTRIAXONE 250MG IV 1-0-1 X 2 DAYS
-INJ NS 100ML IV with each dose x 7 days""",
+INJ NS 100ML IV 1-1-1 x 7 days""",
         "total": 9650.99,
     },
 }
