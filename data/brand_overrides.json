@@ -1,5 +1,5 @@
 {
- "_sources": "Compositions checked on 2026-10-27 against retailer/manufacturer pages: Zerodol-SP https://www.1mg.com/drugs/zerodol-sp-tablet-67307 ; Hifenac SP https://www.1mg.com/drugs/hifenac-sp-tablet-716192 ; Ecosprin Gold 10 https://www.1mg.com/drugs/ecosprin-gold-10-capsule-170269 ; Sinarest New https://www.centaurpharma.com/downloads/2022/entchestphysician/cold/Sinarest%20new%20tablets2023.pdf . Format: key -> form -> [[composition, modified_release]]. Add only brands verified against a source. ; Roseday Gold (added 2026-10-28, two independent pages and the printed prescription strengths 75MG/75MG/10MG) https://www.1mg.com/drugs/roseday-gold-capsule-329500 ; https://www.truemeds.in/medicine/roseday-gold-751075-mg-capsule-10-tm-cacr1-005372",
+ "_sources": "Compositions checked on 2026-10-27 against retailer/manufacturer pages: Zerodol-SP https://www.1mg.com/drugs/zerodol-sp-tablet-67307 ; Hifenac SP https://www.1mg.com/drugs/hifenac-sp-tablet-716192 ; Ecosprin Gold 10 https://www.1mg.com/drugs/ecosprin-gold-10-capsule-170269 ; Sinarest New https://www.centaurpharma.com/downloads/2022/entchestphysician/cold/Sinarest%20new%20tablets2023.pdf . Format: key -> form -> [[composition, modified_release]]. Add only brands verified against a source. ; Roseday Gold (added 2026-10-28, two independent pages and the printed prescription strengths 75MG/75MG/10MG) https://www.1mg.com/drugs/roseday-gold-capsule-329500 ; https://www.truemeds.in/medicine/roseday-gold-751075-mg-capsule-10-tm-cacr1-005372 ; Shelcal 500 and Shelcal XT (added 2026-10-29, calcium given as elemental calcium, 500 mg = 1250 mg calcium carbonate; so the two bills of the real prescription can be compared) Shelcal 500: https://www.apollopharmacy.in/otc/shelcal-500mg-tablet ; https://www.truemeds.in/otc/shelcal-500-mg250iu-tablet-15-tm-tacr1-036 ; https://pharmeasy.in/health-care/products/shelcal-500mg-strip-of-15-tablets . Shelcal XT: https://www.1mg.com/drugs/shelcal-xt-tablet-350480 ; https://www.apollopharmacy.in/otc/shelcal-xt-tablet-15-s",
  "zerodol sp": {
   "tablet": [
    [
@@ -37,6 +37,22 @@
    [
     "aspirin:75mg;clopidogrel:75mg;rosuvastatin:10mg",
     10
+   ]
+  ]
+ },
+ "shelcal 500": {
+  "tablet": [
+   [
+    "calcium:500mg;vitamin d3:250iu",
+    0
+   ]
+  ]
+ },
+ "shelcal xt": {
+  "tablet": [
+   [
+    "calcium:500mg;vitamin d3:2000iu;methylcobalamin:1500mcg;l-methylfolate calcium:1mg;pyridoxal-5-phosphate:20mg",
+    0
    ]
   ]
  }

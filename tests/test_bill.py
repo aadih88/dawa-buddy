@@ -208,7 +208,9 @@ def test_variant_warning_says_what_actually_differs():
     from dawa_buddy.reconcile import compare_variants
     assert "adds amlodipine" in compare_variants("Concor 5", "CONCOR AM 5 TAB")
     assert "Same ingredients, different strength" in compare_variants("Telma 20", "TELMA 40 TAB")
-    assert "could not look up" in compare_variants("Shelcal-XT", "SHELCAL 500MG TAB")          # not in the brand table: say so, don't guess
+    assert "could not look up" in compare_variants("Zzyzx-XT", "ZZYZX 500MG TAB")              # not in the brand table: say so, don't guess
+    shelcal = compare_variants("Shelcal-XT", "SHELCAL 500MG TAB")                              # two pharmacy pages agree on each (data/brand_overrides.json)
+    assert "Ingredients differ" in shelcal and "billed one lacks methylcobalamin" in shelcal.replace("l-methylfolate calcium, ", "") and "vitamin d3 is 2000 iu in the prescribed one and 250 iu in the billed one" in shelcal
 
 
 def test_variant_flag_carries_the_difference():
@@ -453,3 +455,13 @@ def test_the_questions_ask_the_patient_to_compare_the_bill_mrp_with_the_strip():
     text = report.questions([f])
     assert "## Check the MRP on the strip" in text and "the seller's own figure" in text and "PAN 40MG TAB" in text and "MRP of 11.00" in text
     assert "## Check the MRP on the strip" not in report.questions([b.audit_line(b.BillLine("x", "PAN 40MG TAB", 6, 11.0, 66.0, "tab", None, None))])      # no MRP printed, nothing to compare
+
+
+def test_the_shelcal_prescription_is_compared_with_the_bill_even_with_a_dose_pattern_in_the_line():
+    from dawa_buddy.reader import read_offline
+    from dawa_buddy.reconcile import reconcile
+    lines, _ = b.parse_bill_ex("SHELCAL 500MG TAB | 30 | 9.81 | 294.30")
+    f = [x for x in reconcile(read_offline("TAB SHELCAL-XT 0---1---0 TO CONTINUE"), lines) if x.kind == "different_variant"][0]
+    assert "Shelcal-Xt 0" not in f.note and "cannot say how they differ" not in f.note        # the dose pattern's 0 is not a strength
+    assert "prescribed is calcium 500 mg + vitamin d3 2000 iu" in f.note and "billed is calcium 500 mg + vitamin d3 250 iu" in f.note
+    assert b.audit_line(lines[0]).tier == b.TIER_SUPPLEMENT                                   # knowing its composition does not turn a supplement into a price-listed medicine

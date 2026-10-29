@@ -888,3 +888,11 @@ def test_the_strip_size_is_asked_for_only_when_a_conversion_needs_it_and_in_the_
     at.number_input(key="r0_0_fp0").set_value(15)
     [b for b in at.button if b.label == "Save changes"][0].click().run()
     assert "Needed" not in html_blocks(at) and "₹10.90 per tablet" in _captions(at)                   # filled in, and now the conversion is shown
+
+
+def test_the_wrong_variant_card_shows_how_the_two_products_differ_without_a_tap(monkeypatch):
+    at = _bill_app(monkeypatch, [("SHELCAL 500MG TAB", 30, 9.81, 15, 163.45)], rx="TAB SHELCAL-XT 0---1---0 TO CONTINUE")
+    page = html_blocks(at)
+    body = page.split('class="db-body">')[1].split("</div>")[0]                       # the visible sentence of the card, not the folded explanation
+    assert "Ingredients differ" in body and "vitamin d3 is 2000 iu in the prescribed one and 250 iu in the billed one" in body.replace("&#x27;", "'")
+    assert "Check before taking" in page and "Shelcal-Xt 0" not in page

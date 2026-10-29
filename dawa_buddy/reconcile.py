@@ -132,6 +132,10 @@ def compare_variants(prescribed: str, billed: str) -> str:
             parts.append(f"the billed one adds {', '.join(sorted(sb - sa))}")
         if sa - sb:
             parts.append(f"the billed one lacks {', '.join(sorted(sa - sb))}")
+        sta, stb = dict(zip(a.salts.split("+"), a.strengths)), dict(zip(b.salts.split("+"), b.strengths))
+        for salt in sorted(sa & sb):         # an ingredient both have, in a different amount ("vitamin d3 2000 iu against 250 iu")
+            if sta[salt] != stb[salt]:
+                parts.append(f"{salt} is {sta[salt][0]:g} {sta[salt][1]} in the prescribed one and {stb[salt][0]:g} {stb[salt][1]} in the billed one")
         return f"Ingredients differ: prescribed is {_show(a)}; billed is {_show(b)} ({'; '.join(parts)})."
     if sorted(a.strengths) != sorted(b.strengths):
         return f"Same ingredients, different strength: prescribed is {_show(a)}; billed is {_show(b)}."
@@ -146,8 +150,9 @@ def _rx_desc(m: Medication | None, name: str) -> str:
         return name
     if m.strength:
         return f"{name} {m.strength}"
-    hit = re.search(re.escape(name.split()[0]) + r"[\w\-. ]*?\s(\d+(?:\.\d+)?)\b", m.raw or "", re.I)
-    return f"{name} {hit[1]}" if hit and name.split()[-1].lower() in (m.raw or "").lower() else name
+    raw = re.sub(r"\b[01]\s*[-\u2013\u2014]+\s*[01]\s*[-\u2013\u2014]+\s*[01]\b", " ", m.raw or "")        # the dose pattern 0---1---0 is not a strength
+    hit = re.search(re.escape(name.split()[0]) + r"[\w\-. ]*?\s(\d+(?:\.\d+)?)\b", raw, re.I)
+    return f"{name} {hit[1]}" if hit and name.split()[-1].lower() in raw.lower() else name
 
 
 def _pair_variants(flags: list[Flag], rx: Prescription, lines: list[BillLine]) -> list[Flag]:

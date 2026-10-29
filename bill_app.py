@@ -608,7 +608,8 @@ def results(df, total):
         st.markdown(ui.section_label("Ask about these", n_cards), unsafe_allow_html=True)
     for x in wrong:        # a possibly wrong medicine matters more than any price, so it comes first
         prescribed, billed = x.subject.split(" -> ")
-        st.markdown(ui.card("red", billed, "Check before taking", visual=ui.diff(prescribed, billed), why=x.note), unsafe_allow_html=True)
+        shown = re.search(r"different product\.\s*((?:Ingredients differ|Same ingredients).*?)\s*Ask the pharmacist", x.note)         # how they differ is the point of this card: not behind a tap
+        st.markdown(ui.card("red", billed, "Check before taking", body=shown.group(1) if shown else "", visual=ui.diff(prescribed, billed), why=x.note), unsafe_allow_html=True)
     for f in attention:
         st.markdown(finding_html(f), unsafe_allow_html=True)
     peers = peer_cards(peer_found)
