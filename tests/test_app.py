@@ -49,12 +49,12 @@ def test_outpatient_sample_leads_with_a_verdict_then_plain_english_cards(app):
     click(app, "Outpatient pharmacy bill")
     assert not app.exception
     page = html_blocks(app)
-    assert "4 things to ask about" in page
-    assert page.index("4 things to ask about") < page.index("Above the legal ceiling price")      # verdict first
+    assert "5 things to ask about" in page
+    assert page.index("5 things to ask about") < page.index("Above the legal ceiling price")      # verdict first
     for text in ("Check before taking", "Above the MRP on your bill", "Above the legal ceiling price",
                  "A cheaper generic exists: ask your doctor", "You paid ₹12.40 per tablet", "Legal limit ₹6.92", "Printed MRP ₹8", "Generic ₹0.91"):
         assert text in page, text
-    assert page.count('class="db-meter"') == 3 and page.count('class="db-diff"') == 1                    # three price meters (MRP, ceiling, generic) and the Prescribed -> On the bill comparison
+    assert page.count('class="db-meter"') == 4 and page.count('class="db-diff"') == 1                    # four price meters (MRP, ceiling, two generics) and the Prescribed -> On the bill comparison
     assert "generic_gap" not in page and "above_ceiling" not in page          # no internal names reach the user
     assert not [d for d in app.dataframe if not str(d.key).startswith("editor_")]   # results are cards, not clipped table cells
 
@@ -840,13 +840,12 @@ def test_restriction_is_per_visitor_not_global():
 
 
 def test_a_generic_below_the_flag_ratio_is_still_said_out_loud(monkeypatch):
-    # second real bill: Dolo 650 (2.2x the generic) and Monocef O (2.8x) are inside every limit, so they are not flagged, but "within the limits" must not
-    # hide that a generic is listed at under half the price, nor the 3x rule that decided it
-    rows = [("DOLO 650MG TAB", 6, 2.24, 1, 2.24), ("MONOCEF O 200 MG TAB", 6, 19.9, 1, 19.9), ("PAN 40MG TAB", 6, 11.0, 1, 11.0), ("CONCOR 5MG TAB", 20, 12.82, 1, 12.82)]
+    # a line inside every limit whose generic is 1.5x to under 2x cheaper is not flagged, but "within the limits" must not hide the generic, nor the 2x rule that decided it
+    rows = [("DOLO 650MG TAB", 6, 1.70, 1, 1.70), ("MONOCEF O 200 MG TAB", 6, 13.0, 1, 13.0), ("PAN 40MG TAB", 6, 11.0, 1, 11.0), ("CONCOR 5MG TAB", 20, 12.82, 1, 12.82)]
     at = _bill_app(monkeypatch, rows)
     page = html_blocks(at)
     assert "A cheaper generic may exist for 2 lines" in page                                         # Pan and Concor: flagged
-    assert "2 other lines have a generic listed too, but under 3× the price, so not flagged: DOLO 650MG TAB; MONOCEF O 200 MG TAB" in page
-    assert "We flag a generic only at 3× or more." in page and "you paid 2.2× that" in page          # in the folded row of the line itself
+    assert "2 other lines have a generic listed too, but under 2× the price, so not flagged: DOLO 650MG TAB; MONOCEF O 200 MG TAB" in page
+    assert "We flag a generic only at 2× or more." in page and "you paid 1.6× that" in page          # in the folded row of the line itself
     only_mild = html_blocks(_bill_app(monkeypatch, rows[:2]))
-    assert "None flagged (we flag a generic at 3× the price or more). 2 lines have a generic listed too" in only_mild
+    assert "None flagged (we flag a generic at 2× the price or more). 2 lines have a generic listed too" in only_mild

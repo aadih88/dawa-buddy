@@ -493,7 +493,7 @@ def check_rows(fs, flags, wrong, unidentified, generic, listed_ok: int = 0, look
         k = sum(f.tier == b.TIER_GENERIC_GAP for f in fs)
         rows.append(("amber", "Cheaper generics", f"A cheaper generic may exist for {plural(k, 'line')} (about {rupees(generic)}). Ask your doctor before switching." + mild_text))
     elif mild:
-        rows.append(("grey", "Cheaper generics", "None flagged (we flag a generic at 3× the price or more)." + mild_text))
+        rows.append(("grey", "Cheaper generics", f"None flagged (we flag a generic at {b.GENERIC_GAP_RATIO:g}× the price or more)." + mild_text))
     if unidentified:
         rows.append(("amber", "Medicines to confirm", f"{plural(len(unidentified), 'medicine')} not identified yet: {', '.join(unidentified)}. Confirm them under “Help us identify”."))
     return rows

@@ -179,7 +179,8 @@ def test_injection_per_vial_ceiling_and_generic():
     # ceftriaxone 250 mg: NPPA ceiling 29.02 per vial (x1.12 = 32.50); Jan Aushadhi 13.41
     f = one("AACEF 250 INJ | 1 | 90.00 | 90.00 | vial")
     assert f.tier == b.TIER_ABOVE_CEILING and f.ceiling == 29.02 and abs(f.possible_saving - 60.98) < 0.01
-    assert one("AACEF 250 INJ | 1 | 29.50 | 29.50 | vial").tier == b.TIER_OK
+    assert one("AACEF 250 INJ | 1 | 26.00 | 26.00 | vial").tier == b.TIER_OK                # 1.9x the generic: under the 2x flag
+    assert one("AACEF 250 INJ | 1 | 29.50 | 29.50 | vial").tier == b.TIER_GENERIC_GAP       # 2.2x: a question about the generic, though under the ceiling
     assert one("AMICAP 500 INJ | 1 | 150.00 | 150.00 | vial").tier == b.TIER_GENERIC_GAP     # amikacin 500 mg, no ceiling, JA 27.19
 
 
@@ -293,7 +294,7 @@ def test_samples_show_the_results_they_promise():
                      {f.kind for f in reconcile(read_offline(s["rx"]), lines, s["total"])})
     t, kinds = out["Outpatient pharmacy bill"]
     assert t["TELMA"] == b.TIER_ABOVE_CEILING and t["AMLONG"] == b.TIER_ABOVE_MRP and t["ATORVA"] == b.TIER_GENERIC_GAP
-    assert t["DOLO"] == b.TIER_OK and t["SHELCAL"] == b.TIER_SUPPLEMENT and "different_variant" in kinds
+    assert t["DOLO"] == b.TIER_GENERIC_GAP and t["SHELCAL"] == b.TIER_SUPPLEMENT and "different_variant" in kinds
     t, kinds = out["Hospital pharmacy bill"]
     assert t["AACEF"] == b.TIER_ABOVE_CEILING and t["LASIX"] == b.TIER_ABOVE_CEILING and t["ACYCLOTAS"] == b.TIER_OK
     assert t["SYRINGE"] == b.TIER_NOT_MEDICINE and "different_variant" not in kinds
