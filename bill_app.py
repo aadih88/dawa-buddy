@@ -486,12 +486,22 @@ def check_rows(fs, flags, wrong, unidentified, generic, listed_ok: int = 0, look
         rows.append(("green", "Your prescription", "The bill matches your prescription: same products, no extras, no missing items."))
     else:
         rows.append(("red" if wrong else "amber", "Your prescription", f"{plural(len(flags), 'difference')} from the prescription, listed below."))
+    mild = [f.line.desc for f in fs if f.tier == b.TIER_OK and mild_generic(f)]
+    mild_text = (f" {plural(len(mild), 'other line' if generic else 'line')} {'has' if len(mild) == 1 else 'have'} a generic listed too, but under {b.GENERIC_GAP_RATIO:g}× the price, "
+                 "so not flagged: " + named(mild) + ".") if mild else ""
     if generic:
         k = sum(f.tier == b.TIER_GENERIC_GAP for f in fs)
-        rows.append(("amber", "Cheaper generics", f"A cheaper generic may exist for {plural(k, 'line')} (about {rupees(generic)}). Ask your doctor before switching."))
+        rows.append(("amber", "Cheaper generics", f"A cheaper generic may exist for {plural(k, 'line')} (about {rupees(generic)}). Ask your doctor before switching." + mild_text))
+    elif mild:
+        rows.append(("grey", "Cheaper generics", "None flagged (we flag a generic at 3× the price or more)." + mild_text))
     if unidentified:
         rows.append(("amber", "Medicines to confirm", f"{plural(len(unidentified), 'medicine')} not identified yet: {', '.join(unidentified)}. Confirm them under “Help us identify”."))
     return rows
+
+
+def mild_generic(f) -> bool:
+    """A line inside every limit whose generic is still clearly cheaper, but under the ratio at which a generic is flagged."""
+    return bool(f.generic_unit and f.unit_price and b.GENERIC_MENTION_RATIO * f.generic_unit <= f.unit_price < b.GENERIC_GAP_RATIO * f.generic_unit)
 
 
 def mini(f) -> str:
@@ -508,6 +518,9 @@ def mini(f) -> str:
         why = f"<br><span class='small'>{html.escape(known + reason + mrp)}</span>"
     elif f.mrp_pct is not None and f.tier == b.TIER_OK:
         why = f"<br><span class='small'>Charged {f.mrp_pct:.0f}% of the MRP on your bill.</span>"
+    if f.tier == b.TIER_OK and mild_generic(f):          # inside the limits, yet a generic is cheaper: say so, and why it was not flagged
+        why += (f"<br><span class='small'>A Jan Aushadhi generic is listed at {rupees(f.generic_unit)} per {PER.get(f.basis, 'unit')}; you paid "
+                f"{f.unit_price / f.generic_unit:.1f}× that. We flag a generic only at {b.GENERIC_GAP_RATIO:g}× or more.</span>")
     rows, foot = transparency.reference(f, rupees, billed_word)
     how = f"<details class='how'><summary>How we checked this</summary>{ui.facts(rows)}</details>" if len(rows) > 1 else ""
     return f"<div class='minibox'><div class='mini'><span class='l'>{html.escape(f.line.desc)}<br><span class='small'>{label}</span>{why}</span><span class='r'>{right}</span></div>{how}</div>"

@@ -14,6 +14,7 @@ from .knowledge import BRANDS
 
 GST_ALLOWANCE = 1.12          # ceilings exclude GST; allow the highest medicine slab before flagging
 GENERIC_GAP_RATIO = 3.0       # flag 'ask for generic' when unit price >= 3x the JA benchmark
+GENERIC_MENTION_RATIO = 1.5   # below the flag, but a generic at under two-thirds of the price is still worth saying out loud
 # Switching these needs the prescriber's say-so, so we never nudge a swap.
 DOCTOR_ONLY = {"warfarin", "thyroxine", "phenytoin", "carbamazepine", "valproate", "levetiracetam",
                "tacrolimus", "cyclosporine", "digoxin", "lithium", "clozapine"}
