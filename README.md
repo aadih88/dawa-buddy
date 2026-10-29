@@ -150,6 +150,22 @@ Dawa Buddy cannot fix a pricing policy. It can give a patient the numbers the po
 
 If the Court's final order changes the rules, the tool's data layer is a set of versioned CSV files with parsers that check their own completeness ([§14](#14-price-data-and-how-to-refresh-it)), so new limits can be loaded quickly. Whatever the rules turn out to be, a patient still needs to see them applied to the bill in front of them.
 
+### Related work: what already exists, and what this adds
+
+Medicine price comparison is a crowded and useful space. Two examples I looked at (their public home pages, 29 Oct 2026; I have not used their apps, so this is about what they say they do):
+
+| | What it says it does | When in the journey |
+|---|---|---|
+| [MediSave](https://www.medisaveapp.com/) | Compares branded, generic and Jan Aushadhi prices across nearby pharmacies; also a prescription scanner, lab-report explanations, dose reminders, doctor booking and a pharmacy dashboard | **Before you buy**: where is it cheapest? |
+| [MedCompare](https://medcompare.in/) | Compares prices for a searched medicine across online pharmacies, with generic alternatives and salt composition | **Before you buy**: where is it cheapest? |
+| **Dawa Buddy** | Takes the **bill and prescription you already have** and checks every line against the legal ceiling prices (NPPA), the MRP printed on the bill and the prescription; asks you to confirm every number; explains the prescription in Hindi and Kannada | **After you pay** (or while the counter waits): was I charged a legal price, and did I get what the doctor wrote? |
+
+**Where they overlap.** Both kinds of tool know that a cheaper generic can exist. Dawa Buddy also compares with Jan Aushadhi prices, and uses pharmacy websites as *evidence* (strip sizes, the MRP those sites list), not as a shopping list. A price lookup tells you where to buy; it cannot tell you that the drip line on this bill is charged at 24 times its printed MRP, or that the product handed over is not the one prescribed.
+
+**What this adds.** The unit of work is a *bill line*, not a medicine name: a legal-ceiling and MRP check on what was charged, the hospital case that is the subject of the Supreme Court hearing above, a wrong-variant warning with the ingredient difference, a lines-against-total check, and a design where models read and rules decide. The two kinds of tool could sit side by side: one helps you choose the pharmacy, the other checks the receipt.
+
+I make no claim to be first or only; the evidence for the problem is in [section 2](#2-the-problem-with-evidence), and the claim here is narrower: a patient holding a bill had no tool built for that moment.
+
 ---
 
 # Part II. The product
