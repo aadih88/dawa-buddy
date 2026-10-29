@@ -23,7 +23,7 @@
 
 ### Try it in 30 seconds (no key, no upload)
 1. Open the demo link from the submission (or run it locally in two minutes, [section 13](#13-setup-run-and-deploy)), tap **Hospital pharmacy bill**, look over the numbers on the *Check the numbers* screen, and press **See the result**. The sample bills and every price check work **without** the access code.
-2. The first card is an **IV set billed at ₹265 against an MRP of ₹11 printed on the pack**. That is the kind of mark-up a Supreme Court bench has been questioning this month (see [section 2](#2-the-problem-with-evidence)). The injections below it are above their **legal ceiling prices**.
+2. The first card is an **IV set billed at ₹265 against an MRP of ₹11 printed on the bill**. That is the kind of mark-up a Supreme Court bench has been questioning this month (see [section 2](#2-the-problem-with-evidence)). The injections below it are above their **legal ceiling prices**.
 3. Enter the access code from the testing instructions (*I have an access code*) to switch on photo reading, AI text and web look-ups. Then open **Explain my medicines in plain language**, choose **हिन्दी** or **ಕನ್ನಡ**, and press *Explain*. Without the code, the dose, safety notes and timetable still appear (they are fixed templates).
 4. With the code you can also upload your own bill photo (cover names and phone numbers first).
 
@@ -461,7 +461,7 @@ OMNACORTIL FORTE SYRUP | 1 | 90.00 | 90.00 | bottle | 60
 CEFTRIAXONE 250MG INJ | 1 | 29.50 | 29.50 | vial
 # IV bag: name the container (glass / non-glass) if you know it
 NS 0.9% 100ML NON-GLASS | 13 | 21.00 | 273.00
-# consumable: per piece, with the MRP printed on the pack
+# consumable: per piece, with the MRP printed on the bill
 IV SET | 2 | 265.00 | 530.00 | each | | 11.00
 ```
 `mrp` is always the MRP printed on the **pack** (per strip, bottle, tube, vial or piece), as bills print it. With a per-tablet rate, give `pack` (tablets per strip) so the tool can compare.
