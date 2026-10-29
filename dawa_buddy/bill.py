@@ -129,26 +129,41 @@ def _vocab() -> set:
     return _VOCAB
 
 
+def form_of_desc(desc: str) -> str:
+    """The dosage form the bill line names: capsule, injection, liquid (syrup, drops...), topical (gel, jelly, cream...) or tablet. A form the
+    name does not state is a tablet, as before. 'LOX 2% JELLY' must be looked up as a topical, not a tablet, or its composition is never found."""
+    low = desc.lower()
+    return ("capsule" if re.search(r"\bcap(s|sule)?\b", low) else "injection" if re.search(r"\binj", low) else
+            "liquid" if re.search(r"\b(syp|syrup|susp|suspension|drops?|solution|sol|elixir|expectorant)\b", low) else
+            "topical" if re.search(r"\b(gel|jelly|cream|oint|ointment|lotion)\b", low) else "tablet")
+
+
 def resolve(desc: str, forced_salt: str | None = None):
     """Return (ingredients, strengths, form, modified_release, pack_in_desc, billed_per, source) or None."""
     low = desc.lower()
     tokens = re.findall(r"[a-z]+", low)
-    form = ("capsule" if re.search(r"\bcap(s|sule)?\b", low) else "injection" if re.search(r"\binj", low) else
-            "liquid" if re.search(r"\b(syp|syrup|susp|suspension|drops?|solution|sol|elixir|expectorant)\b", low) else
-            "topical" if re.search(r"\b(gel|cream|oint|ointment|lotion)\b", low) else "tablet")
+    form = form_of_desc(desc)
     mr = bool(re.search(r"\b(sr|xr|cr|er|mr|retard|prolonged|modified)\b", low))
     per = "strip" if "strip" in low else "tab" if re.search(r"\b(tab|tablet|cap|capsule)s?\b", low) else None
     hit = None if forced_salt else brand_lookup(desc, form)
+    if not hit and not forced_salt:     # "HIFENAC P TAB ACECLOFENAC +PARACETAMOL INTAS": the brand is the part up to the form word; the rest is composition and maker
+        m = re.match(r"(.+?\b(?:tab|tablet|cap|capsule|syp|syrup|inj|injection|gel|jelly|cream|oint|ointment|lotion)s?)\b\W*\S", desc, re.I)
+        hit = brand_lookup(m.group(1), form) if m else None
     if hit:     # whole-brand match: salts AND strengths come from the table, not from a number guessed out of the text
         return hit.salts, hit.strengths, form, hit.modified_release or mr, None, per, "brand_table?mr" if hit.mr_guess else "brand_table"
     brand_tok = next((t for t in tokens if t in BRANDS), None)
     # 'GLYCOMET GP 1' is not Glycomet and 'PAN D' is not Pan: leftover letters mean a different product, so don't guess.
     if brand_tok and BRANDS[brand_tok] != brand_tok and any(t != brand_tok and t not in NOISE and t not in SALT_SUFFIX for t in tokens):
         brand_tok = None
+    if brand_tok and not forced_salt and re.search(r"[A-Za-z]\s*[+&]\s*[A-Za-z]", desc):
+        brand_tok = None                  # "ACECLOFENAC + PARACETAMOL": a combination named in words is not the single salt that happens to match
     generic = forced_salt or (BRANDS[brand_tok] if brand_tok else None)
     by_name = generic is None      # a plain generic name printed on the bill is used below
     if not generic:   # accept a plain generic name that exists in either benchmark list
-        generic = next((t for t in tokens if len(t) > 4 and t in _vocab()), None)
+        named = list(dict.fromkeys(t for t in tokens if len(t) > 4 and t in _vocab()))
+        if len(named) > 1 or (named and re.search(r"[A-Za-z]\s*[+&]\s*[A-Za-z]", desc)):
+            return None       # the name lists several ingredients ("A + B"): one of them alone would be a different, wrongly priced product
+        generic = named[0] if named else None
     if not generic:
         return None
     st = re.search(r"(\d+(?:\.\d+)?)\s*(mg|mcg|g)?\b", low)

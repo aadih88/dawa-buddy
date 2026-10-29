@@ -330,3 +330,36 @@ def test_prolonged_release_with_a_space_is_not_read_as_an_ingredient():
     assert benchmarks.parse_ingredients("Metformin Hydrochloride Prolonged release Tablets IP 500 mg") == frozenset({"metformin"})
     f = b.audit_line(b.BillLine(raw="g", desc="TAB.GLYCOMET-500 SR", qty=60, rate=3.6, amount=216.0, unit="tab", pack=20, mrp=72.0))
     assert f.tier == b.TIER_GENERIC_GAP and "1.08" in f.note              # the 500 mg prolonged-release generic is 10.79 for 10 tablets
+
+
+# --- bills that print the tax-inclusive per-unit MRP, two values in one cell, and the maker under the name (two real bills, 29 Oct 2026) ---
+def test_form_words_include_jelly():
+    assert b.form_of_desc("LOX 2% JELLY") == "topical" and b.form_of_desc("LACTIHEP SYP") == "liquid" and b.form_of_desc("HIFENAC P TAB") == "tablet"
+    assert b.resolve("LOX 2% JELLY")[:3] == ("lidocaine", [(2.0, "%")], "topical")        # the brand table has it; the tablet lookup could never find it
+
+
+def test_combination_named_in_words_is_never_priced_as_one_salt():
+    # "ACECLOFENAC + PARACETAMOL" was priced against plain paracetamol 500 mg and flagged above its ceiling: a false accusation
+    f = b.audit_line(b.BillLine("x", "ACECLOFENAC + PARACETAMOL TAB", 10, 5.0, 50.0, "tab", 10, 50.0))
+    assert f.tier not in (b.TIER_ABOVE_CEILING, b.TIER_ABOVE_MRP)
+    f = b.audit_line(b.BillLine("x", "HIFENAC P TAB ACECLOFENAC +PARACETAMOL INTAS", 15, 5.53, 82.95, "tab", 1, 5.53))
+    assert f.tier != b.TIER_ABOVE_CEILING and "aceclofenac" in (f.ingredients or "")
+
+
+def test_vision_cleaning_handles_tax_inclusive_per_unit_bills():
+    from dawa_buddy import vision
+    rows, _ = vision.clean_bill({"items": [
+        {"description": "DOLO 650MG TAB H/30049061/Aristo Pharmaceutica", "qty": 6, "rate": 2.24, "amount": 13.44, "unit": "tab", "mrp": 2.24, "mrp_per": "unit"},
+        {"description": "LACTIHEP SYP", "qty": 1, "rate": 278, "amount": 278, "unit": None, "mrp": 278},
+        {"description": "LOX 2% JELLY", "qty": 1, "rate": 35.5, "amount": 35.5, "unit": None},
+        {"description": "X 10MG TAB", "qty": 2, "rate": 3, "amount": 6, "unit": "tab", "pack": 10, "mrp": 3, "mrp_per": "unit"}]})
+    assert rows[0].description == "DOLO 650MG TAB" and rows[0].pack == 1.0 and rows[0].mrp == 2.24      # per-tablet MRP: the audit divides by the pack, so pack 1
+    assert rows[1].unit == "bottle" and rows[2].unit == "tube"                                      # the name states the form
+    assert rows[3].mrp == 30.0 and rows[3].pack == 10                                              # known strip size: per-tablet MRP expressed per strip
+    f = b.audit_line(vision.rows_to_lines(rows)[0])
+    assert f.tier != b.TIER_ABOVE_MRP                                                            # charged = MRP, never "above"
+
+
+def test_bill_prompt_names_the_tax_inclusive_column():
+    from dawa_buddy import vision
+    assert "Taxable" in vision.BILL_PROMPT and "Val In-GST" in vision.BILL_PROMPT and "mrp_per" in vision.BILL_PROMPT

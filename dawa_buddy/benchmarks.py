@@ -19,7 +19,7 @@ SYNONYMS = {"frusemide": "furosemide", "torasemide": "torsemide", "acetylsalicyl
             "clavulanate": "clavulanic acid", "sodium": "", "hydrochloride": "", "gastro-resistant": "",
             "gastro": "", "resistant": "", "resistance": ""}
 FORM_WORDS = [("tablet", "tablet"), ("capsule", "capsule"), ("injection", "injection"), ("syrup", "liquid"),
-              ("suspension", "liquid"), ("solution", "liquid"), ("drops", "drops"), ("gel", "topical"),
+              ("suspension", "liquid"), ("solution", "liquid"), ("drops", "drops"), ("gel", "topical"), ("jelly", "topical"),
               ("cream", "topical"), ("ointment", "topical"), ("lotion", "topical"), ("inhaler", "inhaler")]
 STOP = {"tablets", "tablet", "capsules", "capsule", "ip", "bp", "usp", "and", "per", "with", "of", "for",
         "oral", "injection", "syrup", "suspension", "solution", "prolonged-release", "prolonged", "sustained", "release",

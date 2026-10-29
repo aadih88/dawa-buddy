@@ -757,7 +757,7 @@ def identify(fs, confirmed):
                 if st.button("Looked up online (see below)" if looked else "Look up the ingredients online", key=f"web_{key}", disabled=looked,
                              help="Reads pharmacy websites for this exact product and shows what each page says. You still confirm it against your strip."):
                     with st.spinner("Searching..."):
-                        st.session_state.setdefault("evidence", {})[key] = webcheck.lookup_brand(f.line.desc)
+                        st.session_state.setdefault("evidence", {})[key] = webcheck.lookup_brand(f.line.desc, b.form_of_desc(f.line.desc))
                     st.session_state.ident_open = key
                     st.rerun()
             ev = st.session_state.get("evidence", {}).get(key)
