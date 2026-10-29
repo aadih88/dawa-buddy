@@ -129,6 +129,15 @@ def _vocab() -> set:
     return _VOCAB
 
 
+def composition_stated(desc: str, generic: str) -> bool:
+    """Does the bill line itself print the ingredients the brand table gives ('... TAB ACECLOFENAC +PARACETAMOL INTAS')? Two independent sources then agree, and the
+    table's two-ingredient limit cannot be hiding a third: a bill that lists a composition lists all of it. Matching is by the first five letters, so a
+    misspelling ('CLAVUNIC') still counts. Only the text after the form word is looked at: a brand name that merely contains 'parac' proves nothing."""
+    m = re.search(r"\b(?:tab|tablets?|caps?|capsules?|syp|syrup|inj|injection)\b(.*)$", desc, re.I)
+    stated = re.findall(r"[a-z]+", (m.group(1) if m else "").lower())
+    return bool(stated) and all(any(w.startswith(part[:5]) for w in stated) for part in (x.strip() for x in generic.split("+")))
+
+
 def form_of_desc(desc: str) -> str:
     """The dosage form the bill line names: capsule, injection, liquid (syrup, drops...), topical (gel, jelly, cream...) or tablet. A form the
     name does not state is a tablet, as before. 'LOX 2% JELLY' must be looked up as a topical, not a tablet, or its composition is never found."""
@@ -346,7 +355,7 @@ def _audit_core(line: BillLine, confirmed: dict | None = None) -> Finding:
         return Finding(line, TIER_NEEDS_CONFIRM, generic, st_txt, round(unit_price, 3),
                        note=f"The brand table lists only a modified-release (SR/XR) version of this brand, but the bill does not say "
                             f"which one you got. Check the strip: if it is {'plain' if mr else 'SR/XR'} the price benchmark differs.")
-    if src.startswith("brand_table") and "+" in generic and (c is not None or g):
+    if src.startswith("brand_table") and "+" in generic and (c is not None or g) and not composition_stated(line.desc, generic):
         # The brand table lists at most two actives per product, so a 3-active product (Zerodol-SP) looks like a 2-active one.
         return Finding(line, TIER_NEEDS_CONFIRM, generic, st_txt, round(unit_price, 3),
                        note=f"The brand table says {generic}, but it stores at most two ingredients per product, so a third may be "

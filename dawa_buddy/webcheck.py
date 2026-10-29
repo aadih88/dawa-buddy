@@ -84,11 +84,20 @@ def show(comp: frozenset) -> str:
 _FORM_WORDS = {"tab", "tablet", "tablets", "cap", "caps", "capsule", "capsules", "syp", "syrup", "inj", "injection", "mg", "mcg", "ml", "gm", "g",
                "iu", "ip", "buy", "online", "strip", "of", "po"}
 _RELEASE = {"mr", "sr", "xr", "er", "pr", "cr", "od"}      # sites add or drop these freely; they do not make a different brand
-_TITLE_CUT = re.compile(r"\b(?:tablets?|capsules?|syrup|injection|suspension|drops|cream|gel|ointment|online|strip|price|uses?)\b|[:|\u2013\u2014]| - ", re.I)
+_TITLE_CUT = re.compile(r"\b(?:tablets?|capsules?|syrup|injection|suspension|drops|cream|gel|jelly|ointment|online|strip|price|uses?)\b|[:|\u2013\u2014]| - ", re.I)
 
 
 def _brand_part(title: str) -> str:
     return _TITLE_CUT.split(re.sub(r"(?i)^\s*buy\s+", "", title or ""), maxsplit=1)[0]
+
+
+_DESC_CUT = re.compile(r"\b(?:tab|tablets?|caps?|capsules?|syp|syrup|inj|injection|gel|jelly|cream|oint|ointment|lotion)\b| - ", re.I)
+
+
+def desc_brand(desc: str) -> str:
+    """'HIFENAC P TAB ACECLOFENAC +PARACETAMOL INTAS' -> 'HIFENAC P ': the brand is the part before the form word; what follows is composition and maker, and no
+    pharmacy page title repeats it, so it must not take part in matching or in the search."""
+    return _DESC_CUT.split(desc or "", maxsplit=1)[0].strip() or (desc or "")
 
 
 def _words(text: str) -> set[str]:
@@ -103,7 +112,7 @@ def same_product(title: str, desc: str) -> bool:
     """Is this page about the product on the bill? 'Veltam Plus' is not 'Veltam', 'Concor 5' is not 'Concor T', 'Concor T 2.5/40' is not 'Concor T 5/40'.
     The brand words must be identical (SR/MR ignored) and any strength in the page title must be one the bill also prints."""
     part = _brand_part(title)
-    return _words(part) == _words(desc) and _numbers(part) <= _numbers(desc)
+    return _words(part) == _words(desc_brand(desc)) and _numbers(part) <= _numbers(desc)
 
 
 COMPOSITION_BLOCK = re.compile(r"(?is)composition\W{0,12}(.{0,240})")
@@ -156,8 +165,9 @@ def lookup_brand(desc: str, form: str = "tablet") -> Evidence | None:
     if not available():
         return None
     import httpx
-    brand = " ".join(re.findall(r"[A-Za-z0-9.]+", desc))[:80]
-    query = f"{brand} {form} composition salt strength India"
+    brand = " ".join(re.findall(r"[A-Za-z0-9.]+", desc_brand(desc)))[:80]
+    named = _DESC_CUT.search(desc or "")                       # the form word the bill itself uses ("jelly", "syp") searches better than our class name ("topical")
+    query = f"{brand} {named.group(0).strip(' -').lower() if named and named.group(0).strip(' -') else form} composition salt strength India"
     r = httpx.post(BASE_URL.rstrip("/") + "/search", timeout=60,
                    headers={"Authorization": f"Bearer {os.environ['TAVILY_API_KEY']}"},
                    json={"query": query, "search_depth": "basic", "max_results": 8, "include_raw_content": True, "include_domains": TRUSTED})

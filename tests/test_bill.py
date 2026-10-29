@@ -408,3 +408,21 @@ def test_missing_rate_is_worked_out_and_mrp_per_tablet_or_per_strip_is_told_from
 def test_a_batch_code_or_date_in_the_numbers_list_does_not_break_the_json():
     from dawa_buddy import llm
     assert llm._extract_json('{"items":[{"cells":[1,K2100680,MAR-23,15.00]}]}')["items"][0]["cells"] == [1, "K2100680", "MAR-23", 15.0]
+
+
+def test_a_composition_printed_on_the_bill_that_matches_the_table_is_trusted():
+    # "HIFENAC P TAB ACECLOFENAC +PARACETAMOL INTAS" and "AUGMENTIN 625MG DUO TAB - AMOXICILLIN CLAVUNIC POTASSIUM" were sent to the user to identify although the bill names the
+    # ingredients and the brand table agrees. A third ingredient the bill does not name still blocks it (Zerodol-SP).
+    assert b.composition_stated("HIFENAC P TAB ACECLOFENAC +PARACETAMOL INTAS", "aceclofenac+paracetamol")
+    assert b.composition_stated("AUGMENTIN 625MG DUO TAB - AMOXICILLIN CLAVUNIC POTASSIUM", "amoxicillin+clavulanic acid")        # a misspelling still counts
+    assert not b.composition_stated("PARACIP-C TAB", "paracetamol+caffeine")                                                      # a brand name that contains 'parac' proves nothing
+    assert not b.composition_stated("ZERODOL SP TAB ACECLOFENAC PARACETAMOL", "aceclofenac+paracetamol+serratiopeptidase")
+    f = b.audit_line(b.BillLine("x", "AUGMENTIN 625MG DUO TAB - AMOXICILLIN CLAVUNIC POTASSIUM", 10, 20.17, 201.7, "tab", 1, 20.17))
+    assert f.tier != b.TIER_NEEDS_CONFIRM
+
+
+def test_online_matching_ignores_the_composition_and_maker_printed_after_the_form_word():
+    from dawa_buddy import webcheck as w
+    assert w.desc_brand("HIFENAC P TAB ACECLOFENAC +PARACETAMOL INTAS") == "HIFENAC P"
+    assert w.same_product("Hifenac P Tablet - Uses, Side Effects, Price", "HIFENAC P TAB ACECLOFENAC +PARACETAMOL INTAS")
+    assert not w.same_product("Hifenac Plus Tablet", "HIFENAC P TAB ACECLOFENAC +PARACETAMOL INTAS")                               # a different brand is still refused
