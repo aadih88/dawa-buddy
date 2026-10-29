@@ -16,7 +16,7 @@ from .brand_table import norm_salt, lookup
 BASE_URL = os.environ.get("TAVILY_BASE_URL", "https://api.tavily.com")
 TRUSTED = ["1mg.com", "pharmeasy.in", "apollopharmacy.in", "netmeds.com", "truemeds.in", "practo.com", "medindia.net"]
 NAME_NOISE = {"contains", "composition", "each", "tablet", "tablets", "capsule", "capsules", "is", "a", "combination", "of",
-              "and", "with", "the", "uses", "used", "for", "in", "by", "containing", "salt", "ip"}
+              "and", "with", "the", "uses", "used", "for", "in", "by", "containing", "salt", "ip", "content", "contents", "ingredient", "ingredients"}
 COMP = re.compile(r"([A-Za-z][A-Za-z\- ]*?)\s*\(\s*(\d+(?:\.\d+)?)\s*(mg|mcg|g|iu)\s*\)", re.I)
 JOINER = re.compile(r"^\s*(\+|,|&|and)\s*$", re.I)       # components group only across an explicit joiner
 ACID_FIRST = {"clavulanic", "folic", "ascorbic", "tranexamic", "mefenamic", "valproic", "acetylsalicylic", "salicylic",
@@ -28,16 +28,28 @@ def available() -> bool:
 
 
 def _salt_name(raw: str) -> str:
-    words = [w for w in re.findall(r"[a-z]+", raw.lower()) if w not in NAME_NOISE]
+    # Page text often runs a label into the value with no space ("Salt ContentTinidazole(600 Mg)"): split at a lower-to-upper change before lowercasing,
+    # or "content" and the salt become one word ("contenttinidazole").
+    words = [w for w in re.findall(r"[a-z]+", re.sub(r"(?<=[a-z])(?=[A-Z])", " ", raw).lower()) if w not in NAME_NOISE]
     if len(words) > 1 and words[-2] in ACID_FIRST:
         return norm_salt(" ".join(words[-2:]))
     return norm_salt(words[-1]) if words else ""
+
+
+_HYPHEN_CHAIN = re.compile(r"(?:[A-Z][A-Z ]*-\d+(?:\.\d+)?(?:MG|MCG|G|IU)\s*\+\s*)+[A-Z][A-Z ]*-\d+(?:\.\d+)?(?:MG|MCG|G|IU)")
+
+
+def _bracket_hyphen_chain(text: str) -> str:
+    """Apollo prints 'CIPROFLOXACIN-500MG+TINIDAZOLE-600MG': rewrite each part as 'CIPROFLOXACIN (500MG)'. Only an upper-case chain joined by '+' is touched, so a
+    brand-and-strength title such as 'SHELCAL-500MG' is never read as a salt."""
+    return _HYPHEN_CHAIN.sub(lambda m: re.sub(r"([A-Z][A-Z ]*?)-(\d+(?:\.\d+)?)(MG|MCG|G|IU)", r"\1 (\2\3)", m.group(0)), text)
 
 
 def parse_compositions(text: str) -> list[frozenset]:
     """'Aceclofenac (100mg)+ Paracetamol (325mg)' -> [frozenset({('aceclofenac', '100mg'), ('paracetamol', '325mg')})].
     Components group only across + , & or 'and'; stray words ('Contains', brand names) before a component are dropped."""
     groups, cur, last_end = [], [], None
+    text = _bracket_hyphen_chain(text)
     for m in COMP.finditer(text):
         name = _salt_name(m[1])
         if not name:

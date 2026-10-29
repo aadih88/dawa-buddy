@@ -102,3 +102,17 @@ def test_disagreement_and_empty_results_are_worded_differently():
     assert d.best is None and "disagree" in d.note
     n = webcheck.gather([page("https://www.1mg.com/a", "Telma 40 Tablet")], desc="TELMA 40 TAB")
     assert n.best is None and "No page for this exact product" in n.note
+
+
+def test_a_label_run_into_the_salt_name_is_not_part_of_the_name():
+    # PharmEasy's snippet reads "Salt ContentTinidazole(600.0 Mg)+Ciprofloxacin(500.0 Mg)": "content" must not become "contenttinidazole" (Cifran CT, 29 Oct 2026)
+    want = [frozenset({("tinidazole", "600mg"), ("ciprofloxacin", "500mg")})]
+    for text in ("Salt ContentTinidazole(600.0 Mg)+Ciprofloxacin(500.0 Mg)", "Salt Content[Tinidazole(600.0 Mg)+Ciprofloxacin(500.0 Mg)",
+                 "Salt Content, Tinidazole(600.0 Mg)+Ciprofloxacin(500.0 Mg)"):
+        assert webcheck.parse_compositions(text) == want, text
+
+
+def test_apollos_upper_case_hyphen_format_is_read_but_a_brand_and_strength_title_is_not():
+    from dawa_buddy import webcheck as w
+    assert w.parse_compositions("CIPROFLOXACIN-500MG+TINIDAZOLE-600MG](https://www.apollopharmacy.in/salt/x)") == [frozenset({("ciprofloxacin", "500mg"), ("tinidazole", "600mg")})]
+    assert w.parse_compositions("SHELCAL-500MG Tablet") == []            # 'Shelcal' is a brand, not a salt
