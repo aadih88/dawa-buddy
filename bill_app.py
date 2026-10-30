@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 import pandas as pd
 import streamlit as st
 
-from dawa_buddy import injectables, bill as b, explainer, i18n, listings, llm, nppa_orders, pipeline, review_triage as rt, samples, scheduler, transparency, ui, vision, webcheck
+from dawa_buddy import budget, injectables, bill as b, explainer, i18n, listings, llm, nppa_orders, pipeline, review_triage as rt, samples, scheduler, transparency, ui, vision, webcheck
 from dawa_buddy.reader import read_prescription
 from dawa_buddy.reconcile import reconcile
 from dawa_buddy.report import questions
@@ -146,7 +146,7 @@ def start():
     unlock_box()
     reading = st.session_state.get("reading", False)       # set by the button, so the next run shows every control disabled while the photo is read
     bill_img = rx_img = None
-    if llm.vision_available():
+    if llm.vision_available() and not budget.exhausted("photo"):
         bill_img = st.file_uploader("Photo of your bill", type=["png", "jpg", "jpeg"], key="bill_photo", disabled=reading)
         with st.expander("＋ Add your prescription (optional)"):
             rx_img = st.file_uploader("Photo of your prescription", type=["png", "jpg", "jpeg"], key="rx_photo", disabled=reading)
@@ -158,6 +158,8 @@ def start():
             st.rerun()
         st.markdown("<p class='db-or'>or try a sample</p>", unsafe_allow_html=True)
     else:
+        if not llm.restricted() and (budget.exhausted("model") or budget.exhausted("photo")):
+            msg("amber", "Today's AI budget for this demo is used up, so photo reading and the AI explanations are paused. The samples and every price check still work; it resets each day.")
         st.markdown("<p class='db-or'>Try a sample bill</p>", unsafe_allow_html=True)
     cols = st.columns(len(samples.SAMPLES))
     for col, name in zip(cols, samples.SAMPLES):
@@ -171,6 +173,9 @@ def start():
 
 
 def read_photos(bill_img, rx_img):
+    if not budget.spend("photo"):
+        st.session_state.update(reading=False, start_msg=("amber", "The demo's daily photo-reading budget is used up. The samples and every price check still work; photo reading returns tomorrow."))
+        st.rerun()
     limit = int(os.environ.get("DAWA_MAX_PHOTO_READS", "5"))
     if st.session_state.get("photo_reads", 0) >= limit:
         st.session_state.update(reading=False, start_msg=("amber", f"This demo reads {limit} photos per visit. Try a sample, or run the app yourself (see the README)."))

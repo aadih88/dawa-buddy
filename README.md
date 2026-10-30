@@ -5,12 +5,12 @@
 **Photograph a pharmacy or hospital bill. Dawa Buddy checks it line by line against India's legal price lists and the doctor's prescription, then tells you exactly what to ask, in English, Hindi or Kannada.**
 
 ![licence: MIT](https://img.shields.io/badge/licence-MIT-green)
-![tests: 292 passing](https://img.shields.io/badge/tests-292%20passing-brightgreen)
+![tests: 299 passing](https://img.shields.io/badge/tests-299%20passing-brightgreen)
 ![Nebius Token Factory](https://img.shields.io/badge/runs%20on-Nebius%20Token%20Factory-1f6feb)
 ![NVIDIA Nemotron](https://img.shields.io/badge/models-NVIDIA%20Nemotron-76b900)
 ![Tavily](https://img.shields.io/badge/web%20evidence-Tavily-7b61ff)
 
-**Demo:** the hosted app's URL and its access code are in the submission's testing instructions (the link is not published here, so that strangers cannot spend the model credits; see [section 13](#13-setup-run-and-deploy)) · **Demo video (3 min): link added at submission** · [Hackathon page](https://nebiusglobalaihackathon.devpost.com/) · Track: **Best Apps and Agents**
+**Demo:** the hosted app's URL is in the submission form (it is not repeated here). Photo reading, AI text and web look-ups work up to a shared daily budget that protects the credits; the samples and every price check always work (see [section 13](#13-setup-run-and-deploy)) · **Demo video (3 min): link added at submission** · [Hackathon page](https://nebiusglobalaihackathon.devpost.com/) · Track: **Best Apps and Agents**
 
 > Dawa Buddy never accuses anyone. It reads your documents, compares them with public price lists and the prescription, and tells you **what to ask**.
 > It is information, not a finding of wrongdoing, and not medical advice.
@@ -24,13 +24,13 @@
 ### Try it in 30 seconds (no key, no upload)
 1. Open the demo link from the submission (or run it locally in two minutes, [section 13](#13-setup-run-and-deploy)), tap **Hospital pharmacy bill**, look over the numbers on the *Check the numbers* screen, and press **See the result** (it reads **Looks right, see the result** when every line multiplies out). The sample bills and every price check work **without** the access code.
 2. The first card is an **IV set billed at ₹265 against an MRP of ₹11 printed on the bill**. That is the kind of mark-up a Supreme Court bench has been questioning this month (see [section 2](#2-the-problem-with-evidence)). The injections below it are above their **legal ceiling prices**.
-3. Enter the access code from the testing instructions (*I have an access code*) to switch on photo reading, AI text and web look-ups. Then open **Explain my medicines in plain language**, choose **हिन्दी** or **ಕನ್ನಡ**, and press *Explain*. Without the code, the dose, safety notes and timetable still appear (they are fixed templates).
+3. Photo reading, AI text and web look-ups work in the hosted demo up to a daily budget (when it is used up the page says so and the samples and price checks still work). Open **Explain my medicines in plain language**, choose **हिन्दी** or **ಕನ್ನಡ**, and press *Explain*. The dose, safety notes and timetable are fixed templates, so they appear even without a model.
 4. With the code you can also upload your own bill photo (cover names and phone numbers first).
 
 ### What a judge should know in one minute
 | Criterion | Short answer | Where to look |
 |---|---|---|
-| **Technological implementation** | Nemotron **Super VL** reads photos, **Lightning** reads prescriptions, **Ultra / Super** write Hindi, all through one Token Factory endpoint. A deterministic rules engine decides every price verdict, so the model can never invent an accusation. 292 tests; 4 evaluation suites. | [§7](#7-architecture), [§8](#8-how-we-use-nebius-nvidia-nemotron-and-tavily), [§10](#10-validation-and-evaluation) |
+| **Technological implementation** | Nemotron **Super VL** reads photos, **Lightning** reads prescriptions, **Ultra / Super** write Hindi, all through one Token Factory endpoint. A deterministic rules engine decides every price verdict, so the model can never invent an accusation. 299 tests; 4 evaluation suites. | [§7](#7-architecture), [§8](#8-how-we-use-nebius-nvidia-nemotron-and-tavily), [§10](#10-validation-and-evaluation) |
 | **Design** | One question per screen, verdict first, a "What we checked" list so a clean bill reads as protection, phone-first, status always colour + icon + words, Hindi and Kannada typography. | [§5](#5-the-product-tour) |
 | **Potential impact** | The Indian government's own court affidavit says patients have "very low bargaining position" and "very limited" knowledge of prices. This tool puts the comparison in the patient's hands at the moment of paying. | [§2](#2-the-problem-with-evidence), [§4](#4-the-idea) |
 | **Quality of the idea** | A *receipt audit*, not a price lookup: it resolves each line to a medicine, strength and form, converts per-tablet, per-strip, per-vial, per-ml and per-piece prices correctly, and reconciles the bill with the prescription (including the wrong *variant* handed over). It is honest about what it cannot see. | [§4](#4-the-idea), [§9](#9-engineering-decisions-and-why) |
@@ -54,7 +54,7 @@ I started with one real prescription and its pharmacy bill, from my own family, 
 
 It was not simple. The prescription said **Shelcal-XT**; the counter had handed over **Shelcal 500**, a different product, and nothing on the bill said so. The bill printed the MRP *per strip* beside a *per-tablet* price, so comparing them needed a tablets-per-strip number that only the strip itself had. A hospital bill listed a saline bag at a price that looked wrong, until I found that NPPA publishes a **second, higher legal ceiling** for "special features" packs, in a separate gazette notification, and that the bag matched it to the paisa. Every one of these checks was possible. Each needed gazette PDFs, a spreadsheet and patience that a family does not have at a hospital discharge counter.
 
-Then the court record caught up with the experience. In October 2026 a Supreme Court bench began asking why a drip line with an MRP of ₹11 was being sold for ₹292, and the Union government told the Court, in an affidavit, that patients have a "very low bargaining position" and "very limited" knowledge of drugs, substitutes and prices. That sentence is the whole problem statement. Dawa Buddy is my attempt to reduce that asymmetry for one patient, with one photo, in under a minute: do the arithmetic and the lookups, say what could not be checked, and phrase every finding as a question to ask, never an accusation.
+Then the court record caught up with the experience. In October 2026 a Supreme Court bench began asking why a drip line with an MRP of ₹11 was being sold for ₹299, and the Union government told the Court, in an affidavit, that patients have a "very low bargaining position" and "very limited" knowledge of drugs, substitutes and prices. That sentence is the whole problem statement. Dawa Buddy is my attempt to reduce that asymmetry for one patient, with one photo, in under a minute: do the arithmetic and the lookups, say what could not be checked, and phrase every finding as a question to ask, never an accusation.
 
 ## 2. The problem, with evidence
 Sources are numbered and listed in [section 19](#19-sources). Dates are as reported.
@@ -63,7 +63,7 @@ Sources are numbered and listed in [section 19](#19-sources). Dates are as repor
 Two bodies of litigation and the government's own filings describe the same pattern.
 
 - **27 October 2026 (yesterday).** A bench of Justices Vikram Nath and Sandeep Mehta heard petitions by advocate Kishan Chand Jain and paediatric surgeon Sanjay Kulshrestha seeking stricter enforcement of the Drugs (Prices Control) Order, 2013. The bench asked how a hospital could charge **₹1.3 lakh for a cancer injection a distributor could procure for ₹11,000** and asked the Centre to justify it [3]. It noted that around **90% of medicines are outside the DPCO's price controls** [3]. Hospitals' counsel argued that capping margins would make hospital operations unviable and push costs onto other charges; the Centre argued for a "calibrated approach" and said complete control is not the answer [2]. **The order is reserved; written submissions are due in two weeks** [2]. The outcome is pending as this README is written.
-- **12 October 2026.** The Centre told the Court it would cap trade margins at 30% on non-scheduled cancer drugs. The bench called that "just the tip of the iceberg" and asked about other products. Justice Mehta cited an **India-made cardiac stent costing about ₹5,000 sold by hospitals for more than ₹25,000**, and **"a saline drip line carrying an MRP of ₹11 being sold for ₹292"** [4]. The Centre's affidavit estimated the cancer-drug cap would cut MRPs by 20% to 70%, saving about ₹2,500 crore a year [4].
+- **12 October 2026.** The Centre told the Court it would cap trade margins at 30% on non-scheduled cancer drugs. The bench called that "just the tip of the iceberg" and asked about other products. Justice Mehta cited an **India-made cardiac stent costing about ₹5,000 sold by hospitals for more than ₹25,000**, and **"a saline drip line carrying an MRP of ₹11 being sold for ₹299"** [4]. The Centre's affidavit estimated the cancer-drug cap would cut MRPs by 20% to 70%, saving about ₹2,500 crore a year [4].
 - **The government's affidavit** (reported 23 October 2026) calls hospitals charging high MRPs for medicines and consumables a **"malpractice"**. It says patients have a "very low bargaining position vis-a-vis the hospital, and the patient's knowledge of drugs, their substitutes and their prices is also very limited". It describes margins of **170% to 700% or more on anti-cancer drugs** and **100% to 1000% or more on consumables**, and notes that for patients paying directly, hospital supplies are **"billed separately at MRP"** [5].
 - **4 March 2025, *Siddharth Dalmia v. Union of India*.** A PIL alleged that private hospitals push patients to buy medicines, implants and devices from in-house pharmacies at higher prices. Its example: an injection sold at an MRP of ₹61,132 while the same company's product was available in the open market at ₹50,000, with one free injection for every four bought that the hospital did not pass on. The bench (Justices Surya Kant and N Kotiswar Singh) left the policy to state governments [6].
 
@@ -140,7 +140,7 @@ Dawa Buddy cannot fix a pricing policy. It can give a patient the numbers the po
 
 | Pattern reported in the Court | What the patient can see | What Dawa Buddy does today | Where it stops |
 |---|---|---|---|
-| **Consumable billed far above its printed MRP** (drip line, MRP ₹11, sold at ₹292) | The MRP on the pack and the billed rate | **Per-piece MRP check.** Flags "Above the MRP on your bill" with the price meter. The *Hospital pharmacy bill* sample reproduces it (IV set, MRP ₹11, billed ₹265). | Needs the MRP read off the pack. It cannot know an MRP it was not given. |
+| **Consumable billed far above its printed MRP** (drip line, MRP ₹11, sold at ₹299) | The MRP on the pack and the billed rate | **Per-piece MRP check.** Flags "Above the MRP on your bill" with the price meter. The *Hospital pharmacy bill* sample reproduces it (IV set, MRP ₹11, billed ₹265). | Needs the MRP read off the pack. It cannot know an MRP it was not given. |
 | **A scheduled drug or injection above its legal ceiling** | Bill rate, strength, form | Converts to per tablet, per vial or per ml and compares with the **NPPA ceiling (911 formulations loaded)** plus a GST allowance. The sample shows two injections above ceiling. | Scheduled medicines only; ceilings as of 1 April 2026. |
 | **Non-scheduled branded drug where the MRP is many times the trade price** (₹2,700 bought, MRP ₹27,000) | Only the MRP | Checks the bill against the printed MRP; compares with the **Jan Aushadhi generic price** where a generic exists (a gap of 3x or more becomes a question *for the doctor*); shows pharmacy-site listings as a reference. | **It cannot see the price to retailer.** The heart of the Court's concern is invisible to the patient, and with no ceiling there is nothing to call illegal. It says so. |
 | **A hospital charging a drug at many times what a distributor pays** (₹11,000 vs ₹1.3 lakh) | MRP and billed rate | Flags only if the bill exceeds the printed MRP; otherwise reports "within the printed MRP" and any generic benchmark. | Same limit: a mark-up *within* MRP is a policy question, not something a bill can prove. |
@@ -316,7 +316,7 @@ Everything model-related runs on **Nebius Token Factory** through its OpenAI-com
 | **Units are explicit; no silent conversion** | The commonest overcharge illusion is per-tablet versus per-strip. | Guess the unit. |
 | **Versioned CSV data with self-checking parsers** | The parser stops unless serial numbers run 1..N with no gap and every price is a number. This caught a merged-cell row (`Condoms 11.65`) the table reader had skipped. | Hand-copied numbers. |
 | **Streamlit** | Fast to iterate, free hosting, Python end to end; the widget restyling is pinned to one Streamlit version. | A separate web front end: more polish potential, much more to build and host in the time. |
-| **An access code that switches off all model and web calls, per visitor** | A hosted link can be found or leaked, and every photo read and AI explanation costs credits. Locked visitors still get the samples and every rules-based price check, so nothing is hidden; judges get everything with the code. A test fails if a locked visitor makes any model or web call. | Keeping the link secret and hoping; a Streamlit viewer allow-list (judges cannot be given a shared login). |
+| **A shared daily budget for the hosted demo (with an optional per-visitor access code)** | The demo link ends up on a public page and every photo read and AI explanation costs credits, so judges must not need a code but a stranger must not be able to spend without limit. Three counters for the whole app (photo reads, model calls, web look-ups; 100, 600 and 400 a day by default, changeable in the secrets) fall back, when used up, to the rules-based mode: the samples and every price check keep working and the screens say the AI part returns tomorrow. The counters are in memory, so the hard limit is a separate API key with a small prepaid balance. Tests cover the limits, the day rollover, the refusal before the API is called and the screen. | An access code in the public description (public, so no protection); keeping the link secret and hoping; a Streamlit viewer allow-list (judges cannot be given a shared login). |
 | **No accounts, no storage** | Bills contain personal data. | Saving history. |
 | **Samples that need no key** | Anyone, including a judge, can see the product work in one tap. | Require an API key to try. |
 
@@ -330,7 +330,7 @@ All numbers below are reproducible with the commands in [section 13](#13-setup-r
 ### 10.1 Results
 | Check | Result | Caveat |
 |---|---|---|
-| Unit and integration tests | **292 pass** | Includes fake-server tests for the Ollama and Tavily paths and a test that inspects what is sent to Tavily. |
+| Unit and integration tests | **299 pass** | Includes fake-server tests for the Ollama and Tavily paths and a test that inspects what is sent to Tavily. |
 | Brand resolution, 108 real brand lines | **99 correct, 4 missed (safe), 0 wrong.** The curated map alone: 26 correct, 61 missed, 2 wrong (1 reached a price verdict). 14 of 14 supplements, invented and ambiguous names handled safely. | Expected answers were written from pharmaceutical knowledge, **not** copied from the table. A pharmacist should review them. |
 | Bill tier accuracy, 18 synthetic lines (tablets, liquids, injections) | **18 of 18** | Synthetic prices written by the author. |
 | Prescription extraction, 24 synthetic cases | Offline rules F1 **1.00**, live Nemotron F1 **1.00**; safety-flag F1 1.00 / 1.00; 0 invented medicines; median latency 1.33 s | **Saturated**: the rules were tuned on this style of text, so it does not show the model's value. The real-photo comparison does. |
@@ -347,7 +347,7 @@ All numbers below are reproducible with the commands in [section 13](#13-setup-r
 
 ### 10.2 Reproduce
 ```bash
-pytest -q tests                                   # 292 tests
+pytest -q tests                                   # 299 tests
 python -m evals.run_bill_evals                    # 18 synthetic bill lines, tier accuracy
 python -m evals.run_brand_evals [--verbose]       # 108 brand lines: correct / missed / wrong
 python -m evals.run_evals --out evals/results.md  # 24 synthetic prescriptions, live model
@@ -396,7 +396,7 @@ Synthetic tests passed long before real documents did. These are the failures re
 | The wrong-variant card said "Same brand name, different product" but, for the real Shelcal case, only "we could not look up the ingredients, so we cannot say how they differ": neither Shelcal-XT nor Shelcal 500 was in the brand table (a supplement). A stray "0" from the dose pattern `0---1---0` was also being read as a strength ("Shelcal-Xt 0"). | Both products were added to `data/brand_overrides.json` with their sources (each composition confirmed on two or more pharmacy pages), the dose pattern is no longer read as a strength, and the comparison also names an ingredient present in both in a different amount. The card now reads: "prescribed is calcium 500 mg + vitamin d3 2000 iu + methylcobalamin 1500 mcg + l-methylfolate calcium 1 mg + pyridoxal-5-phosphate 20 mg; billed is calcium 500 mg + vitamin d3 250 iu (the billed one lacks …; vitamin d3 is 2000 iu in the prescribed one and 250 iu in the billed one)". Four-version check: the old code never explained it either. | Only brands with a verified source are added; any other pair still says plainly that it cannot say how they differ. |
 | PharmEasy's page text runs a label into the value ("Salt ContentTinidazole(600.0 Mg)"), and the parser joined them: **Cifran CT** was read as ciprofloxacin 500 mg + **contenttinidazole** 600 mg. Apollo's `CIPROFLOXACIN-500MG+TINIDAZOLE-600MG` format was not read at all, so that page never confirmed anything. | A name is split where lower case runs into upper case before it is read, and "content" joins the noise words; an upper-case `NAME-500MG+NAME-600MG` chain is read as a composition, but a brand-and-strength title like `SHELCAL-500MG` never is. Live: **Cifran CT now resolves to ciprofloxacin 500 mg + tinidazole 600 mg, confirmed by three sites** (1mg, Apollo, PharmEasy); Concor T and Veltam are unchanged. Two tests. | A page whose product name does not match exactly (Cifran CTH) still finds nothing, which is a safe miss; a stray word in the page text could still confuse the parser, which is why the result is only ever a suggestion the patient confirms from the strip. |
 | On the second real bill, two lines had a Jan Aushadhi generic at under half their price (Dolo 650 at 2.2×, Monocef O at 2.8×) and read "within the limits", while two others (8× and 9×) were flagged. The 3× flag looked inconsistent, and the author judged it too relaxed. | The flag is now **2×** (`GENERIC_GAP_RATIO`), which flags Dolo 650 and Monocef O. A generic 1.5× to under 2× cheaper is no longer silent: the checklist says "None flagged (we flag a generic at 2× the price or more)" and names those lines, and each line's fold shows the generic's price and the multiple paid. The outpatient sample now has 5 things to ask about (Dolo 650 added); the hospital sample is unchanged. Two of the 18 hand-written tier cases (Dolo 650 at ₹2.10 and a ₹29.50 ceftriaxone vial, 2.0× and 2.2× their generics) are meant to be "inside every limit", so they were repriced just under the new boundary (₹1.90 and ₹26.00) and keep their expected result; the unit tests pin both sides of it (₹26 not flagged, ₹29.50 flagged). The eval scored 16 of 18 until that was done, and is 18 of 18 again. | A lower threshold flags more lines. Jan Aushadhi generics are cheap by design, so most branded medicines sit above 2×; the flag is always a question for the doctor, never an accusation. |
-| The Supreme Court's headline example (a ₹11 consumable billed at ₹292) was caught only if the user chose a unit; consumables had no "per piece" option. | Added **per piece** with a direct MRP comparison, plus a test and the hospital sample line. Found by reading the court coverage against the app, on 28 October. |
+| The Supreme Court's headline example (a ₹11 consumable billed at ₹299) was caught only if the user chose a unit; consumables had no "per piece" option. | Added **per piece** with a direct MRP comparison, plus a test and the hospital sample line. Found by reading the court coverage against the app, on 28 October. |
 
 ## 11. How it meets the requirements
 | Req | How it is met | Evidence |
@@ -423,7 +423,7 @@ Checked against the [official rules](https://nebiusglobalaihackathon.devpost.com
 | Uses at least one **NVIDIA open source model** | ✅ Nemotron 3.5 Super VL, Nemotron 3.5 Lightning, Nemotron 3 Super 120B, Nemotron 3 Ultra 550B | [§8](#8-how-we-use-nebius-nvidia-nemotron-and-tavily) |
 | One of the four **tracks** | ✅ Best Apps and Agents | Top of this page |
 | **Project description** (what, why, how) | ✅ | Sections 1, 4, 7 |
-| **Working demo URL** | ✅ in the submission form and its testing instructions, with an access code (the rules allow a private demo if credentials are provided). The link is deliberately not in this repository. | Submission form |
+| **Working demo URL** | ✅ in the submission form. The app is open (no code) and protected by a daily budget; the link is deliberately not in this repository. | Submission form |
 | **Demo video**, 3 minutes or less, public on YouTube | ⏳ link added at submission | Top of this page |
 | **Public repository** with an open source licence visible at the top | ✅ MIT, shown in the repository's About section | `LICENSE` |
 | **README** with setup instructions and run guidance | ✅ | [§13](#13-setup-run-and-deploy) |
@@ -432,7 +432,7 @@ Checked against the [official rules](https://nebiusglobalaihackathon.devpost.com
 | **Prior-work statement** | ✅ none: everything was built in the submission period | [§18](#18-prior-work-licence-acknowledgements) |
 | Third-party data and APIs used within their terms | ✅ public NPPA and PMBJP data, an MIT-licensed brand dataset, Tavily's API | `data/NOTICE.md` |
 | Original work, English materials, no copyrighted music in the video | ✅ | |
-| Project available **free and without restriction for testing** until judging ends | ✅ Judges receive the URL and the access code in the testing instructions and get every feature, free. Without the code a visitor still gets the sample bills and every price check, but no model or web call (so a leaked link cannot drain the credits). Anyone can also run it locally with their own key. The demo will stay up through the judging period (to 15 Dec 2026). | [§13](#13-setup-run-and-deploy) |
+| Project available **free and without restriction for testing** until judging ends | ✅ Judges open the URL and get every feature, free, with no code. A shared daily budget (photo reads, model calls, web look-ups) protects the credits; if it is used up the samples and every price check still work and the budget resets each day (00:00 UTC). Anyone can also run it locally with their own key. The demo will stay up through the judging period (to 15 Dec 2026). | [§13](#13-setup-run-and-deploy) |
 | **Best Use of Tavily**: a functional runtime call to the Tavily API | ✅ three runtime uses | [§8](#8-how-we-use-nebius-nvidia-nemotron-and-tavily) |
 
 ---
@@ -460,11 +460,14 @@ streamlit run bill_app.py
    NEBIUS_API_KEY = "..."
    TAVILY_API_KEY = "..."            # optional
    DAWA_MAX_PHOTO_READS = "15"       # photo reads per unlocked visitor session (the default is 5)
-   DAWA_ACCESS_CODE = "..."          # the code judges enter to switch on photo reading, AI text and web look-ups (leave unset for local use: no gate)
+   # DAWA_ACCESS_CODE = "..."       # optional: visitors start locked (samples and price checks only) until they enter it. Leave unset for an open demo.
+   DAWA_DAILY_PHOTO_READS = "100"    # shared by all visitors, per day (00:00 UTC): photo reads
+   DAWA_DAILY_MODEL_CALLS = "600"    # model calls per day
+   DAWA_DAILY_WEB_CALLS = "400"      # web look-ups per day
    ```
 3. Deploy. The first build installs `requirements.txt` (about two minutes); an idle app sleeps and wakes when someone visits.
 
-**Access code.** When `DAWA_ACCESS_CODE` is set, every visitor starts *locked*: the app switches every model and web call off for that visitor (`llm.restrict`, per visitor thread), so only the sample bills and the rules-based price checks run, and no credits can be spent. Entering the code unlocks that visitor's session (a wrong guess costs 1.5 s). The hosted link is shared only with the judges, together with the code, in the submission's testing instructions. Streamlit exposes top-level secrets as environment variables, which is what the app reads. If the start screen shows only the sample buttons and no photo upload, the key is not reaching the app: check the secret's name. Memory is not a concern: loading the brand table and running an audit peaks at about 190 MB.
+**Daily budget and optional access code.** The hosted demo is open: no code. Three shared counters (`dawa_buddy/budget.py`) cap photo reads, model calls and web look-ups per day for the whole app. When one is used up the app falls back to the rules-based mode: the sample bills and every price check keep working, the start screen says the AI part is paused, and it resets at 00:00 UTC. The counters are in memory (a restart resets them), so the hard limit is the balance on the API keys: use a separate key with a small prepaid balance for the demo. `DAWA_MAX_PHOTO_READS` still caps each visitor session. If you prefer a gate, set `DAWA_ACCESS_CODE`: every visitor then starts *locked* (`llm.restrict`, per visitor thread) until the code is entered, and a wrong guess costs 1.5 s. Streamlit exposes top-level secrets as environment variables, which is what the app reads. If the start screen shows only the sample buttons and no photo upload, the key is not reaching the app (check the secret's name) or today's budget is used up. Memory is not a concern: loading the brand table and running an audit peaks at about 190 MB.
 
 **Command line (no browser)**
 ```bash
@@ -497,7 +500,7 @@ IV SET | 2 | 265.00 | 530.00 | each | | 11.00
 | `ollama` | Local model, no cloud (`OLLAMA_MODEL`, `DAWA_VISION_MODEL`) |
 | `offline` | Rules only, clearly labelled; no photo reading |
 
-Optional: `DAWA_ACCESS_CODE` (gate for a hosted demo), `DAWA_TEXT_MODEL`, `DAWA_VISION_MODEL`, `NEBIUS_BASE_URL`, `TAVILY_API_KEY`, `DAWA_KN_MODEL_TEXT=1` (turns the experimental Kannada AI text back on, for testing only).
+Optional: `DAWA_DAILY_PHOTO_READS`, `DAWA_DAILY_MODEL_CALLS`, `DAWA_DAILY_WEB_CALLS` (shared daily budget), `DAWA_ACCESS_CODE` (gate for a hosted demo), `DAWA_TEXT_MODEL`, `DAWA_VISION_MODEL`, `NEBIUS_BASE_URL`, `TAVILY_API_KEY`, `DAWA_KN_MODEL_TEXT=1` (turns the experimental Kannada AI text back on, for testing only).
 
 ## 14. Price data and how to refresh it
 | Data | Source | In the repo |
@@ -572,11 +575,11 @@ Accessed 28 October 2026 unless noted. Figures in the news reports are as report
 2. The Hindu, "SC says 'economic policy' cannot take precedence over lives as Centre backs 'calibrated' drug-price controls", 27 Oct 2026. https://www.thehindu.com/news/national/sc-says-economic-policy-cannot-take-precedence-over-lives-as-centre-backs-calibrated-drug-price-controls/article71631892.ece
 3. ThePrint, "'Not through this dacoity': SC questions Rs 1.3 lakh hospital charge for Rs 11,000 cancer injection", 27 Oct 2026. https://theprint.in/health/not-through-this-dacoity-sc-questions-rs-1-3-lakh-hospital-charge-for-rs-11000-cancer-vaccine/3083192/
 4. The Hindu, "Supreme Court wants cap on trade margin for all essential medicines and medical products", 12 Oct 2026 (updated 17 Oct). https://www.thehindu.com/sci-tech/health/supreme-court-wants-cap-on-trade-margin-for-all-essential-medicines-and-medical-products/article71575807.ece
-5. Times of India, "Hospitals 'overcharging' is a malpractice: Govt to Supreme Court", 23 Oct 2026. https://timesofindia.indiatimes.com/india/hospitals-overcharging-is-a-malpractice-govt-to-supreme-court/articleshow/135129260.cms
+5. Times of India, "Hospitals 'overcharging' is a malpractice: Govt to Supreme Court", 23 Oct 2026. https://timesofindia.indiatimes.com/india/hospitals-overcharging-is-a-malpractice-govt-to-supreme-court/articleshow/135129960.cms
 6. PTI via ET Pharma, "Policy decisions by states needed to protect patients from being fleeced by pharmacies at private hospitals: SC", 5 Mar 2025. https://pharma.economictimes.indiatimes.com/news/policy-and-regulations/policy-decisions-by-states-needed-to-protect-patients-from-being-fleeced-by-pharmacies-at-private-hospitals-sc/118721289
 7. The Hindu (Data Point), "₹8,447 crore in medicine overcharging claims remain outstanding as SC seeks wider price controls", 22 Oct 2026, citing NPPA and NSS Report no. 596 (Household Social Consumption: Health, 2025). https://www.thehindu.com/data/8447-crore-in-medicine-overcharging-claims-remain-outstanding-as-sc-seeks-wider-price-controls/article71607884.ece
 8. National Health Systems Resource Centre, National Health Accounts Estimates for India 2022-23. https://nhsrcindia.org/sites/default/files/2026-05/NHA%202022-23%20Report.pdf
-9. PIB, "NPPA Integrates Pharma Jan Samadhan Portal with Pharma Sahi Daam Portal", 25 Jun 2026. https://www.pib.gov.in/PressReleasePage.aspx?PRID=2292731&reg=48&lang=1
+9. PIB, "NPPA Integrates Pharma Jan Samadhan Portal with Pharma Sahi Daam Portal", 25 Jun 2026. https://www.pib.gov.in/PressReleasePage.aspx?PRID=2299731&reg=48&lang=1
 10. NPPA, Pharma Sahi Daam. https://nppa.gov.in/pharma_sahi_daam
 11. Consumer Awareness Group, "Maximum Retail Price (MRP) and Over-Charging". https://www.cag.org.in/blogs/maximum-retail-price-mrp-and-over-charging
 12. Legal 500, "NPPA Revises The Ceiling Price Of Coronary Stent" (the February 2017 cap, up to 85%). https://www.legal500.com/intelligence/india/food-drugs-healthcare-life-sciences/nppa-revises-the-ceiling-price-of-coronary-stent
@@ -607,6 +610,6 @@ dawa_buddy/
 data/                       Price lists, brand table, overrides, NOTICE.md
 scripts/                    audit_bill, read_photos, check_nebius, NPPA PDF parsers, brand-table builder, review-pack builder (markdown), review-sheet builder (xlsx for reviewers: one row per phrase, a verdict dropdown), synth_bills (twelve invented bill layouts with known answers), clinical_review (second-opinion screen of the medicine table by other model families)
 evals/                      Gold sets and runners
-tests/                      292 tests
+tests/                      299 tests
 my_data/                    Your private bills and prescriptions (git-ignored)
 ```

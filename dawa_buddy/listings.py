@@ -138,7 +138,10 @@ def search(desc: str, search_fn=None) -> Listing | None:
 
 def _tavily(q: str) -> list[dict]:
     import httpx
+    from . import budget
     from .webcheck import BASE_URL
+    if not budget.spend("web"):
+        return []                         # today's shared web budget is used up: no listings, the page says so
     r = httpx.post(BASE_URL.rstrip("/") + "/search", timeout=60, headers={"Authorization": f"Bearer {os.environ['TAVILY_API_KEY']}"},
                    json={"query": q, "search_depth": "advanced", "max_results": 8, "include_domains": DOMAINS, "include_raw_content": True})
     r.raise_for_status()

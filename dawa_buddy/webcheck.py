@@ -8,7 +8,7 @@ no quantities, prices, patient or hospital details.
 from __future__ import annotations
 import os, re
 from collections import Counter
-from . import llm
+from . import budget, llm
 from dataclasses import dataclass, field
 from urllib.parse import urlparse
 from .brand_table import norm_salt, lookup
@@ -24,7 +24,7 @@ ACID_FIRST = {"clavulanic", "folic", "ascorbic", "tranexamic", "mefenamic", "val
 
 
 def available() -> bool:
-    return bool(os.environ.get("TAVILY_API_KEY")) and not llm.restricted()
+    return bool(os.environ.get("TAVILY_API_KEY")) and not llm.restricted() and not budget.exhausted("web")
 
 
 def _salt_name(raw: str) -> str:
@@ -177,6 +177,8 @@ def lookup_brand(desc: str, form: str = "tablet") -> Evidence | None:
     if not available():
         return None
     import httpx
+    if not budget.spend("web"):
+        return None                       # today's shared web budget is used up
     brand = " ".join(re.findall(r"[A-Za-z0-9.]+", desc_brand(desc)))[:80]
     named = _DESC_CUT.search(desc or "")                       # the form word the bill itself uses ("jelly", "syp") searches better than our class name ("topical")
     query = f"{brand} {named.group(0).strip(' -').lower() if named and named.group(0).strip(' -') else form} composition salt strength India"
@@ -205,6 +207,8 @@ def lookup_orders(wanted_text: str):
     queries = [f"{ip} tablet retail price NPPA order", f"{plain} Tablets retail price 1 Tablet M/s Ltd."]
     rows, urls = [], []
     for q in queries:
+        if not budget.spend("web"):
+            break                         # today's shared web budget is used up: keep what was found so far
         r = httpx.post(BASE_URL.rstrip("/") + "/search", timeout=60, headers={"Authorization": f"Bearer {os.environ['TAVILY_API_KEY']}"},
                        json={"query": q, "search_depth": "advanced", "max_results": 8, "include_raw_content": True, "include_domains": ["nppa.gov.in"]})
         r.raise_for_status()

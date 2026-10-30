@@ -7,6 +7,7 @@ is also the baseline the evals compare the model against.
 from __future__ import annotations
 import json, os, re, threading
 from typing import Any, Optional
+from . import budget
 
 BASE_URL = os.environ.get("NEBIUS_BASE_URL", "https://api.tokenfactory.nebius.com/v1/")
 # Model IDs are configurable; verify exact IDs in the Token Factory playground.
@@ -38,6 +39,8 @@ def provider() -> str:
     DAWA_PROVIDER wins; otherwise Nebius if a key is set; otherwise offline. A restricted visitor is always offline."""
     if restricted() or os.environ.get("DAWA_OFFLINE") == "1":
         return "offline"
+    if budget.exhausted("model") and os.environ.get("DAWA_PROVIDER", "").lower() != "ollama":
+        return "offline"                  # today's shared model budget is used up: rules only, samples still work (a local Ollama has no cost, so no budget)
     p = os.environ.get("DAWA_PROVIDER", "").lower()
     if p in ("ollama", "nebius", "offline"):
         return p
@@ -119,6 +122,8 @@ def vision_available() -> bool:
 
 def _nebius_create(**kw):
     """JSON tasks do not need reasoning tokens. Ask for none; if the model rejects the field, retry without it."""
+    if not budget.spend("model"):
+        raise RuntimeError("The daily model budget for this demo is used up.")
     c = _client()
     try:
         return c.chat.completions.create(extra_body={"reasoning_effort": "none"}, **kw)
