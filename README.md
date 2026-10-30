@@ -5,7 +5,7 @@
 Photograph a pharmacy or hospital bill. Dawa Buddy checks it line by line against India's legal price lists and the doctor's prescription, then tells you exactly what to ask, in English, Hindi or Kannada.
 
 ![licence: MIT](https://img.shields.io/badge/licence-MIT-green)
-![tests: 299 passing](https://img.shields.io/badge/tests-299%20passing-brightgreen)
+![tests: 304 passing](https://img.shields.io/badge/tests-304%20passing-brightgreen)
 
 <p>
   <img src="docs/screenshot-hospital.png" alt="Result for the hospital sample bill: an IV set billed at 265 rupees against a printed MRP of 11 rupees is the first card" width="300">
@@ -20,7 +20,7 @@ Photograph a pharmacy or hospital bill. Dawa Buddy checks it line by line agains
 - **What it never does.** Accuse anyone, give medical advice, or guess. Only "above a legal ceiling or the printed MRP" is a possible violation, and it is always phrased as a question. If something cannot be checked, it says so.
 - **How it works.** AI models (NVIDIA Nemotron on Nebius Token Factory) *read* photos and *explain* medicines. A rules engine *decides* every price verdict and every safety note. You confirm every number before anything is judged.
 - **Private.** No accounts, nothing stored. Cover names and phone numbers before uploading.
-- **Open source** (MIT), 299 tests, runs locally in two minutes. The sample bills need no key and no photo.
+- **Open source** (MIT), 304 tests, runs locally in two minutes. The sample bills need no key and no photo.
 
 > Dawa Buddy is information, not a finding of wrongdoing, and not medical advice.
 
@@ -34,7 +34,7 @@ It started with one real prescription and its pharmacy bill, from my own family,
 
 It was not simple. The prescription said **Shelcal-XT**; the counter had handed over **Shelcal 500**, a different product, and nothing on the bill said so. The bill printed the MRP *per strip* beside a *per-tablet* price, so comparing them needed a tablets-per-strip number that only the strip itself had. A hospital bill listed a saline bag at a price that looked wrong, until I found that NPPA publishes a **second, higher legal ceiling** for "special features" packs, in a separate gazette notification, and that the bag matched it to the paisa. Every one of these checks was possible. Each needed gazette PDFs, a spreadsheet and patience that a family does not have at a hospital discharge counter.
 
-Then the court record caught up with the experience. In October 2026 a Supreme Court bench began asking why a drip line with an MRP of ₹11 was being sold for ₹299, and the Union government told the Court, in an affidavit, that patients have a "very low bargaining position" and "very limited" knowledge of drugs, substitutes and prices. That sentence is the whole problem statement. Dawa Buddy reduces that asymmetry for one patient, with one photo, in under a minute: it does the arithmetic and the lookups, says what could not be checked, and phrases every finding as a question to ask.
+Then the court record caught up with the experience. In October 2026 a Supreme Court bench began asking why a drip line with an MRP of ₹11 was being sold for ₹304, and the Union government told the Court, in an affidavit, that patients have a "very low bargaining position" and "very limited" knowledge of drugs, substitutes and prices. That sentence is the whole problem statement. Dawa Buddy reduces that asymmetry for one patient, with one photo, in under a minute: it does the arithmetic and the lookups, says what could not be checked, and phrases every finding as a question to ask.
 
 
 ## The problem, with evidence
@@ -44,7 +44,7 @@ Sources are numbered and listed in [Sources](#sources). Dates are as reported.
 Two bodies of litigation and the government's own filings describe the same pattern.
 
 - **27 October 2026.** A bench of Justices Vikram Nath and Sandeep Mehta heard petitions by advocate Kishan Chand Jain and paediatric surgeon Sanjay Kulshrestha seeking stricter enforcement of the Drugs (Prices Control) Order, 2013. The bench asked how a hospital could charge **₹1.3 lakh for a cancer injection a distributor could procure for ₹11,000** and asked the Centre to justify it [3]. It noted that around **90% of medicines are outside the DPCO's price controls** [3]. Hospitals' counsel argued that capping margins would make hospital operations unviable and push costs onto other charges; the Centre argued for a "calibrated approach" and said complete control is not the answer [2]. **The order is reserved; written submissions are due in two weeks** [2]. The outcome is pending as this README is written.
-- **12 October 2026.** The Centre told the Court it would cap trade margins at 30% on non-scheduled cancer drugs. The bench called that "just the tip of the iceberg" and asked about other products. Justice Mehta cited an **India-made cardiac stent costing about ₹5,000 sold by hospitals for more than ₹25,000**, and **"a saline drip line carrying an MRP of ₹11 being sold for ₹299"** [4]. The Centre's affidavit estimated the cancer-drug cap would cut MRPs by 20% to 70%, saving about ₹2,500 crore a year [4].
+- **12 October 2026.** The Centre told the Court it would cap trade margins at 30% on non-scheduled cancer drugs. The bench called that "just the tip of the iceberg" and asked about other products. Justice Mehta cited an **India-made cardiac stent costing about ₹5,000 sold by hospitals for more than ₹25,000**, and **"a saline drip line carrying an MRP of ₹11 being sold for ₹304"** [4]. The Centre's affidavit estimated the cancer-drug cap would cut MRPs by 20% to 70%, saving about ₹2,500 crore a year [4].
 - **The government's affidavit** (reported 23 October 2026) calls hospitals charging high MRPs for medicines and consumables a **"malpractice"**. It says patients have a "very low bargaining position vis-a-vis the hospital, and the patient's knowledge of drugs, their substitutes and their prices is also very limited". It describes margins of **170% to 700% or more on anti-cancer drugs** and **100% to 1000% or more on consumables**, and notes that for patients paying directly, hospital supplies are **"billed separately at MRP"** [5].
 - **4 March 2025, *Siddharth Dalmia v. Union of India*.** A PIL alleged that private hospitals push patients to buy medicines, implants and devices from in-house pharmacies at higher prices. Its example: an injection sold at an MRP of ₹61,132 while the same company's product was available in the open market at ₹50,000, with one free injection for every four bought that the hospital did not pass on. The bench (Justices Surya Kant and N Kotiswar Singh) left the policy to state governments [6].
 
@@ -115,7 +115,7 @@ Dawa Buddy cannot fix a pricing policy. It gives a patient the numbers the polic
 
 | Pattern reported in the Court | What Dawa Buddy does today | Where it stops |
 |---|---|---|
-| **Consumable billed far above its printed MRP** (drip line, MRP ₹11, sold at ₹299) | Per-piece MRP check. The *Hospital pharmacy bill* sample reproduces it (IV set, MRP ₹11, billed ₹265). | Needs the MRP printed on the bill. |
+| **Consumable billed far above its printed MRP** (drip line, MRP ₹11, sold at ₹304) | Per-piece MRP check. The *Hospital pharmacy bill* sample reproduces it (IV set, MRP ₹11, billed ₹265). | Needs the MRP printed on the bill. |
 | **A scheduled drug or injection above its legal ceiling** | Converts to per tablet, per vial or per ml and compares with the **NPPA ceiling (911 formulations loaded)** plus a GST allowance. | Scheduled medicines only; ceilings as of 1 April 2026. |
 | **Non-scheduled branded drug where the MRP is many times the trade price** | Checks the bill against the printed MRP; compares with the Jan Aushadhi generic where one exists (a gap of 2x or more becomes a question *for the doctor*). | **It cannot see the price to retailer.** With no ceiling there is nothing to call illegal. It says so. |
 | **Devices** (a stent at ₹5,000 vs ₹25,000+) | Reports "No price list covers this", **never "fine"**. | No device ceilings loaded yet (roadmap). |
@@ -274,7 +274,7 @@ All numbers are reproducible with the commands below. Where a number is weak, it
 
 | Check | Result | Caveat |
 |---|---|---|
-| Unit and integration tests | **299 pass** | Includes fake-server tests for the Ollama and Tavily paths and a test that inspects what is sent to Tavily. |
+| Unit and integration tests | **304 pass** | Includes fake-server tests for the Ollama and Tavily paths and a test that inspects what is sent to Tavily. |
 | Brand resolution, 108 real brand lines | **99 correct, 4 missed (safe), 0 wrong.** Supplements, invented and ambiguous names handled safely. | Expected answers were written from pharmaceutical knowledge; a pharmacist should review them. |
 | Bill tier accuracy, 18 synthetic lines | **18 of 18** | Synthetic prices written by the author. |
 | Bill reader, 12 synthetic layouts | 58 of 58 rows read to the known answer | Stress tests the reader was tuned against; not an accuracy figure. |
@@ -288,7 +288,7 @@ All numbers are reproducible with the commands below. Where a number is weak, it
 | **Not yet measured** | Handwriting, many other bill layouts, real-user outcomes, native-speaker and clinician review | |
 
 ```bash
-pytest -q tests                                   # 299 tests
+pytest -q tests                                   # 304 tests
 python -m evals.run_bill_evals                    # 18 synthetic bill lines, tier accuracy
 python -m evals.run_brand_evals [--verbose]       # 108 brand lines: correct / missed / wrong
 python -m evals.run_evals --out evals/results.md  # 24 synthetic prescriptions, live model
@@ -307,7 +307,7 @@ Synthetic tests passed long before real documents did. Some of the changes real 
 - **A missing table cell is `NaN` on newer pandas**, which is truthy; units silently defaulted wrongly on the hosted app but not in local tests. Fixed, with a test.
 - **A generic more than twice as cheap** is now surfaced as a question for the doctor (the threshold started at 3x and was judged too relaxed).
 - **"Within the MRP printed on your bill"** only proves the bill agrees with itself, so the wording and the review of such lines say exactly that.
-- **Consumables had no "per piece" option**, so the headline court example (₹11 billed at ₹299) was missed until it was added.
+- **Consumables had no "per piece" option**, so the headline court example (₹11 billed at ₹304) was missed until it was added.
 
 ---
 
@@ -434,11 +434,11 @@ Accessed 28 October 2026 unless noted. Figures in the news reports are as report
 2. The Hindu, "SC says 'economic policy' cannot take precedence over lives as Centre backs 'calibrated' drug-price controls", 27 Oct 2026. https://www.thehindu.com/news/national/sc-says-economic-policy-cannot-take-precedence-over-lives-as-centre-backs-calibrated-drug-price-controls/article71631892.ece
 3. ThePrint, "'Not through this dacoity': SC questions Rs 1.3 lakh hospital charge for Rs 11,000 cancer injection", 27 Oct 2026. https://theprint.in/health/not-through-this-dacoity-sc-questions-rs-1-3-lakh-hospital-charge-for-rs-11000-cancer-vaccine/3083192/
 4. The Hindu, "Supreme Court wants cap on trade margin for all essential medicines and medical products", 12 Oct 2026 (updated 17 Oct). https://www.thehindu.com/sci-tech/health/supreme-court-wants-cap-on-trade-margin-for-all-essential-medicines-and-medical-products/article71575807.ece
-5. Times of India, "Hospitals 'overcharging' is a malpractice: Govt to Supreme Court", 23 Oct 2026. https://timesofindia.indiatimes.com/india/hospitals-overcharging-is-a-malpractice-govt-to-supreme-court/articleshow/135129960.cms
+5. Times of India, "Hospitals 'overcharging' is a malpractice: Govt to Supreme Court", 23 Oct 2026. https://timesofindia.indiatimes.com/india/hospitals-overcharging-is-a-malpractice-govt-to-supreme-court/articleshow/135130460.cms
 6. PTI via ET Pharma, "Policy decisions by states needed to protect patients from being fleeced by pharmacies at private hospitals: SC", 5 Mar 2025. https://pharma.economictimes.indiatimes.com/news/policy-and-regulations/policy-decisions-by-states-needed-to-protect-patients-from-being-fleeced-by-pharmacies-at-private-hospitals-sc/118721289
 7. The Hindu (Data Point), "₹8,447 crore in medicine overcharging claims remain outstanding as SC seeks wider price controls", 22 Oct 2026, citing NPPA and NSS Report no. 596 (Household Social Consumption: Health, 2025). https://www.thehindu.com/data/8447-crore-in-medicine-overcharging-claims-remain-outstanding-as-sc-seeks-wider-price-controls/article71607884.ece
 8. National Health Systems Resource Centre, National Health Accounts Estimates for India 2022-23. https://nhsrcindia.org/sites/default/files/2026-05/NHA%202022-23%20Report.pdf
-9. PIB, "NPPA Integrates Pharma Jan Samadhan Portal with Pharma Sahi Daam Portal", 25 Jun 2026. https://www.pib.gov.in/PressReleasePage.aspx?PRID=2299731&reg=48&lang=1
+9. PIB, "NPPA Integrates Pharma Jan Samadhan Portal with Pharma Sahi Daam Portal", 25 Jun 2026. https://www.pib.gov.in/PressReleasePage.aspx?PRID=2304731&reg=48&lang=1
 10. NPPA, Pharma Sahi Daam. https://nppa.gov.in/pharma_sahi_daam
 11. Consumer Awareness Group, "Maximum Retail Price (MRP) and Over-Charging". https://www.cag.org.in/blogs/maximum-retail-price-mrp-and-over-charging
 12. Legal 500, "NPPA Revises The Ceiling Price Of Coronary Stent" (the February 2017 cap, up to 85%). https://www.legal500.com/intelligence/india/food-drugs-healthcare-life-sciences/nppa-revises-the-ceiling-price-of-coronary-stent
@@ -469,6 +469,6 @@ dawa_buddy/
 data/                       Price lists, brand table, overrides, NOTICE.md
 scripts/                    audit_bill, read_photos, check_nebius, NPPA PDF parsers, brand-table builder, review-pack builder (markdown), review-sheet builder (xlsx for reviewers: one row per phrase, a verdict dropdown), synth_bills (twelve invented bill layouts with known answers), clinical_review (second-opinion screen of the medicine table by other model families)
 evals/                      Gold sets and runners
-tests/                      299 tests
+tests/                      304 tests
 my_data/                    Your private bills and prescriptions (git-ignored)
 ```

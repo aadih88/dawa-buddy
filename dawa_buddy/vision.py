@@ -10,9 +10,10 @@ from . import llm
 from .bill import form_of_desc, BillLine, TAB_UNITS, STRIP_UNITS, BOTTLE_UNITS, TUBE_UNITS, VIAL_UNITS
 
 BILL_PROMPT = """You are transcribing a photo of an Indian pharmacy or hospital bill. Reply with ONLY JSON:
-{"items":[{"description":str,"qty":number|null,"rate":number|null,"amount":number|null,
+{"document":"bill"|"prescription"|"other","items":[{"description":str,"qty":number|null,"rate":number|null,"amount":number|null,
 "unit":"tab"|"strip"|"bottle"|"tube"|"vial"|null,"pack":number|null,"mrp":number|null,"mrp_per":"unit"|"pack"|null,"cells":[number],"unsure":bool}],"subtotal":number|null,"discount":number|null,"total":number|null}
-Rules: copy text exactly as printed; one object per bill line; do not calculate or correct any number;
+Rules: document says what the photo shows: "bill" (a pharmacy or hospital bill or invoice), "prescription" (a doctor's prescription) or "other" (anything else, a person, a place, a report, a blurred or blank page). When it is not a bill, set items to [].
+Copy text exactly as printed; one object per bill line; do not calculate or correct any number;
 amount is the final value of the line as charged, TAX INCLUDED: the column called Net Amt, Amount, Total, Value or Val In-GST. Never use a column called Taxable or Taxable Value.
 qty is the number of units sold; rate is the price per unit as printed (MRP/Unit or Rate or MRP). Some bills print two values in one cell, one above the other (for example qty above discount %, or MRP above net rate): take the top value for qty and the MRP, and ignore the discount %.
 mrp_per: "unit" if the printed MRP is for ONE tablet/unit (the column says MRP/Unit, or the bill prints one per-unit price, labelled MRP, which is also the rate); "pack" if it is for a strip, bottle or box; null if unclear. If the only per-unit price column is labelled MRP, set both rate and mrp to it.
@@ -24,7 +25,8 @@ set mrp ONLY if an MRP is printed for that line, copied exactly as printed (it i
 Ignore patient name, address and phone."""
 
 RX_PROMPT = """You are transcribing a photo of an Indian doctor's prescription. Reply with ONLY JSON:
-{"lines":[str]}
+{"document":"prescription"|"bill"|"other","lines":[str]}
+document says what the photo shows: "prescription" (a doctor's prescription), "bill" (a pharmacy or hospital bill or invoice) or "other" (anything else); when it is not a prescription, set lines to [].
 One string per medicine, written as the doctor wrote it (name, strength, dose pattern like 1-0-1, days, before/after food).
 Copy dose patterns character by character, keeping every digit and every dash exactly as printed (for example 0---1---0 stays 0---1---0, never 0---0).
 Do not add, correct or guess anything. Skip lines you cannot read. Ignore patient name and doctor details."""
@@ -280,19 +282,62 @@ def prepare(img: bytes, mime: str, max_side: int = 1800) -> tuple[bytes, str]:
         return img, mime
 
 
+class WrongDocument(Exception):
+    """The photo is not what the box asked for. kind is what the reader says it is: 'bill', 'prescription' or 'other'."""
+    def __init__(self, kind: str, wanted: str):
+        super().__init__(f"expected a {wanted}, got {kind}")
+        self.kind, self.wanted = kind, wanted
+
+
+def _document(data) -> str | None:
+    kind = str(data.get("document") or "").strip().lower() if isinstance(data, dict) else ""
+    return kind if kind in ("bill", "prescription", "other") else None
+
+
+KIND_PROMPT = """What does this photo show? Answer with exactly one word and nothing else: bill (a pharmacy or hospital bill or invoice), prescription (a doctor's prescription, clinical note or discharge advice listing medicines), or other (anything else)."""
+
+
+def classify(img_b64: str, mime: str) -> str | None:
+    """Used only after a read that came back as prose instead of data: ask what the photo is, in one word. None if that fails too."""
+    try:
+        text = llm.chat_vision_text_short(img_b64, mime, KIND_PROMPT)
+    except Exception:
+        return None
+    word = re.sub(r"<think>.*?</think>", "", text or "", flags=re.S).strip().lower()
+    for kind in ("prescription", "bill", "other"):
+        if re.match(rf"\W*{kind}\b", word):
+            return kind
+    return None
+
+
+def _read(img: bytes, mime: str, prompt: str, wanted: str):
+    """The model's JSON for a photo; a photo of the wrong kind raises WrongDocument, even when the model explained itself in words."""
+    img, mime = prepare(img, mime)
+    b64 = _b64(img)
+    try:
+        data = llm.chat_vision_json(b64, mime, prompt)
+    except ValueError:
+        kind = classify(b64, mime)
+        if kind and kind != wanted:
+            raise WrongDocument(kind, wanted)
+        raise
+    kind = _document(data)
+    if kind and kind != wanted:
+        raise WrongDocument(kind, wanted)
+    return data
+
+
 def read_bill_photo(img: bytes, mime: str):
     return read_bill_photo_ex(img, mime)[:2]
 
 
 def read_bill_photo_ex(img: bytes, mime: str):
     """(rows, printed total, bill-level facts such as a discount on the whole bill)."""
-    img, mime = prepare(img, mime)
-    return clean_bill_ex(llm.chat_vision_json(_b64(img), mime, BILL_PROMPT))
+    return clean_bill_ex(_read(img, mime, BILL_PROMPT, "bill"))
 
 
 def read_rx_photo(img: bytes, mime: str) -> str:
-    img, mime = prepare(img, mime)
-    return clean_rx(llm.chat_vision_json(_b64(img), mime, RX_PROMPT))
+    return clean_rx(_read(img, mime, RX_PROMPT, "prescription"))
 
 
 def rows_to_lines(rows: list[Row]) -> list[BillLine]:

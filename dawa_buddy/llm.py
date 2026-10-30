@@ -160,6 +160,17 @@ def chat_vision_json(image_b64: str, mime: str, instruction: str) -> Any:
         return _extract_json(resp.choices[0].message.content or "")
 
 
+def chat_vision_text_short(image_b64: str, mime: str, instruction: str) -> str:
+    """One image, a one-word answer (used to tell a bill from a prescription when a full read came back as prose)."""
+    vm = vision_model()
+    if not vm:
+        raise RuntimeError("no vision model")
+    content = [{"type": "text", "text": instruction}, {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}"}}]
+    if provider() == "ollama":
+        return _ollama_chat([{"role": "user", "content": instruction, "images": [image_b64]}], vm)
+    return _nebius_create(model=vm, temperature=0, max_tokens=300, messages=[{"role": "user", "content": content}]).choices[0].message.content or ""
+
+
 def chat_vision_text(image_b64: str, mime: str, instruction: str) -> str:
     """Kept for the prescription screen: returns the raw text answer."""
     if not VISION_MODEL:

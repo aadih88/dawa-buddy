@@ -172,6 +172,15 @@ def start():
         read_photos(bill_img, rx_img)
 
 
+def wrong_document_message(e) -> str:
+    said = {"bill": "a bill", "prescription": "a prescription", "other": "something other than a bill or prescription"}[e.kind]
+    if e.wanted == "bill" and e.kind == "prescription":
+        return "That looks like a prescription, not a bill. Put the bill in the first box and the prescription in the second (optional) one."
+    if e.wanted == "prescription" and e.kind == "bill":
+        return "The photo in the prescription box looks like a bill. Put the bill in the first box and the doctor's prescription in the second one, or leave the second one empty."
+    return f"The {e.wanted} photo looks like {said}. Please upload a clear, flat photo of a {e.wanted}."
+
+
 def read_photos(bill_img, rx_img):
     if not budget.spend("photo"):
         st.session_state.update(reading=False, start_msg=("amber", "The demo's daily photo-reading budget is used up. The samples and every price check still work; photo reading returns tomorrow."))
@@ -185,8 +194,14 @@ def read_photos(bill_img, rx_img):
         try:
             rows, total, meta = vision.read_bill_photo_ex(bill_img.getvalue(), bill_img.type)
             rx = vision.read_rx_photo(rx_img.getvalue(), rx_img.type) if rx_img else ""
-        except Exception as e:
-            st.session_state.update(reading=False, start_msg=("red", f"We could not read that photo ({type(e).__name__}). Try a sharper, flatter photo."))
+        except vision.WrongDocument as e:
+            st.session_state.update(reading=False, start_msg=("amber", wrong_document_message(e)))
+            st.rerun()
+        except ValueError:      # the reader answered in words, not data: not a document it can read
+            st.session_state.update(reading=False, start_msg=("amber", "We could not make sense of that photo. Please upload a clear, flat photo of a pharmacy or hospital bill (and, if you have it, the prescription in the second box)."))
+            st.rerun()
+        except Exception:
+            st.session_state.update(reading=False, start_msg=("red", "The photo reader is not available right now. Please try again in a minute, or try a sample bill."))
             st.rerun()
     if not rows:
         st.session_state.update(reading=False, start_msg=("amber", "We could not find any bill lines in that photo. Try a sharper, flatter photo."))
