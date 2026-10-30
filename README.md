@@ -422,7 +422,7 @@ Not built, in order of impact. Ideas, not promises.
 4. **More languages** (Tamil, Telugu, Marathi, Bengali) using the same fixed-table approach, after native-speaker review.
 5. **Handwriting and package bills** (a single hospital package price with no itemisation).
 6. **Serve the models from dedicated endpoints**, and use batch jobs for batch re-checks when a price list is revised.
-7. **A physical-phone and real-user study**, including pharmacists, to tune wording.
+7. **A real-user study**, including pharmacists, to tune wording.
 
 ## Licence and acknowledgements
 MIT (see `LICENSE`). Data attributions are in `data/NOTICE.md`. Thanks to the owner of the real redacted bills and prescriptions used for validation, and to the teams behind NPPA's public notifications, the PMBJP product list and the open Indian medicine dataset.
