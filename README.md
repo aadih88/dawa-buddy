@@ -1,19 +1,11 @@
 # Dawa Buddy
 
-### A second pair of eyes on every medicine bill
+**A second pair of eyes on every medicine bill.**
 
-**Photograph a pharmacy or hospital bill. Dawa Buddy checks it line by line against India's legal price lists and the doctor's prescription, then tells you exactly what to ask, in English, Hindi or Kannada.**
+Photograph a pharmacy or hospital bill. Dawa Buddy checks it line by line against India's legal price lists and the doctor's prescription, then tells you exactly what to ask, in English, Hindi or Kannada.
 
 ![licence: MIT](https://img.shields.io/badge/licence-MIT-green)
 ![tests: 299 passing](https://img.shields.io/badge/tests-299%20passing-brightgreen)
-![Nebius Token Factory](https://img.shields.io/badge/runs%20on-Nebius%20Token%20Factory-1f6feb)
-![NVIDIA Nemotron](https://img.shields.io/badge/models-NVIDIA%20Nemotron-76b900)
-![Tavily](https://img.shields.io/badge/web%20evidence-Tavily-7b61ff)
-
-**Demo:** the hosted app's URL is in the submission form (it is not repeated here). Photo reading, AI text and web look-ups work up to a shared daily budget that protects the credits; the samples and every price check always work (see [section 13](#13-setup-run-and-deploy)) · **Demo video (3 min): link added at submission** · [Hackathon page](https://nebiusglobalaihackathon.devpost.com/) · Track: **Best Apps and Agents**
-
-> Dawa Buddy never accuses anyone. It reads your documents, compares them with public price lists and the prescription, and tells you **what to ask**.
-> It is information, not a finding of wrongdoing, and not medical advice.
 
 <p>
   <img src="docs/screenshot-hospital.png" alt="Result for the hospital sample bill: an IV set billed at 265 rupees against a printed MRP of 11 rupees is the first card" width="300">
@@ -21,64 +13,53 @@
   <img src="docs/screenshot-explain-hi.png" alt="The prescription explained in Hindi: the dose from fixed templates, then what each medicine is for and what to watch for" width="300">
 </p>
 
-### Try it in 30 seconds (no key, no upload)
-1. Open the demo link from the submission (or run it locally in two minutes, [section 13](#13-setup-run-and-deploy)), tap **Hospital pharmacy bill**, look over the numbers on the *Check the numbers* screen, and press **See the result** (it reads **Looks right, see the result** when every line multiplies out). The sample bills and every price check work **without** the access code.
-2. The first card is an **IV set billed at ₹265 against an MRP of ₹11 printed on the bill**. That is the kind of mark-up a Supreme Court bench has been questioning this month (see [section 2](#2-the-problem-with-evidence)). The injections below it are above their **legal ceiling prices**.
-3. Photo reading, AI text and web look-ups work in the hosted demo up to a daily budget (when it is used up the page says so and the samples and price checks still work). Open **Explain my medicines in plain language**, choose **हिन्दी** or **ಕನ್ನಡ**, and press *Explain*. The dose, safety notes and timetable are fixed templates, so they appear even without a model.
-4. With the code you can also upload your own bill photo (cover names and phone numbers first).
+## TL;DR
 
-### What a judge should know in one minute
-| Criterion | Short answer | Where to look |
-|---|---|---|
-| **Technological implementation** | Nemotron **Super VL** reads photos, **Lightning** reads prescriptions, **Ultra / Super** write Hindi, all through one Token Factory endpoint. A deterministic rules engine decides every price verdict, so the model can never invent an accusation. 299 tests; 4 evaluation suites. | [§7](#7-architecture), [§8](#8-how-we-use-nebius-nvidia-nemotron-and-tavily), [§10](#10-validation-and-evaluation) |
-| **Design** | One question per screen, verdict first, a "What we checked" list so a clean bill reads as protection, phone-first, status always colour + icon + words, Hindi and Kannada typography. | [§5](#5-the-product-tour) |
-| **Potential impact** | The Indian government's own court affidavit says patients have "very low bargaining position" and "very limited" knowledge of prices. This tool puts the comparison in the patient's hands at the moment of paying. | [§2](#2-the-problem-with-evidence), [§4](#4-the-idea) |
-| **Quality of the idea** | A *receipt audit*, not a price lookup: it resolves each line to a medicine, strength and form, converts per-tablet, per-strip, per-vial, per-ml and per-piece prices correctly, and reconciles the bill with the prescription (including the wrong *variant* handed over). It is honest about what it cannot see. | [§4](#4-the-idea), [§9](#9-engineering-decisions-and-why) |
+- **What it is.** A web app for patients and caregivers. Take a photo of a medicine bill (and, if you have it, the prescription); confirm what the app read; get a short list of things worth asking about.
+- **What it checks.** The price charged per tablet, strip, bottle, vial, bag or piece against the **NPPA legal ceiling price**, the **MRP printed on your bill**, and the **Jan Aushadhi generic price**; the bill against the **prescription** (missing items, extras, the wrong variant handed over); and whether the lines add up to the total.
+- **What it never does.** Accuse anyone, give medical advice, or guess. Only "above a legal ceiling or the printed MRP" is a possible violation, and it is always phrased as a question. If something cannot be checked, it says so.
+- **How it works.** AI models (NVIDIA Nemotron on Nebius Token Factory) *read* photos and *explain* medicines. A rules engine *decides* every price verdict and every safety note. You confirm every number before anything is judged.
+- **Private.** No accounts, nothing stored. Cover names and phone numbers before uploading.
+- **Open source** (MIT), 299 tests, runs locally in two minutes. The sample bills need no key and no photo.
 
----
+> Dawa Buddy is information, not a finding of wrongdoing, and not medical advice.
 
 ## Contents
-**Part I. The case:** [1 Why I built this](#1-why-i-built-this) · [2 The problem, with evidence](#2-the-problem-with-evidence) · [3 Who it is for and what they need](#3-who-it-is-for-and-what-they-need) · [4 The idea](#4-the-idea)
-**Part II. The product:** [5 The product tour](#5-the-product-tour) · [6 What each result means](#6-what-each-result-means)
-**Part III. The technology:** [7 Architecture](#7-architecture) · [8 Nebius, NVIDIA Nemotron and Tavily](#8-how-we-use-nebius-nvidia-nemotron-and-tavily) · [9 Engineering decisions](#9-engineering-decisions-and-why)
-**Part IV. The proof:** [10 Validation and evaluation](#10-validation-and-evaluation) · [11 Requirements traceability](#11-how-it-meets-the-requirements) · [12 Hackathon checklist](#12-hackathon-requirements-checklist)
-**Part V. Run it:** [13 Setup, run, deploy](#13-setup-run-and-deploy) · [14 Price data and refresh](#14-price-data-and-how-to-refresh-it)
-**Part VI. Honesty:** [15 Limits, safety, responsible AI](#15-limits-safety-and-responsible-ai) · [16 Roadmap](#16-roadmap) · [17 Feedback](#17-feedback-on-nebius-token-factory-and-nvidia-models) · [18 Prior work, licence](#18-prior-work-licence-acknowledgements) · [19 Sources](#19-sources)
+[Why it exists](#why-it-exists) · [Who it is for](#who-it-is-for) · [How it works for you](#how-it-works-for-you) · [What each result means](#what-each-result-means) · [Under the hood](#under-the-hood) · [Models and web evidence](#models-and-web-evidence) · [Design decisions](#design-decisions) · [Quality and evaluation](#quality-and-evaluation) · [Run it yourself](#run-it-yourself) · [Price data](#price-data-and-how-to-refresh-it) · [Limits and safety](#limits-safety-and-responsible-ai) · [Roadmap](#roadmap) · [Licence](#licence-and-acknowledgements) · [Sources](#sources)
 
 ---
 
-# Part I. The case
-
-## 1. Why I built this
-I started with one real prescription and its pharmacy bill, from my own family, and tried to answer a simple question: *was this bill right?*
+## Why it exists
+It started with one real prescription and its pharmacy bill, from my own family, and a simple question: *was this bill right?*
 
 It was not simple. The prescription said **Shelcal-XT**; the counter had handed over **Shelcal 500**, a different product, and nothing on the bill said so. The bill printed the MRP *per strip* beside a *per-tablet* price, so comparing them needed a tablets-per-strip number that only the strip itself had. A hospital bill listed a saline bag at a price that looked wrong, until I found that NPPA publishes a **second, higher legal ceiling** for "special features" packs, in a separate gazette notification, and that the bag matched it to the paisa. Every one of these checks was possible. Each needed gazette PDFs, a spreadsheet and patience that a family does not have at a hospital discharge counter.
 
-Then the court record caught up with the experience. In October 2026 a Supreme Court bench began asking why a drip line with an MRP of ₹11 was being sold for ₹299, and the Union government told the Court, in an affidavit, that patients have a "very low bargaining position" and "very limited" knowledge of drugs, substitutes and prices. That sentence is the whole problem statement. Dawa Buddy is my attempt to reduce that asymmetry for one patient, with one photo, in under a minute: do the arithmetic and the lookups, say what could not be checked, and phrase every finding as a question to ask, never an accusation.
+Then the court record caught up with the experience. In October 2026 a Supreme Court bench began asking why a drip line with an MRP of ₹11 was being sold for ₹299, and the Union government told the Court, in an affidavit, that patients have a "very low bargaining position" and "very limited" knowledge of drugs, substitutes and prices. That sentence is the whole problem statement. Dawa Buddy reduces that asymmetry for one patient, with one photo, in under a minute: it does the arithmetic and the lookups, says what could not be checked, and phrases every finding as a question to ask.
 
-## 2. The problem, with evidence
-Sources are numbered and listed in [section 19](#19-sources). Dates are as reported.
 
-### 2.1 What the Supreme Court is hearing right now
+## The problem, with evidence
+Sources are numbered and listed in [Sources](#sources). Dates are as reported.
+
+### What the Supreme Court is hearing right now
 Two bodies of litigation and the government's own filings describe the same pattern.
 
-- **27 October 2026 (yesterday).** A bench of Justices Vikram Nath and Sandeep Mehta heard petitions by advocate Kishan Chand Jain and paediatric surgeon Sanjay Kulshrestha seeking stricter enforcement of the Drugs (Prices Control) Order, 2013. The bench asked how a hospital could charge **₹1.3 lakh for a cancer injection a distributor could procure for ₹11,000** and asked the Centre to justify it [3]. It noted that around **90% of medicines are outside the DPCO's price controls** [3]. Hospitals' counsel argued that capping margins would make hospital operations unviable and push costs onto other charges; the Centre argued for a "calibrated approach" and said complete control is not the answer [2]. **The order is reserved; written submissions are due in two weeks** [2]. The outcome is pending as this README is written.
+- **27 October 2026.** A bench of Justices Vikram Nath and Sandeep Mehta heard petitions by advocate Kishan Chand Jain and paediatric surgeon Sanjay Kulshrestha seeking stricter enforcement of the Drugs (Prices Control) Order, 2013. The bench asked how a hospital could charge **₹1.3 lakh for a cancer injection a distributor could procure for ₹11,000** and asked the Centre to justify it [3]. It noted that around **90% of medicines are outside the DPCO's price controls** [3]. Hospitals' counsel argued that capping margins would make hospital operations unviable and push costs onto other charges; the Centre argued for a "calibrated approach" and said complete control is not the answer [2]. **The order is reserved; written submissions are due in two weeks** [2]. The outcome is pending as this README is written.
 - **12 October 2026.** The Centre told the Court it would cap trade margins at 30% on non-scheduled cancer drugs. The bench called that "just the tip of the iceberg" and asked about other products. Justice Mehta cited an **India-made cardiac stent costing about ₹5,000 sold by hospitals for more than ₹25,000**, and **"a saline drip line carrying an MRP of ₹11 being sold for ₹299"** [4]. The Centre's affidavit estimated the cancer-drug cap would cut MRPs by 20% to 70%, saving about ₹2,500 crore a year [4].
 - **The government's affidavit** (reported 23 October 2026) calls hospitals charging high MRPs for medicines and consumables a **"malpractice"**. It says patients have a "very low bargaining position vis-a-vis the hospital, and the patient's knowledge of drugs, their substitutes and their prices is also very limited". It describes margins of **170% to 700% or more on anti-cancer drugs** and **100% to 1000% or more on consumables**, and notes that for patients paying directly, hospital supplies are **"billed separately at MRP"** [5].
 - **4 March 2025, *Siddharth Dalmia v. Union of India*.** A PIL alleged that private hospitals push patients to buy medicines, implants and devices from in-house pharmacies at higher prices. Its example: an injection sold at an MRP of ₹61,132 while the same company's product was available in the open market at ₹50,000, with one free injection for every four bought that the hospital did not pass on. The bench (Justices Surya Kant and N Kotiswar Singh) left the policy to state governments [6].
 
-### 2.2 Enforcement happens late, and does not reach the patient
+### Enforcement happens late, and does not reach the patient
 - NPPA, the price regulator, had demanded **₹10,029.8 crore** from manufacturers for overcharging as of 31 March 2026. **₹1,582.4 crore has been realised; ₹8,447.4 crore is outstanding**, with more than ₹5,800 crore tied up in litigation [7].
 - Recovering money from companies is **not** compensation for patients. The Hindu quotes a Lok Sabha reply of 23 July 2019: "there is no mechanism to compensate the consumers for the amount overcharged" [7].
 - A Parliamentary Standing Committee reported dues of ₹8,526 crore as of 30 September 2025 and recommended a dedicated legal cell in NPPA [3].
 
 The practical consequence: after-the-fact enforcement can recover money from companies years later. It cannot fix the bill a family paid last Tuesday. The only moment a patient can act is **before paying, or while asking for a corrected bill**.
 
-### 2.3 The burden on households
+### The burden on households
 - Households' out-of-pocket spending was about **43% of India's total health expenditure** in 2022-23 (₹3,82,629 crore) [8].
 - In the 2025 NSS health survey, medicines averaged **₹6,368 per hospitalisation case in rural India (19.4% of the total)** and **₹6,948 in urban India (14.9%)**. Where hospitals billed a package price, medicines are hidden inside it, so the true share may be higher [7].
 
-### 2.4 Which limit applies to which line is not obvious
+### Which limit applies to which line is not obvious
 | Product type | Is there a legal price limit? | Can a patient see it? |
 |---|---|---|
 | **Scheduled medicines** (price-controlled under DPCO, 935 formulations) | Yes: a **ceiling price**, plus GST. | Only in NPPA gazette PDFs. |
@@ -90,87 +71,64 @@ The practical consequence: after-the-fact enforcement can recover money from com
 
 The 2017 stent cap is the best argument that this works: when a limit is **fixed and public**, prices move. The problem is how few people can find the limit for the line in front of them.
 
-### 2.5 What a patient can do today
+### What a patient can do today
 NPPA runs **Pharma Sahi Daam**, a search tool and app for the prices of scheduled and non-scheduled medicines, integrated in June 2026 with the **Pharma Jan Samadhan** complaint portal [9][10]. It is a genuine public good and Dawa Buddy points to it as the place to complain. As NPPA describes it, it is a *lookup*: you already need to know the medicine, strength and pack, and you check one medicine at a time. I found nothing in its description about reading a bill or a prescription, comparing the two, handling per-tablet versus per-strip arithmetic, or catching a dispensed variant that differs from the prescribed one. Dawa Buddy is the layer that **audits a whole bill** and hands the patient specific questions.
 
-## 3. Who it is for and what they need
-**Three people the design is built around**
-1. **The caregiver at the discharge counter.** An adult child settling a parent's hospital pharmacy bill (injections, IV fluids, consumables) out of pocket, under time pressure, afraid of an argument. Needs: *is anything clearly wrong, and what exactly do I say?*
-2. **The chronic-medication household.** A monthly bill for blood pressure, diabetes and cholesterol tablets plus supplements. Needs: *did I get the right product, is the printed MRP respected, is there a cheaper generic worth asking my doctor about?*
-3. **The family member who reads Hindi or Kannada, not English.** Needs: *what is each medicine for, when do I take it, and what should worry me, in words I trust.*
+## Who it is for
+1. **The caregiver at the discharge counter.** An adult child settling a parent's hospital pharmacy bill (injections, IV fluids, consumables) out of pocket, under time pressure, afraid of an argument. *Is anything clearly wrong, and what exactly do I say?*
+2. **The chronic-medication household.** A monthly bill for blood pressure, diabetes and cholesterol tablets plus supplements. *Did I get the right product, is the printed MRP respected, is there a cheaper generic worth asking my doctor about?*
+3. **The family member who reads Hindi or Kannada, not English.** *What is each medicine for, when do I take it, and what should worry me, in words I trust.*
 
-Secondary users: pharmacists and billing staff (a question is easier to answer than an accusation), consumer-rights volunteers, and anyone filing a complaint with NPPA who needs line-level evidence.
+Pharmacists and billing staff benefit too (a question is easier to answer than an accusation), as do consumer-rights volunteers and anyone filing a complaint with NPPA who needs line-level evidence.
 
-**What they told the design (pain points to requirements)**
-| # | Requirement | Why |
-|---|---|---|
-| R1 | Works from a **phone photo**, no typing | Nobody retypes a bill at a counter. |
-| R2 | **Never accuses**; every finding is a question | Wrongful accusations destroy trust and are unfair to honest sellers. |
-| R3 | **Accuracy over coverage**: unknown stays unknown, and say how much was checked | A false "all clear" or a false alarm is worse than "we could not check this". |
-| R4 | **Legally meaningful comparisons**: ceiling, printed MRP and generic reference kept distinct | They mean different things; mixing them misleads. |
-| R5 | **Units done right**: per tablet, strip, bottle, tube, vial, ml, IV bag, piece | Unit confusion is the commonest cause of apparent overcharging and of missed overcharging. |
-| R6 | **Catch dispensing errors** (wrong variant, missing or extra items) | A cheap bill for the wrong medicine is not a good bill. |
-| R7 | **Explain the prescription**: dose, timetable, interactions, what is missing | Understanding the medicine is half of using it safely. |
-| R8 | **Own language, safely** (Hindi, Kannada) | A wrong word in a medical sentence is a safety risk. |
-| R9 | **Privacy**: no accounts, nothing stored, minimal data sent | Bills carry names, phone numbers and diagnoses. |
-| R10 | **Trust under AI error**: user confirms what the model read | Models misread digits; people act on numbers. |
-| R11 | **Free, no sign-up, works without a key** | Judges and patients both need to try it instantly. |
-| R12 | **Actionable output**: questions to ask, downloadable, and a route to complain | A finding with no next step is just worry. |
+**What the design commits to**
+| Need | How the product meets it |
+|---|---|
+| Works from a **phone photo**, no typing | Photo upload with the camera offered on phones; the reader returns every number in each row and code picks the ones that multiply out |
+| **Never accuses** | Every finding is a question; only "above a legal ceiling or the printed MRP" can be a possible violation |
+| **Accuracy over coverage** | Unknown stays unknown; every audit says how much of the bill could be checked |
+| **Legally meaningful comparisons** | Ceiling, printed MRP and generic reference are kept distinct |
+| **Units done right** | Per tablet, strip, bottle, tube, vial, ml, IV bag and piece; no silent conversion |
+| **Catches dispensing errors** | Wrong variant, missing or extra items, too many units, totals that do not add up |
+| **Explains the prescription** | Dose, timetable, interactions and what is missing, in plain language |
+| **Own language, safely** | Hindi and Kannada from fixed templates and tables wherever a model failed in testing |
+| **Privacy** | No accounts, nothing stored, minimal data sent to services |
+| **Trust under AI error** | You confirm what the model read before anything is judged |
+| **Actionable** | A downloadable list of questions to ask, and the route to complain |
 
-Section [11](#11-how-it-meets-the-requirements) maps each requirement to the feature that meets it and the evidence.
-
-## 4. The idea
+## The idea
 > **A receipt audit, not a price lookup.** Read the bill. Work out, line by line, what was actually charged per unit. Compare it with each limit that really applies to that line. Say which limit it is, say how sure we are, and turn it into a question.
 
-### Principles that shape every decision
 | Principle | What it means in the code |
 |---|---|
-| **Never accuse** | Only "above a legal ceiling or printed MRP" can be a possible violation, always phrased as a question. Everything else is a prompt to ask. |
+| **Never accuse** | Only "above a legal ceiling or printed MRP" can be a possible violation, always phrased as a question. |
 | **Rules decide, the model reads** | Nemotron transcribes, normalises and explains. It never decides a price tier and can never override a safety rule. |
 | **Unknown stays unknown** | No unit, no pack size, an unreadable concentration or an unidentified brand produces *no verdict*, with a note on what is missing. |
 | **Say how much we could check** | Every audit reports the share of the bill judged against a price list and against the MRP. |
 | **The user confirms identity** | A model's guess at a brand's ingredient is only a suggestion; no price judgement is made until the user confirms it from the strip. |
 | **Evidence, not authority** | Web results show which pages say what; agreement needs two different sites; an official order for another company's brand is context, never a limit on yours. |
 
-### Why this is not "an agent that decides"
-The track is *Best Apps and Agents*, and the obvious build is an autonomous agent that researches prices and passes judgement. I chose not to. In a medical and legal-adjacent setting, an autonomous verdict that is sometimes confidently wrong is the failure mode that hurts people. Dawa Buddy is **agentic where it is safe** (it reads photos, searches NPPA and pharmacy sites with Tavily, resolves brands) and **deterministic where it must be correct** (every tier, every ceiling comparison, every safety rule). The model proposes; a rule or the user disposes.
+**Agentic where it is safe, deterministic where it must be correct.** The app reads photos, searches NPPA and pharmacy sites and resolves brands on its own. But in a medical and legal-adjacent setting an autonomous verdict that is sometimes confidently wrong is the failure that hurts people, so every tier, every ceiling comparison and every safety rule is plain, tested code. The model proposes; a rule or the user disposes.
 
-### What the court-reported patterns mean for this tool (honestly)
-Dawa Buddy cannot fix a pricing policy. It can give a patient the numbers the policy debate is about. Here is exactly what it does and does not do for each pattern reported in court.
+### What it does about the patterns reported in court
+Dawa Buddy cannot fix a pricing policy. It gives a patient the numbers the policy debate is about.
 
-| Pattern reported in the Court | What the patient can see | What Dawa Buddy does today | Where it stops |
-|---|---|---|---|
-| **Consumable billed far above its printed MRP** (drip line, MRP ₹11, sold at ₹299) | The MRP on the pack and the billed rate | **Per-piece MRP check.** Flags "Above the MRP on your bill" with the price meter. The *Hospital pharmacy bill* sample reproduces it (IV set, MRP ₹11, billed ₹265). | Needs the MRP read off the pack. It cannot know an MRP it was not given. |
-| **A scheduled drug or injection above its legal ceiling** | Bill rate, strength, form | Converts to per tablet, per vial or per ml and compares with the **NPPA ceiling (911 formulations loaded)** plus a GST allowance. The sample shows two injections above ceiling. | Scheduled medicines only; ceilings as of 1 April 2026. |
-| **Non-scheduled branded drug where the MRP is many times the trade price** (₹2,700 bought, MRP ₹27,000) | Only the MRP | Checks the bill against the printed MRP; compares with the **Jan Aushadhi generic price** where a generic exists (a gap of 3x or more becomes a question *for the doctor*); shows pharmacy-site listings as a reference. | **It cannot see the price to retailer.** The heart of the Court's concern is invisible to the patient, and with no ceiling there is nothing to call illegal. It says so. |
-| **A hospital charging a drug at many times what a distributor pays** (₹11,000 vs ₹1.3 lakh) | MRP and billed rate | Flags only if the bill exceeds the printed MRP; otherwise reports "within the printed MRP" and any generic benchmark. | Same limit: a mark-up *within* MRP is a policy question, not something a bill can prove. |
-| **Devices** (a stent at ₹5,000 vs ₹25,000+) | Little | Reports "No price list covers this", **never "fine"**. | No device ceilings are loaded yet (roadmap). Some do exist. |
-| **Being pushed to the in-house pharmacy** | Nothing on the bill | Nothing. | A policy problem. |
-| **The wrong product dispensed** (our own real case) | Prescription vs bill | **Wrong-variant warning** that names the prescribed and the billed product and shows what differs between their ingredient lists. | Needs the prescription. |
-
-If the Court's final order changes the rules, the tool's data layer is a set of versioned CSV files with parsers that check their own completeness ([§14](#14-price-data-and-how-to-refresh-it)), so new limits can be loaded quickly. Whatever the rules turn out to be, a patient still needs to see them applied to the bill in front of them.
-
-### Related work: what already exists, and what this adds
-
-Medicine price comparison is a crowded and useful space. Two examples I looked at (their public home pages, 29 Oct 2026; I have not used their apps, so this is about what they say they do):
-
-| | What it says it does | When in the journey |
+| Pattern reported in the Court | What Dawa Buddy does today | Where it stops |
 |---|---|---|
-| [MediSave](https://www.medisaveapp.com/) | Compares branded, generic and Jan Aushadhi prices across nearby pharmacies; also a prescription scanner, lab-report explanations, dose reminders, doctor booking and a pharmacy dashboard | **Before you buy**: where is it cheapest? |
-| [MedCompare](https://medcompare.in/) | Compares prices for a searched medicine across online pharmacies, with generic alternatives and salt composition | **Before you buy**: where is it cheapest? |
-| **Dawa Buddy** | Takes the **bill and prescription you already have** and checks every line against the legal ceiling prices (NPPA), the MRP printed on the bill and the prescription; asks you to confirm every number; explains the prescription in Hindi and Kannada | **After you pay** (or while the counter waits): was I charged a legal price, and did I get what the doctor wrote? |
+| **Consumable billed far above its printed MRP** (drip line, MRP ₹11, sold at ₹299) | Per-piece MRP check. The *Hospital pharmacy bill* sample reproduces it (IV set, MRP ₹11, billed ₹265). | Needs the MRP printed on the bill. |
+| **A scheduled drug or injection above its legal ceiling** | Converts to per tablet, per vial or per ml and compares with the **NPPA ceiling (911 formulations loaded)** plus a GST allowance. | Scheduled medicines only; ceilings as of 1 April 2026. |
+| **Non-scheduled branded drug where the MRP is many times the trade price** | Checks the bill against the printed MRP; compares with the Jan Aushadhi generic where one exists (a gap of 2x or more becomes a question *for the doctor*). | **It cannot see the price to retailer.** With no ceiling there is nothing to call illegal. It says so. |
+| **Devices** (a stent at ₹5,000 vs ₹25,000+) | Reports "No price list covers this", **never "fine"**. | No device ceilings loaded yet (roadmap). |
+| **The wrong product dispensed** (my own real case) | **Wrong-variant warning** naming the prescribed and billed product and what differs between their ingredient lists. | Needs the prescription. |
 
-**Where they overlap.** Both kinds of tool know that a cheaper generic can exist. Dawa Buddy also compares with Jan Aushadhi prices, and uses pharmacy websites as *evidence* (strip sizes, the MRP those sites list), not as a shopping list. A price lookup tells you where to buy; it cannot tell you that the drip line on this bill is charged at 24 times its printed MRP, or that the product handed over is not the one prescribed.
+The data layer is a set of versioned CSV files with parsers that check their own completeness, so if the rules change, new limits can be loaded quickly.
 
-**What this adds.** The unit of work is a *bill line*, not a medicine name: a legal-ceiling and MRP check on what was charged, the hospital case that is the subject of the Supreme Court hearing above, a wrong-variant warning with the ingredient difference, a lines-against-total check, and a design where models read and rules decide. The two kinds of tool could sit side by side: one helps you choose the pharmacy, the other checks the receipt.
-
-I make no claim to be first or only; the evidence for the problem is in [section 2](#2-the-problem-with-evidence), and the claim here is narrower: a patient holding a bill had no tool built for that moment.
+### How it differs from price-comparison apps
+Price comparison tools (for example MediSave and MedCompare, from their public home pages) help you decide **where to buy**: they compare a medicine's price across pharmacies and show generic alternatives. Dawa Buddy starts from **the bill and prescription you already have** and asks whether what you were charged is legal and what the doctor wrote. The unit of work is a *bill line*, not a medicine name. The two kinds of tool sit side by side: one helps you choose the pharmacy, the other checks the receipt.
 
 ---
 
-# Part II. The product
-
-## 5. The product tour
+## How it works for you
 **One page, one question.** Start with a photo or a sample, confirm the numbers once, read the answer.
 
 <p>
@@ -181,22 +139,16 @@ I make no claim to be first or only; the evidence for the problem is in [section
   <img src="docs/screenshot-explain-kn.png" alt="The prescription explained in Kannada from a fixed table, with the dose, safety notes and a timetable" width="230">
 </p>
 
-| Step | What happens | Why |
-|---|---|---|
-| **1. Start** | Upload a bill photo (and optionally a prescription) and press **Read my bill**, or tap a sample. Every control is disabled while the photo is read. | The first thing a visitor can do is try it. Samples run with no key and take the same road as a photo. |
-| **2. Check the numbers** | **A banner gives the verdict first** ("5 lines read. Every line multiplies out. The lines add up to the printed total, ₹648"). **A line that multiplies out and needed no guess is folded into one row** and approved with one tap (**Looks right, see the result**); a line that does not multiply out, was hard to read, or had its numbers chosen by the reader opens with the reason, and when the lines do not add up to the printed total the banner points at them. The decision is a plain tested function (`review_triage.py`), the screen only draws it. One card per bill line shows what was read (to compare with the paper), how it was sold (per tablet, strip, bottle, tube, vial, piece), pack size and printed MRP. **Every line is one live panel, no pop-up and no Save button:** *Billed per* (tablet or strip), the number billed, the price charged per tablet or strip, the MRP on the bill and whether it is per tablet or per strip, and the tablets per strip only when a conversion needs it. Choosing a unit changes the labels and a sentence under the panel recomputes at once ("You paid ₹9.81 per tablet. MRP on the bill ₹163.45 for a whole strip (₹10.90 per tablet)"). A number applies when you leave the field; the total is always quantity × price and a line whose printed total does not add up is marked. **Removing is undoable:** a removed line moves to *Removed lines* with **Put back**. *Add a line we missed* is the same kind of form with an **Add this line** button. **Nothing needed is easy to miss:** one amber note at the top names every line that still needs a number (usually tablets per strip, for a printed MRP that is per strip), the field is flagged on the card, a **Find strip sizes online** button sits right there, and the caption above *See the result* says what will be skipped if the gap is left. If a prescription line has no readable dose, one amber note lists those lines and opens the prescription box. | A misread digit must never become an accusation (R10), and a step that matters must not be skippable by accident. |
-| **3. Result** | A verdict first ("4 things to ask about", or "Nothing above a legal limit"). Tiles appear **only when they carry news**: the rupees above a legal limit, or a possible generic saving. A zero is never shown as a result. Under it, **What we checked** lists each check and what it found: *printed MRP* (green tick: at or below on N lines), *legal price ceiling* (grey "not applicable" when none of the medicines is price-controlled, which is normal), *your prescription* (matches, or N differences), *cheaper generics* (only when one exists) and *medicines to confirm*. Then a card per line that needs attention, each with a **price meter**. Lines within limits and lines no list covers are folded away. | A clean bill must read as protection, not as a screen of zeros, and a check that does not apply is explained, not hidden. |
-| **4. Ask** | **Download the questions to ask** the seller or doctor. Medicines that could not be matched appear under *Help us identify*, **one collapsible row per medicine** with its status in the title ("needs your confirmation" or "confirmed"), so the section stays short however many there are. In a row, type the ingredients from the strip and press **Confirm ingredients**; the result above updates at once, the box gives way to what was confirmed (with a **Change ingredients** link), and a line says what changed; or let the app read pharmacy sites for that exact product, then confirm it against the strip. A button that has done its job is disabled for the rest of the session ("Looked up online", "Using: …"), so nothing can be pressed twice to no effect. | Output a person can act on (R12), and the section is never a dead end. |
-| **5. Explain** | *Explain my medicines in plain language*: dose sentences, safety notes, timetable, in English, Hindi or Kannada. | R7 and R8. |
+1. **Start.** Upload a bill photo (and optionally a prescription) or tap a sample. The samples use invented patients and prices and run fully offline against the real price lists.
+2. **Check the numbers.** A banner gives the verdict first ("5 lines read. Every line multiplies out. The lines add up to the printed total, ₹648"). A line that multiplies out and needed no guess is folded into one row and approved with one tap; a line that does not add up, was hard to read, or had its numbers chosen by the reader opens with the reason. Each line is one live panel: the number billed, the price per tablet or strip, the MRP on the bill and whether it is per tablet or per strip, and tablets per strip only when a conversion needs it. A sentence under the panel recomputes at once ("You paid ₹9.81 per tablet. MRP on the bill ₹163.45 for a whole strip (₹10.90 per tablet)"). Removing a line is undoable, and a line we missed can be added. If a whole-bill discount is printed, it is read and spread over the lines for the price checks.
+3. **Result.** A verdict first ("4 things to ask about", or "Nothing above a legal limit"). Tiles appear only when they carry news. **What we checked** lists each check and what it found (printed MRP, legal price ceiling, your prescription, cheaper generics, medicines to confirm), so a clean bill reads as protection. Then a card per line that needs attention, each with a **price meter**, the formulation and the ceiling or MRP it was compared with, and **how we checked this**.
+4. **Ask.** Download the questions to ask the seller or doctor. Medicines that could not be matched appear under *Help us identify*, one collapsible row each: type the ingredients from the strip and confirm, or let the app read pharmacy sites for that exact product and then confirm it.
+5. **Explain.** *Explain my medicines in plain language*: dose sentences, safety notes and a timetable, in English, Hindi or Kannada.
 
-### Design decisions
-- **Verdict first, details folded.** An earlier version put an About section, two tabs and tables of numbers on the first screen. It read like a portfolio page, not an app. The redesign was shown as a mockup first, then built.
-- **Status is never colour alone.** Red, amber, green and grey each pair a colour with an icon *and* words ("Above the legal ceiling price"). A test checks the palette against WCAG AA contrast.
-- **Phone first.** One column, controls at least 44 px, one card per bill line instead of a table, camera offered by the file picker. Checked at phone width in a headless browser; a physical phone is still to do.
-- **Typography for the reader.** DM Serif Display for the verdict, DM Sans for text, Noto Sans Devanagari and Kannada so Hindi and Kannada render properly.
-- **A price meter.** The bar shows the amount paid against the limit, so "₹265 against ₹11" is understood without reading.
+**Design choices.** Verdict first, details folded. Status is never colour alone (colour, icon and words, checked against WCAG AA contrast). Phone first: one column, controls of at least 44 px, one card per line. DM Serif Display and DM Sans for text, Noto Sans Devanagari and Kannada so Hindi and Kannada render properly. A price meter shows the amount paid against the limit, so "₹265 against ₹11" is understood without reading.
 
-## 6. What each result means
+## What each result means
+
 | Tier | Meaning | Possible violation? |
 |---|---|---|
 | `above_mrp` | Charged above the MRP printed on the bill (the seller's own figure; compare the strip). | Yes, for any product. |
@@ -212,9 +164,8 @@ I make no claim to be first or only; the evidence for the problem is in [section
 
 ---
 
-# Part III. The technology
+## Under the hood
 
-## 7. Architecture
 ```mermaid
 flowchart LR
     A[Bill photo] --> V[Nemotron Super VL<br/>transcribe only]
@@ -257,6 +208,8 @@ flowchart TB
 3. Otherwise a **closed-list model fallback**: Nemotron must choose from generics that really exist at the strength printed, or answer `null`. Even then it is only a suggestion until the user confirms it from the strip.
 4. Optional **Tavily** evidence shows which pages say what; agreement counts only when two different sites match.
 
+**Reading messy bills.** The reader returns every number in each row; code, not the model, finds the quantity, price and line value that multiply out, makes the lines add up to the printed total, prefers the tax-inclusive value, works out a missing price, and tells a per-tablet MRP from a per-strip one. A rate printed per strip with a quantity in tablets is divided by the pack size, the way a person would. Twelve invented bill layouts with known answers (`scripts/synth_bills.py`) keep this honest.
+
 ### Pricing by form (each compares like with like and refuses to convert units it was not given)
 | Form | Unit on the bill | Compared with |
 |---|---|---|
@@ -278,33 +231,27 @@ Missing items, extra items, **wrong variant** (the first brand word matches but 
 - **Kannada**: a real run showed fluent-looking nonsense from the model (place names and the word "Friday" as side effects), valid script, no meaning, which no script check can catch. So **Kannada AI text is off**. Instead, **176 common ingredients** (and combinations of them) have a **fixed table** (`medinfo.py`): a purpose phrase, side-effect phrases and warning sentences, composed mechanically and with no dose advice. An ingredient not in the table is never guessed: the reader sees the English line with a notice.
 - **A timetable** and a downloadable share text, in the reader's language.
 
-## 8. How we use Nebius, NVIDIA Nemotron and Tavily
-Everything model-related runs on **Nebius Token Factory** through its OpenAI-compatible API (`https://api.tokenfactory.nebius.com/v1/`, `dawa_buddy/llm.py`). Moving between local development and the hosted demo is an environment variable.
 
-| Where | Model (ID) | What it does | Why a model and not rules |
+## Models and web evidence
+Everything model-related runs on **Nebius Token Factory** through its OpenAI-compatible API (`dawa_buddy/llm.py`). Switching between local development and a hosted deployment is an environment variable.
+
+| Where | Model | What it does | Why a model and not rules |
 |---|---|---|---|
-| Reading bill and prescription photos (`vision.py`) | `nvidia/Nemotron-3.5-Super-VL` | Transcribes lines, numbers, units, MRP and the printed total into JSON. Never judges a price. | Photos of real bills have no fixed layout. |
-| Prescription reader (`reader.py`) and brand-to-ingredient fallback (`bill.py`) | `nvidia/Nemotron-3_5-Lightning` (default) | Finishes lines the rules cannot parse; picks an ingredient from a closed list or answers null. Output must be grounded in the source line. | Doctors write free text; brands outside the table. |
-| Explainer, Hindi (`explainer.py`) | `nvidia/Nemotron-3-Ultra-550b-a55b`, backup `nvidia/nemotron-3-super-120b-a12b` | What each medicine is for and what to watch for, in Hindi, script-checked. | Language generation for two sentences per medicine. |
+| Reading bill and prescription photos (`vision.py`) | NVIDIA Nemotron Super VL | Transcribes lines, numbers, units, MRP, discount and the printed total into JSON. Never judges a price. | Photos of real bills have no fixed layout. |
+| Prescription reader (`reader.py`) and brand-to-ingredient fallback (`bill.py`) | Nemotron Lightning (default) | Finishes lines the rules cannot parse; picks an ingredient from a closed list or answers null. Output must be grounded in the source line. | Doctors write free text; brands outside the table. |
+| Explainer, Hindi (`explainer.py`) | Nemotron Ultra, backup Super 120B | What each medicine is for and what to watch for, script-checked. | Language generation for two sentences per medicine. |
 | Explainer, English | Lightning | The same two sentences in English. | Same. |
-| Web evidence (`webcheck.py`, `nppa_orders.py`, `listings.py`) | **Tavily** search | See below. | Brands and prices that live on public web pages. |
+| Web evidence (`webcheck.py`, `nppa_orders.py`, `listings.py`) | Tavily search | See below. | Brands and prices that live on public web pages. |
 
-**Which Nemotron for which job.** The track guidance is to reach for Ultra when you need serious capability and let smaller models handle fast, everyday calls. We did exactly that and measured it: the small fast **Lightning** model is the default for every everyday call (median **1.33 s** per prescription over 24 cases); the **vision** model reads photos (a 4 MB phone photo reaches the review screen in about **5 s** on the hosted app, one measurement); the large **Ultra** model is used only when someone asks for a Hindi explanation (1.7 to 5 s in the checks). A per-session cap on photo reads (`DAWA_MAX_PHOTO_READS`) keeps a public link from spending credits.
+The small fast model is the default for every everyday call (median 1.33 s per prescription over 24 cases); the vision model reads photos (a 4 MB phone photo reaches the review screen in about 5 s); the large model is used only when someone asks for a Hindi explanation (1.7 to 5 s). Model choices were made with data: Lightning answered Hindi and Kannada requests in English with no error; Super 120B mixed Bengali and Arabic letters into Kannada; Ultra's Kannada was fluent but mostly nonsense on a real prescription. That is why Kannada has a fixed table.
 
-**Where Token Factory accelerated the work.**
-- One OpenAI-compatible endpoint served a vision model, a small fast text model and two large models, with **no custom client** and a per-task model switch by environment variable. That let us *test model choice with data* instead of guessing: `models.list()` confirmed the exact IDs on the day we integrated (27 October 2026).
-- It made the negative results cheap to find, which became product decisions: Lightning answered Hindi and Kannada requests in English with no error; Super 120B mixed Bengali and Arabic letters into Kannada; Ultra's Kannada was fluent but, on a real prescription, three of four side-effect lines were nonsense. That is why Kannada has a fixed table. Per-model language benchmarks would have saved a day, and I say so in [section 17](#17-feedback-on-nebius-token-factory-and-nvidia-models).
 
-**What a real photo taught us about the models.** On 11 lines from two real prescriptions we compared the rules-only reader with the model. The rules **truncated the product name on 7 of 11 lines** (`Concor T` became `Concor`, `Roseday Gold` became `Roseday`, `Glycomet-500 Sr` became `Glycomet-`). That matters directly, because the wrong-variant warning depends on the *full* product name. The model kept the full name on all of them. It made one mistake (it read `STAT`, give once now, as `SOS`, as needed) and on a prescription where the dose was printed `0---1---0` it dropped the `1`. Both led to changes ([section 10.3](#103-what-real-data-broke-and-what-we-changed)).
-
-**Not used.** Nebius Serverless Endpoints, Serverless Jobs and AI Cloud are not used; the demo is hosted on Streamlit Community Cloud and calls Token Factory at runtime. They are encouraged but not required, and listed in the [roadmap](#16-roadmap).
-
-### Tavily: three runtime uses, each as evidence for the user, never a verdict by itself
+### Web evidence (Tavily): three uses, each as evidence for the user, never a verdict by itself
 1. **Identify a brand** the tables cannot resolve (`webcheck.py`). The search returns whole pages; we read each page's *Composition* paragraph, and **drop pages about a different product** before anyone votes (a *Veltam Plus* page does not count for *Veltam*, *Concor 5* does not count for *Concor T*, a 2.5 mg page does not count for 5 mg). Two different sites agreeing is shown as agreement; a single clear answer is shown as a labelled suggestion ("only one site states this"); real disagreement is shown as disagreement. In every case the user confirms from the strip, and only the brand text is sent.
 2. **NPPA price context** (`nppa_orders.py`). For a medicine with no ceiling of its own (a combination such as bisoprolol 5 mg + telmisartan 40 mg), Tavily searches `nppa.gov.in` only, phrased like NPPA's own order lists, and the rows are parsed from the official text. NPPA fixes such prices **company by company**: on a real bill, ten other companies' versions were priced at ₹11.60 to ₹12.71 per tablet before GST, and none of the orders found named the maker of the brand billed. So the app shows them as *"other brands of the same combination are price-controlled lower"*, with links to the orders and the sentence *"this is not a legal limit on your brand"*, and never as above-ceiling. Applying one company's price to another's brand would be a false accusation. Only the ingredients are sent, never prices, quantities or patient details (a test inspects the outgoing request).
 3. **Pack size and listed MRP from pharmacy websites** (`listings.py`; runs by itself once after a photo is read, a button covers anything it did not reach). PharmEasy, 1mg, Truemeds and Netmeds state the strip size and the current MRP. A pack size is suggested only when two sites agree, and the MRP reference is the highest per-tablet value that two different sites support within 10%. A listed MRP is never the legal limit (1mg itself says "MRP may vary by batch"): a bill whose printed MRP is more than 10% above every listing gets a *question* ("ask to see the MRP on the strip"), never the above-MRP label. Pages are matched by name and strength so `Telma 40` never becomes `Telma H 40`.
 
-## 9. Engineering decisions (and why)
+## Design decisions
 | Decision | Why | Alternative rejected |
 |---|---|---|
 | **Rules decide, the model reads** | A wrong price verdict is an accusation. A wrong transcription is caught by the user's confirmation. | An end-to-end model that outputs a verdict. |
@@ -312,40 +259,34 @@ Everything model-related runs on **Nebius Token Factory** through its OpenAI-com
 | **Two-site agreement for web evidence** | Single pages are wrong or stale (an outlier listing at ₹499 appeared in testing). | Trust the first result. |
 | **Company-specific NPPA orders are context, not limits** | NPPA fixes prices per company; another company's price is not a limit on this brand. | Show the lowest controlled price as "the ceiling". |
 | **Fixed templates for dose, safety and timetable text** | Medical sentences must be reviewable once and identical every time. | Let the model write them. |
-| **Script and meaning gating for non-English text** | A script check proves the alphabet, not the meaning, so for Kannada we also removed free-form AI text. | Ship AI Kannada behind a script check. |
 | **Units are explicit; no silent conversion** | The commonest overcharge illusion is per-tablet versus per-strip. | Guess the unit. |
-| **Versioned CSV data with self-checking parsers** | The parser stops unless serial numbers run 1..N with no gap and every price is a number. This caught a merged-cell row (`Condoms 11.65`) the table reader had skipped. | Hand-copied numbers. |
-| **Streamlit** | Fast to iterate, free hosting, Python end to end; the widget restyling is pinned to one Streamlit version. | A separate web front end: more polish potential, much more to build and host in the time. |
-| **A shared daily budget for the hosted demo (with an optional per-visitor access code)** | The demo link ends up on a public page and every photo read and AI explanation costs credits, so judges must not need a code but a stranger must not be able to spend without limit. Three counters for the whole app (photo reads, model calls, web look-ups; 100, 600 and 400 a day by default, changeable in the secrets) fall back, when used up, to the rules-based mode: the samples and every price check keep working and the screens say the AI part returns tomorrow. The counters are in memory, so the hard limit is a separate API key with a small prepaid balance. Tests cover the limits, the day rollover, the refusal before the API is called and the screen. | An access code in the public description (public, so no protection); keeping the link secret and hoping; a Streamlit viewer allow-list (judges cannot be given a shared login). |
+| **The printed MRP is the seller's own figure** | "Within the MRP on your bill" only proves the bill agrees with itself. The wording says so everywhere, and listed MRPs from pharmacy sites raise a question, never a verdict. | Treat the printed MRP as the legal limit. |
+| **Versioned CSV data with self-checking parsers** | The parser stops unless serial numbers run 1..N with no gap and every price is a number. | Hand-copied numbers. |
+| **Streamlit** | Fast to iterate, free hosting, Python end to end. | A separate web front end: more polish potential, much more to build and host. |
+| **A shared daily budget for hosted deployments** | A public link spends credits on every photo read and AI explanation. Three counters for the whole app fall back to the rules-based mode when used up, so the samples and every price check always keep working. | A per-visitor access code (kept as an option); hoping nobody finds the link. |
 | **No accounts, no storage** | Bills contain personal data. | Saving history. |
-| **Samples that need no key** | Anyone, including a judge, can see the product work in one tap. | Require an API key to try. |
+| **Samples that need no key** | Anyone can see the product work in one tap. | Require an API key to try. |
 
 ---
 
-# Part IV. The proof
+## Quality and evaluation
+All numbers are reproducible with the commands below. Where a number is weak, it says so.
 
-## 10. Validation and evaluation
-All numbers below are reproducible with the commands in [section 13](#13-setup-run-and-deploy). Where a number is weak, it says so.
-
-### 10.1 Results
 | Check | Result | Caveat |
 |---|---|---|
 | Unit and integration tests | **299 pass** | Includes fake-server tests for the Ollama and Tavily paths and a test that inspects what is sent to Tavily. |
-| Brand resolution, 108 real brand lines | **99 correct, 4 missed (safe), 0 wrong.** The curated map alone: 26 correct, 61 missed, 2 wrong (1 reached a price verdict). 14 of 14 supplements, invented and ambiguous names handled safely. | Expected answers were written from pharmaceutical knowledge, **not** copied from the table. A pharmacist should review them. |
-| Bill tier accuracy, 18 synthetic lines (tablets, liquids, injections) | **18 of 18** | Synthetic prices written by the author. |
-| Prescription extraction, 24 synthetic cases | Offline rules F1 **1.00**, live Nemotron F1 **1.00**; safety-flag F1 1.00 / 1.00; 0 invented medicines; median latency 1.33 s | **Saturated**: the rules were tuned on this style of text, so it does not show the model's value. The real-photo comparison does. |
-| Real bill photos (two bills) | 4 of 4 and 5 of 5 lines transcribed with every number correct | Two bills: an anecdote, not a benchmark. |
-| Real prescription photos | 11 lines: the model kept the full product name where the rules truncated 7; 1 error (`STAT` read as `SOS`); one dose pattern `0---1---0` was read as `0---0` | Two prescriptions. This is why every transcription is shown for confirmation. |
-| Hindi and Kannada explainer, live | Hindi: good in every run I read, accepted by the script check, 1.7 to 5 s. Kannada: accepted by the script check **but a real run produced fluent nonsense**, so Kannada AI text is off. | Script check proves the alphabet, not the meaning. An LLM second-opinion review (28 Oct 2026, see the next row) marked **9 of 14 Kannada AI lines as nonsense**, one of them dangerous ("black stools" rendered as "black weakness"), which independently confirms that Kannada AI text must stay off; it found **no nonsense in the 14 Hindi AI lines** (meaning right in 13). **No native speaker or clinician has reviewed Hindi or Kannada yet.** |
-| Second-opinion review of the fixed Hindi and Kannada text and of the medicine table (28 Oct 2026, by an LLM: **not a native speaker or a clinician**) | Hindi fixed text: 82 of 88 rows OK. Kannada fixed text: 80 of 88 OK. Kannada medicine table: 132 of 147 OK. Medicine map (176 ingredients): 65 OK, 111 flagged, nearly all as "add a warning". **Applied:** 5 Hindi and 8 Kannada wording fixes (including a real Kannada grammar error: "like {drug}" had been written as "as {drug} does"); 14 table fixes (including a double-verb bug: several pieces ended in "to use" before the frame's "is used"); and 132 warning additions across 93 ingredients, each reusing a warning that was already written and translated, with my own clinical judgement on top (no "never in pregnancy" for statins, letrozole or clomiphene; none for low sugar on teneligliptin). **Not applied:** about 20 free-text requests that need new wording (listed for a clinician), and 3 stylistic changes. | An LLM shares blind spots with the model that wrote the text, so this is a second opinion, not a review. The files for human reviewers are `docs/language_review.md` and the reviewer spreadsheet (`scripts/build_review_sheet.py`). |
-| Third pass on the English medicine table (28 Oct 2026): two models from other families (Qwen3-235B, DeepSeek-V4-Pro) screened all 176 ingredients, then a stronger model reviewed the 54 they flagged (`scripts/clinical_review.py`; all LLMs, **no clinician**) | The first two over-flagged (152 of 176 "flagged by both" until missing-warning suggestions were ranked below wrong-warning flags). The stronger model rated 40 of the 54 purposes OK and 14 incomplete (another common use left out), **none wrong**. It found one unsafe line: torasemide said "drink plenty of water", which is wrong advice for a diuretic used in heart or kidney failure. **Applied:** that line removed, and 18 more warnings across 17 ingredients, each reusing an existing translated sentence (alcohol for sedating or liver-affecting drugs, allergy, blood tests for two ACE inhibitors, pregnancy for amlodipine and norethisterone). **Not applied:** about 40 suggested new sentences (new unreviewed text after the feature freeze), and a stricter pregnancy sentence for letrozole and clomiphene, which women take in order to conceive. | Disagreement between reviewers was the useful signal; a single model's "missing" list was mostly padding. Still no human review of the medicine content. |
-| NPPA price context for an unpriced combination (live, Tavily) | 10 distinct company rows from 4 NPPA documents for bisoprolol 5 mg + telmisartan 40 mg, parsed correctly against rows copied from the documents | One combination live. Only the "composition, unit, company, price" layout is parsed; anything else returns nothing, not a guess. |
-| Pharmacy-website lookup, real bill (live, Tavily) | **Pack sizes right for 6 of 6 products where the strip is known**; the **printed-MRP check became possible on 4 of 4 lines** with one button (2 of 4 before; the look-up now runs by itself after a photo is read), while no line has a government price list entry (the page says so plainly); listed MRPs matched the printed MRP for Concor T and Shelcal. One brand (Pantop) had no two sites within 10% and correctly got no reference. | 6 products, one day. Listings change and sites disagree, so every result is a question. |
-| Online ingredient lookup, 4 real brands (live, Tavily) | Concor T 5/40 and Veltam 0.4: **two sites agree** after the fix (neither did before). Glycomet 500 SR: one clear answer, labelled as a suggestion. Roseday Gold: the pharmacy sites **genuinely disagree** and the app says so. 4 pages about similar-named products were ignored for each brand. | 4 brands, one day. Pages that state no composition (several Apollo and Netmeds pages) still add nothing. |
-| Live hosted app (28 Oct 2026, before the access code was added) | Sample bill to verdict; a real 4.2 MB bill photo to the review screen in about 5 s | Manual check, one run. |
-| **Not yet measured** | Handwriting, other bill layouts, real-user outcomes, native-speaker review, a physical phone | |
+| Brand resolution, 108 real brand lines | **99 correct, 4 missed (safe), 0 wrong.** Supplements, invented and ambiguous names handled safely. | Expected answers were written from pharmaceutical knowledge; a pharmacist should review them. |
+| Bill tier accuracy, 18 synthetic lines | **18 of 18** | Synthetic prices written by the author. |
+| Bill reader, 12 synthetic layouts | 58 of 58 rows read to the known answer | Stress tests the reader was tuned against; not an accuracy figure. |
+| Prescription extraction, 24 synthetic cases | Offline rules F1 **1.00**, live Nemotron F1 **1.00**; 0 invented medicines; median latency 1.33 s | **Saturated**: the rules were tuned on this style of text. The real-photo comparison is more telling. |
+| Real bill photos | Every number transcribed correctly on the first two bills tried; later real bills (tax-inclusive columns, stacked cells, a whole-bill discount, per-strip rates with tablet quantities) each exposed a reader bug that is now fixed and tested | A handful of bills: an anecdote, not a benchmark. |
+| Real prescription photos | 11 lines: the model kept the full product name where the rules truncated 7; 1 error (`STAT` read as `SOS`); one dose pattern `0---1---0` read as `0---0` | Two prescriptions. This is why every transcription is shown for confirmation. |
+| Hindi and Kannada explainer, live | Hindi: good in every run I read. Kannada: accepted by the script check **but a real run produced fluent nonsense**, so Kannada AI text is off. | The script check proves the alphabet, not the meaning. |
+| LLM second-opinion reviews of the fixed Hindi and Kannada text and of the medicine table (several models from different families, **no native speaker or clinician**) | Found and fixed real errors: a Kannada grammar error, a double-verb bug, an unsafe line ("drink plenty of water" on a diuretic) and 150+ missing warnings, each reusing a warning that was already written and translated | Review by models is a screen, not a clinical review. See `docs/language_review.md`. |
+| NPPA price context for an unpriced combination (live) | 10 company rows from 4 NPPA documents parsed correctly for one combination | One combination; anything not in the expected layout returns nothing, not a guess. |
+| Pharmacy-website lookup, real bill (live) | Pack sizes right for 6 of 6 products where the strip is known; printed-MRP check possible on 4 of 4 lines | One bill. |
+| **Not yet measured** | Handwriting, many other bill layouts, real-user outcomes, native-speaker and clinician review | |
 
-### 10.2 Reproduce
 ```bash
 pytest -q tests                                   # 299 tests
 python -m evals.run_bill_evals                    # 18 synthetic bill lines, tier accuracy
@@ -355,92 +296,24 @@ python -m evals.run_lang_evals --out evals/results_lang.md   # Hindi and Kannada
 DAWA_PROVIDER=offline python -m evals.run_evals --out evals/results_offline.md
 ```
 
-### 10.3 What real data broke, and what we changed
-Synthetic tests passed long before real documents did. These are the failures real bills and prescriptions caused, which is why the design looks as it does.
-
-| What went wrong | What we changed |
-|---|---|
-| A saline bag billed ₹45.22 was flagged above the ordinary ceiling of ₹20.15. | NPPA publishes a second, higher ceiling for "special features" packs from listed makers. We loaded all three notifications; the bag matched ₹43.07 plus 5% GST to the paisa. The earlier flag was wrong in effect, and the *question, never an accusation* design is what kept it harmless. |
-| The rules-only reader truncated 7 of 11 product names (`Concor T` to `Concor`). | The model-assisted reader keeps the full name, kept honest by a rule that its output must be grounded in the source line. |
-| The model read `STAT` as `SOS`; the dose line then said "as needed". | The reader now treats `STAT` as its own single-dose frequency, and every transcription is shown for confirmation. |
-| A dose printed `0---1---0` was read by the vision model as `0---0`, and the dose parser accepted only single dashes. The app said "ask your doctor how to take it". | A prompt that copies dose patterns character by character; a parser that accepts any dashes; and an amber warning on the review screen that lists any prescription line with no readable dose and opens the box to fix it. A real bug caught by running real data. |
-| A prescription line `0-0-1 ... SOS in case of constipation` was shown as a daily dose. | "SOS" now wins over printed digits; injections and syrups say "dose", not "tablet". |
-| An NPPA price of ₹12.55 to ₹12.62 for a combination was quoted to me as Concor T's limit. | Those were other companies' orders. NPPA fixes price company by company, so they became *context* ("not a legal limit on your brand"), never an accusation. |
-| Pharmacy-site parsing read a pack of 1 from a URL ending `-1`; an outlier listing (Pantop ₹499) set a bad MRP reference. | Patterns per source; a reference needs two different sites within 10%. |
-| A real run of Kannada AI text was fluent nonsense in valid script. | Kannada AI text off; a fixed, reviewable table for common ingredients; a fixed notice when the table does not cover a medicine. |
-| The same "Something is not written" card repeated for every medicine. | One grouped note per kind of issue. |
-| After the user typed an ingredient, the cards and verdict stayed stale until the next click, so the *Help us identify* box looked like it did nothing. | The page now refreshes in the same step, the box stays open and says what the confirmation did ("Compared as … No price list covers this"). |
-| The online ingredient lookup almost never reached agreement. The cause was extraction, not the web: it read only the short search snippet with one rigid pattern, and the search mixed in neighbouring products. | Read each page's *Composition* paragraph; ignore pages about a different product or strength; show a single clear answer as a labelled suggestion. |
-| The result card showed three tiles: rupees above limits, rupees of generic saving and a percentage of the bill checked. On a clean bill that meant "₹0, ₹0, 0%", which read as "the tool found nothing" when the truth is "you are covered"; and the percentage had merged two different checks (the printed MRP, and a government price list). | Tiles appear only when they carry news. A **What we checked** list says what was verified and found fine (printed MRP, legal ceiling, prescription), and explains in grey when a check does not apply. No percentage, no empty generic saving. |
-| The model-assisted prescription reader returned "Concor" for "CONCOR T 5MG/40" in 1 of 3 live runs. It passed the grounding check (the word is in the line) and produced a false red wrong-variant card. | Brand names are completed deterministically from the words that follow them in the printed line (stopping at a number, comma, route or frequency word): `Concor` becomes `Concor T`, `Roseday` becomes `Roseday Gold`. Regression tests cover both reader paths. |
-| Jan Aushadhi writes "Prolonged **release**" with a space; the name parser only ignored the hyphenated form, so "prolonged" was read as an *ingredient* and metformin SR never matched its own 500 mg price (₹1.08 a tablet; a bill charging ₹3.60 got no comparison). Found while debugging why a real bill showed 0%. | "prolonged" is ignored like "sustained" and "extended"; a regression test pins it. Evals unchanged (18/18; 99 correct, 4 safe misses, 0 wrong). |
-| The result page gave no sign of progress as ingredients were confirmed, and no reason when the price-list figure stayed at 0%. | It lists what is not identified yet (the list shrinks as you confirm), shows what each confirmation did, and when no list covers any medicine says so plainly. |
-| In the *Help us identify* box the look-up and "use it" buttons stayed active after use, inviting repeat searches and doubt about what had happened; with several medicines the single box grew very long. | Each button disables once it has done its job (and re-enables only if the user changes the text it acted on). Each medicine gets its own collapsed row, with the row the user last worked in kept open. |
-| The ingredients box had no button: a Streamlit text box only applies on Enter or when you click away, so users typed and nothing visibly happened. It also stayed on screen after the answer was confirmed. | A form with an explicit **Confirm ingredients** button (pressing it also confirms a value suggested from the brand table, which used to need an edit). Once confirmed, the box is replaced by the confirmed value and its outcome, with a **Change ingredients** link so a typo is not a dead end. |
-| The "Explain my medicines" row sat directly under the identify rows and read as part of that list (the stylesheet stitches adjacent expanders into one group); "Change ingredients" had no colour or padding (and, once tinted, matched the "confirmed" banner above it). | The explainer has its own heading ("Understand your prescription"); "Change ingredients" uses the same primary style as "Confirm ingredients". |
-| Three parts of the result disagreed about which medicines needed confirming: the *Help us identify* list included Veltam (identified as tamsulosin, merely not price-listed) while the alert cards and the checklist row did not; and the checklist row was missing for AI-guessed medicines like Concor T. | One rule, `needs_identifying()`, decides it for all three: an AI or brand-table guess awaiting confirmation, or a line that matched nothing. A test checks the checklist row and the identify list name exactly the same medicines. |
-| After every ingredient was confirmed the section still read "Help us identify (1)", which says an action is pending. | The badge counts only what is still pending. When nothing is, the header becomes "Medicines you confirmed (N)" with "Nothing more to do here"; the answers stay listed so they can be reviewed or changed (a typo must not be permanent). |
-| On the review screen, *Fix a number* applied edits live (an accidental keystroke changed the bill), *Remove this line* could not be undone, quantity, price **and** total were all editable (so they could disagree), *Add a line* had no clear confirm and an unstyled button, and a missing strip size (needed to check a per-strip MRP) was easy to overlook: Veltam came pre-filled from the brand table but Shelcal and Concor T did not. | Edits are staged in a form with **Save changes**; the total is computed; removed lines go to *Removed lines* with **Put back**; *Add this line* is a validated form with a primary button; an amber note and a per-card flag name every missing strip size, with **Find strip sizes online** beside them; the results-page look-up now says which medicines it covers and why. |
-| The MRP row of *What we checked* read "Charged above the printed MRP on 1 line of 4. 3 other lines are within it.": correct but unreadable, with no line named and no amounts. | Each row now names the line and both prices: "1 line is priced above the MRP printed on the pack. IV SET NOVOFUSION 30115: charged ₹265 per piece, the pack says ₹11." The ceiling row does the same with the legal limit. |
-| The daily timetable listed *strengths* ("500MG after food", "5MG/40", "As written") where a person needs an *amount*; a vaccine (a STAT single dose) sat in it as "as needed"; and a syrup written "0-0-1 … SOS in case of constipation" appeared every night when the model read the line (it kept the digits and lost the word). | Rows now say what to take: "1 tablet (500 mg), after food", "15 ml", "1 dose (500 mg)", in all three languages, from the same function the dose sentence uses. A single dose goes in its own *One-time dose* section, never the table; as-needed rows come last; and the line's own SOS or STAT beats the digits a model returns. |
-| On a real prescription most medicines came back in English in the Kannada briefing. Roseday Gold missed because the prescription says *TAB* while the brand table lists a capsule, and the table keeps only two ingredients while the line prints three strengths; Veltam missed because the table keys it with its strength ("veltam 0.4"). | The lookup tries tablet and capsule and the brand name with its strength. A guard refuses any table hit with fewer ingredients than strengths printed on the line, so a partial product is never described (the failure the English fallback was protecting against). Roseday Gold was added as a hand-verified three-ingredient brand (two independent pages and the printed strengths). Kannada fixed text on that prescription went from 1 to 3 of 7 medicines; the other four (a supplement, a laxative, a vaccine and an unlisted combination) still honestly fall back to English with a notice. |
-| An LLM second-opinion review of the Hindi and Kannada text found a grammar error in a Kannada safety sentence, a double-verb bug in the Kannada medicine table, passive "clinical" wording, and 111 ingredients whose warnings were thin (NSAIDs with no pregnancy warning, doxycycline, albendazole, thiocolchicoside with no "never in pregnancy", CNS drugs with no "do not drive"). | Fixes applied the same day; every added warning reuses an existing translated sentence, so no new unreviewed Kannada was introduced; tests pin the grammar rule and the pregnancy-wording rules. The human reviewers' sheet is regenerated from the corrected text. |
-| Two more real bills (29 Oct 2026): one prints the MRP per tablet with tax included, one prints two values in each cell (quantity over discount, MRP over net rate) and the maker's name under each item. The reader took the pre-tax "Taxable" column as the line amount, left the maker in the item name, and the audit priced "ACECLOFENAC + PARACETAMOL" as plain paracetamol and flagged it above its ceiling, which was a false accusation. "LOX 2% JELLY" was looked up in the tablet list, so its ingredient was never found, even with web search. | The photo prompt now says the amount is the tax-inclusive line value and never the Taxable column; the maker/HSN text is stripped from names; a per-tablet MRP is converted so it is never divided by a strip size; a unit is inferred when the name states the form (SYP, JELLY). A name listing several ingredients is never priced as one, and a brand name followed by its composition is looked up by the brand part alone. The form detector now knows "jelly". Four new tests; the old bills still audit the same. |
-| The same two bills showed that fixing one layout at a time does not scale: a new column order would break the reader again. | The reader now returns every number in each row; code (not the model) finds the quantity, price and line value that multiply out, makes the lines add up to the printed total, prefers the tax-inclusive value, works a missing price out as value over quantity, and tells a per-tablet MRP from a per-strip one by size. A model-free test suite pins each rule. **`scripts/synth_bills.py`** draws twelve invented bills in different layouts (per-tablet and per-strip MRP, split tax, stacked cells, a discount column, scrambled headers, no rate column, a tilted blurred photo, a rate printed per strip against a quantity in tablets, and a final discount with round-off): **58 of 58 rows read right**. That is a stress test of layouts that I tuned against, not an accuracy figure for real bills. | Invalid JSON from the model (a batch code listed among the numbers) is repaired and retried once, so it cannot end a patient's session. |
-| A printed MRP is the seller's own figure. "Charged within the MRP on the bill" only proves the bill agrees with itself: a seller who prints an inflated MRP and charges it would pass, and the result called that MRP "printed on the pack". | The wording now says **the MRP on your bill** everywhere and what that does and does not prove. Lines whose only comparison is the bill's own MRP sit in their own group ("Checked only against the MRP on your bill"), not in "Within the limits". The downloaded questions add **"Check the MRP on the strip"**. After a photo is read, the result looks the lines up once on pharmacy websites by itself (Tavily; never for the samples, never for a locked visitor), because the listings are the only independent check on an MRP: on the second real bill, listings were found for **4 of 4 lines**, and the row says "pharmacy websites list a consistent MRP for 4 lines". | The check is only as good as the listings: a stale low listing cannot raise an alarm (the highest listed MRP is the reference), and an MRP can differ by batch, so it is always a question, never a finding. |
-| On the review and result screens, choosing *per tablet* or *per strip* changed nothing, the strip-size box sat beside that choice although it is a different question, and a per-tablet MRP stayed per tablet whichever was chosen. Cause: a per-tablet MRP had been stored by pretending a strip held one tablet, so the box held an invented 1 and the toggle had nothing real to convert. | The basis of the printed MRP is now its own fact (`mrp_each`: one tablet or a whole strip, with its own control), the strip size is only asked for when a conversion needs it and sits in the *Fix a number* form, and every card shows a live sentence that recomputes with the choices ("You paid ₹372 per strip (₹12.40 per tablet). MRP on the bill ₹80 for a whole strip (₹8 per tablet)"). A per-tablet MRP on a per-tablet price asks for no strip size at all. | No strip size is ever invented; two tests drive the toggles and the fix form. |
-| The per-line entry was confusing and did not respond: a tablet/strip toggle, a separate MRP toggle and a read-only sentence sat outside a *Fix a number* pop-up form, and widgets inside a form cannot change anything until it is saved, so the choices could not update the numbers they were about. | The form and the pop-up are gone. Each line is one live panel of the three things read off a bill: the number billed, the price charged and the MRP, each with its own *per tablet / per strip*, and the strip size only when a conversion needs it. Selecting a unit changes the labels and the converted sentence at once. Tests drive the toggles and the number fields. | A number commits when the field is left (Enter or tap away), not on every keystroke, and removal is still undoable. |
-| A third real bill (a pharmacy printout): the **Rate column is per strip of 10 while Qty counts tablets** (6 × ₹191 = ₹1,146, but the amount is ₹114.60), and a **₹20 "Less Dis" taken off the whole bill** (lines ₹189.60, net ₹170 after round-off). The reader called ₹191 a per-tablet MRP, marked both lines wrong, and the banner said the lines did not add up to the total. | A person divides by the strip size, so the code does: when quantity × rate is a whole strip size times the amount (here exactly 10), the rate is the strip's price (kept as the MRP), the pack is that size and the price per tablet is amount ÷ quantity (₹19.10, ₹12.50). The reader now returns the bill's discount and net total separately from the items, the review shows "lines add up to ₹189.60; less the ₹20 discount on the whole bill, that is the printed total ₹170" with an editable field, and the price checks use the price after the discount, spread over the lines in proportion (the card still shows the printed amounts, and the fold shows the rate before the discount). Without a printed discount the gap is named as inferred. Eight tests and two new synthetic layouts (58 of 58 rows). | A discount can only lower a price, so it can remove a false flag but never create one; a gap larger than 60% of the bill is treated as a misread, not a discount. The strip price is assumed to be the MRP when the bill prints no separate MRP column. |
-| After the review screen was redesigned, the Hospital sample opened on a wall of amber: the same three lines (an IV fluid bag, a saline bottle, a syringe) were reported as "need a number" in a banner count, a top note and again on each opened card, plus an unreadable dose that the sample prescription contained by accident. Nothing was wrong with the bill; the author had only looked at the result screens. | Units are now filled in where the name settles them (an IV fluid or a consumable is "each", as injections and syrups already were), also for the samples; the unit prompt appears once; the sample prescription line has a readable dose. A test opens both samples and requires a clean, one-tap review. | A real photo can still show an amber note, correctly (a strip size is missing); the samples must not. |
-| The deployed app still showed the amber wall after the fix, although the new sample text was live. Cause: the cloud installs the newest pandas (the requirements are unpinned), where a missing table cell is `NaN`, not `None`, and `NaN` is truthy, so "this line already has a unit" was true for every line and no default was applied. The tests ran on pandas 2.3.3 and could not see it. | A unit counts as set only if it is a non-empty string; a test builds the table with both `None` and `NaN`, and both samples were run through the whole flow with every missing cell forced to `NaN`. | The requirements are deliberately not pinned (a pin that has no wheel for the cloud's Python would break the deploy); the remaining risk is another newer-pandas difference that the NaN simulation does not cover. |
-| The wrong-variant card said "Same brand name, different product" but, for the real Shelcal case, only "we could not look up the ingredients, so we cannot say how they differ": neither Shelcal-XT nor Shelcal 500 was in the brand table (a supplement). A stray "0" from the dose pattern `0---1---0` was also being read as a strength ("Shelcal-Xt 0"). | Both products were added to `data/brand_overrides.json` with their sources (each composition confirmed on two or more pharmacy pages), the dose pattern is no longer read as a strength, and the comparison also names an ingredient present in both in a different amount. The card now reads: "prescribed is calcium 500 mg + vitamin d3 2000 iu + methylcobalamin 1500 mcg + l-methylfolate calcium 1 mg + pyridoxal-5-phosphate 20 mg; billed is calcium 500 mg + vitamin d3 250 iu (the billed one lacks …; vitamin d3 is 2000 iu in the prescribed one and 250 iu in the billed one)". Four-version check: the old code never explained it either. | Only brands with a verified source are added; any other pair still says plainly that it cannot say how they differ. |
-| PharmEasy's page text runs a label into the value ("Salt ContentTinidazole(600.0 Mg)"), and the parser joined them: **Cifran CT** was read as ciprofloxacin 500 mg + **contenttinidazole** 600 mg. Apollo's `CIPROFLOXACIN-500MG+TINIDAZOLE-600MG` format was not read at all, so that page never confirmed anything. | A name is split where lower case runs into upper case before it is read, and "content" joins the noise words; an upper-case `NAME-500MG+NAME-600MG` chain is read as a composition, but a brand-and-strength title like `SHELCAL-500MG` never is. Live: **Cifran CT now resolves to ciprofloxacin 500 mg + tinidazole 600 mg, confirmed by three sites** (1mg, Apollo, PharmEasy); Concor T and Veltam are unchanged. Two tests. | A page whose product name does not match exactly (Cifran CTH) still finds nothing, which is a safe miss; a stray word in the page text could still confuse the parser, which is why the result is only ever a suggestion the patient confirms from the strip. |
-| On the second real bill, two lines had a Jan Aushadhi generic at under half their price (Dolo 650 at 2.2×, Monocef O at 2.8×) and read "within the limits", while two others (8× and 9×) were flagged. The 3× flag looked inconsistent, and the author judged it too relaxed. | The flag is now **2×** (`GENERIC_GAP_RATIO`), which flags Dolo 650 and Monocef O. A generic 1.5× to under 2× cheaper is no longer silent: the checklist says "None flagged (we flag a generic at 2× the price or more)" and names those lines, and each line's fold shows the generic's price and the multiple paid. The outpatient sample now has 5 things to ask about (Dolo 650 added); the hospital sample is unchanged. Two of the 18 hand-written tier cases (Dolo 650 at ₹2.10 and a ₹29.50 ceftriaxone vial, 2.0× and 2.2× their generics) are meant to be "inside every limit", so they were repriced just under the new boundary (₹1.90 and ₹26.00) and keep their expected result; the unit tests pin both sides of it (₹26 not flagged, ₹29.50 flagged). The eval scored 16 of 18 until that was done, and is 18 of 18 again. | A lower threshold flags more lines. Jan Aushadhi generics are cheap by design, so most branded medicines sit above 2×; the flag is always a question for the doctor, never an accusation. |
-| The Supreme Court's headline example (a ₹11 consumable billed at ₹299) was caught only if the user chose a unit; consumables had no "per piece" option. | Added **per piece** with a direct MRP comparison, plus a test and the hospital sample line. Found by reading the court coverage against the app, on 28 October. |
-
-## 11. How it meets the requirements
-| Req | How it is met | Evidence |
-|---|---|---|
-| **R1** phone photo | Responsive single-column UI; camera via the file picker; photos auto-resized (1800 px, EXIF fixed). | `vision.py`, [§5](#5-the-product-tour), live test with a 4.2 MB photo |
-| **R2** never accuse | Only above-ceiling and above-MRP are possible violations, worded as questions; everything else a prompt to ask. | `RESULT` tiers in `bill_app.py`, [§6](#6-what-each-result-means) |
-| **R3** accuracy over coverage | `no_benchmark`, `unit_unclear`, `needs_confirmation`; the result lists each check and what it found, and says plainly when a check does not apply. | Brand eval: 0 wrong of 108; [§10](#10-validation-and-evaluation) |
-| **R4** distinct limits | Ceiling, printed MRP, Jan Aushadhi reference and web listing kept as separate labelled things. | `ceilings.py`, `benchmarks.py`, `listings.py` |
-| **R5** units right | Explicit unit per line; per-tablet, strip, bottle, tube, vial, ml, bag, piece; no silent conversion. | `bill.py`, `liquids.py`, `injectables.py`; 18/18 tier eval |
-| **R6** dispensing errors | Wrong-variant warning with the ingredient difference; missing, extra, too many units, total mismatch. | `reconcile.py`; the Shelcal case |
-| **R7** explain the prescription | Fixed dose sentences, auditable safety rules, timetable. | `explainer.py`, `safety.py`, `scheduler.py`; 24-case eval |
-| **R8** own language, safely | Hindi and Kannada for dose, safety, timetable and disclaimer from fixed templates (LLM second opinion applied; human review pending); Kannada medicine text from a fixed table, never free AI. | `i18n.py`, `medinfo.py`; review pack |
-| **R9** privacy | No accounts, nothing stored; photos go to Token Factory to be read; only brand or ingredient text goes to Tavily (a test inspects the request). | [§15](#15-limits-safety-and-responsible-ai) |
-| **R10** trust under AI error | Every transcription is confirmed by the user; model output must be grounded in the source line; unreadable doses are flagged. | `lines_form`, `dose_warning`; [§10.3](#103-what-real-data-broke-and-what-we-changed) |
-| **R11** free, no key | Two samples run fully offline against the real price lists; the hosted demo is open. | `samples.py`; live URL |
-| **R12** actionable | Downloadable questions to ask; Pharma Sahi Daam named as the complaint route. | `report.py` |
-
-## 12. Hackathon requirements checklist
-Checked against the [official rules](https://nebiusglobalaihackathon.devpost.com/rules) on 28 October 2026.
-
-| Requirement | Status | Where |
-|---|---|---|
-| Runs on **Nebius Token Factory** (a runtime call to the inference API) | ✅ | `dawa_buddy/llm.py`; every photo read and explanation |
-| Uses at least one **NVIDIA open source model** | ✅ Nemotron 3.5 Super VL, Nemotron 3.5 Lightning, Nemotron 3 Super 120B, Nemotron 3 Ultra 550B | [§8](#8-how-we-use-nebius-nvidia-nemotron-and-tavily) |
-| One of the four **tracks** | ✅ Best Apps and Agents | Top of this page |
-| **Project description** (what, why, how) | ✅ | Sections 1, 4, 7 |
-| **Working demo URL** | ✅ in the submission form. The app is open (no code) and protected by a daily budget; the link is deliberately not in this repository. | Submission form |
-| **Demo video**, 3 minutes or less, public on YouTube | ⏳ link added at submission | Top of this page |
-| **Public repository** with an open source licence visible at the top | ✅ MIT, shown in the repository's About section | `LICENSE` |
-| **README** with setup instructions and run guidance | ✅ | [§13](#13-setup-run-and-deploy) |
-| README highlights **Nemotron, where Token Factory accelerated the work, and other Nebius tools used** | ✅ | [§8](#8-how-we-use-nebius-nvidia-nemotron-and-tavily) |
-| **Feedback** on Token Factory and NVIDIA tools and models | ✅ here and in the submission form | [§17](#17-feedback-on-nebius-token-factory-and-nvidia-models) |
-| **Prior-work statement** | ✅ none: everything was built in the submission period | [§18](#18-prior-work-licence-acknowledgements) |
-| Third-party data and APIs used within their terms | ✅ public NPPA and PMBJP data, an MIT-licensed brand dataset, Tavily's API | `data/NOTICE.md` |
-| Original work, English materials, no copyrighted music in the video | ✅ | |
-| Project available **free and without restriction for testing** until judging ends | ✅ Judges open the URL and get every feature, free, with no code. A shared daily budget (photo reads, model calls, web look-ups) protects the credits; if it is used up the samples and every price check still work and the budget resets each day (00:00 UTC). Anyone can also run it locally with their own key. The demo will stay up through the judging period (to 15 Dec 2026). | [§13](#13-setup-run-and-deploy) |
-| **Best Use of Tavily**: a functional runtime call to the Tavily API | ✅ three runtime uses | [§8](#8-how-we-use-nebius-nvidia-nemotron-and-tavily) |
+### What real bills and prescriptions taught the design
+Synthetic tests passed long before real documents did. Some of the changes real data forced:
+- **A saline bag billed ₹45.22 was flagged above the ordinary ₹20.15 ceiling.** NPPA publishes a second, higher ceiling for "special features" packs; all three notifications are now loaded and the bag matches ₹43.07 plus 5% GST to the paisa. The *question, never an accusation* design is what kept the earlier flag harmless.
+- **Another company's NPPA price was about to be shown as a brand's limit.** NPPA fixes prices company by company, so those prices are now context ("not a legal limit on your brand"), never above-ceiling.
+- **The rules-only reader truncated 7 of 11 product names** (`Concor T` became `Concor`), which would have produced false wrong-variant cards. Names are kept whole and completed deterministically from the printed line.
+- **The model read `STAT` as `SOS`, and dropped a `1` from `0---1---0`.** `STAT` is its own frequency, the parser accepts any dashes, and the review screen warns when a prescription line has no readable dose.
+- **Fluent nonsense in Kannada** led to the fixed table.
+- **Bills print numbers many ways** (tax-inclusive MRP, stacked cells, rate per strip with quantity in tablets, a whole-bill discount). Reading them by arithmetic, not by templates, is now the reader's job.
+- **A missing table cell is `NaN` on newer pandas**, which is truthy; units silently defaulted wrongly on the hosted app but not in local tests. Fixed, with a test.
+- **A generic more than twice as cheap** is now surfaced as a question for the doctor (the threshold started at 3x and was judged too relaxed).
+- **"Within the MRP printed on your bill"** only proves the bill agrees with itself, so the wording and the review of such lines say exactly that.
+- **Consumables had no "per piece" option**, so the headline court example (₹11 billed at ₹299) was missed until it was added.
 
 ---
 
-# Part V. Run it
+## Run it yourself
 
-## 13. Setup, run and deploy
-Python 3.10+. **No key and no photo?** Open the app and press one of the two **sample bills**. They run fully offline against the real price lists (the samples use invented patients and prices).
+Python 3.10+. **No key and no photo?** Open the app and press one of the two **sample bills**; they run fully offline against the real price lists.
 ```bash
 git clone https://github.com/aadih88/dawa-buddy.git
 cd dawa-buddy
@@ -460,14 +333,14 @@ streamlit run bill_app.py
    NEBIUS_API_KEY = "..."
    TAVILY_API_KEY = "..."            # optional
    DAWA_MAX_PHOTO_READS = "15"       # photo reads per unlocked visitor session (the default is 5)
-   # DAWA_ACCESS_CODE = "..."       # optional: visitors start locked (samples and price checks only) until they enter it. Leave unset for an open demo.
+   # DAWA_ACCESS_CODE = "..."       # optional: visitors start locked (samples and price checks only) until they enter it. Leave unset for an open deployment.
    DAWA_DAILY_PHOTO_READS = "100"    # shared by all visitors, per day (00:00 UTC): photo reads
    DAWA_DAILY_MODEL_CALLS = "600"    # model calls per day
    DAWA_DAILY_WEB_CALLS = "400"      # web look-ups per day
    ```
 3. Deploy. The first build installs `requirements.txt` (about two minutes); an idle app sleeps and wakes when someone visits.
 
-**Daily budget and optional access code.** The hosted demo is open: no code. Three shared counters (`dawa_buddy/budget.py`) cap photo reads, model calls and web look-ups per day for the whole app. When one is used up the app falls back to the rules-based mode: the sample bills and every price check keep working, the start screen says the AI part is paused, and it resets at 00:00 UTC. The counters are in memory (a restart resets them), so the hard limit is the balance on the API keys: use a separate key with a small prepaid balance for the demo. `DAWA_MAX_PHOTO_READS` still caps each visitor session. If you prefer a gate, set `DAWA_ACCESS_CODE`: every visitor then starts *locked* (`llm.restrict`, per visitor thread) until the code is entered, and a wrong guess costs 1.5 s. Streamlit exposes top-level secrets as environment variables, which is what the app reads. If the start screen shows only the sample buttons and no photo upload, the key is not reaching the app (check the secret's name) or today's budget is used up. Memory is not a concern: loading the brand table and running an audit peaks at about 190 MB.
+**Daily budget and optional access code.** A hosted deployment can be open (no code). Three shared counters (`dawa_buddy/budget.py`) cap photo reads, model calls and web look-ups per day for the whole app. When one is used up the app falls back to the rules-based mode: the sample bills and every price check keep working, the start screen says the AI part is paused, and it resets at 00:00 UTC. The counters are in memory (a restart resets them), so the hard limit is the balance on the API keys: use a separate key with a small prepaid balance for the demo. `DAWA_MAX_PHOTO_READS` still caps each visitor session. If you prefer a gate, set `DAWA_ACCESS_CODE`: every visitor then starts *locked* (`llm.restrict`, per visitor thread) until the code is entered, and a wrong guess costs 1.5 s. Streamlit exposes top-level secrets as environment variables, which is what the app reads. If the start screen shows only the sample buttons and no photo upload, the key is not reaching the app (check the secret's name) or today's budget is used up. Memory is not a concern: loading the brand table and running an audit peaks at about 190 MB.
 
 **Command line (no browser)**
 ```bash
@@ -502,7 +375,7 @@ IV SET | 2 | 265.00 | 530.00 | each | | 11.00
 
 Optional: `DAWA_DAILY_PHOTO_READS`, `DAWA_DAILY_MODEL_CALLS`, `DAWA_DAILY_WEB_CALLS` (shared daily budget), `DAWA_ACCESS_CODE` (gate for a hosted demo), `DAWA_TEXT_MODEL`, `DAWA_VISION_MODEL`, `NEBIUS_BASE_URL`, `TAVILY_API_KEY`, `DAWA_KN_MODEL_TEXT=1` (turns the experimental Kannada AI text back on, for testing only).
 
-## 14. Price data and how to refresh it
+## Price data and how to refresh it
 | Data | Source | In the repo |
 |---|---|---|
 | NPPA ceilings, 911 formulations | Three gazette notifications of 25.03.2026, effective 1.4.2026 (WPI +0.64956%): 767 under NLEM 2022, 138 under NLEM 2015, 6 under NLEM 2011 | `data/nppa_ceiling_2026-04.csv` |
@@ -522,11 +395,10 @@ python3 scripts/build_brand_index.py indian_medicine_data.csv
 ```
 The parsers are **checked, not trusted**: serial numbers must run 1..N with no gap and every price must be a number, otherwise they stop. A cross-check found 233 of 267 poster rows matching the new lists with identical prices. NPPA revises ceilings every April, and the Supreme Court proceedings may add new limits; when they do, download the notifications and re-run the parsers.
 
+
 ---
 
-# Part VI. Honesty
-
-## 15. Limits, safety and responsible AI
+## Limits, safety and responsible AI
 - **It is not medical advice and not a legal finding.** It never diagnoses and never changes a dose. Every flag is a prompt to ask someone.
 - **It cannot see the price to retailer**, which is what the Supreme Court's concern is mostly about. It can compare with legal ceilings, the printed MRP and generic reference prices, and say "no price list covers this". It does not claim to detect a mark-up inside the MRP.
 - **Coverage is partial.** NPPA ceilings exist only for scheduled drugs; most branded medicines have none. Devices, rooms and procedures have no price list loaded. The tool reports the share it could check and never presents "no benchmark" as "fine".
@@ -536,42 +408,29 @@ The parsers are **checked, not trusted**: serial numbers must run 1..N with no g
 - **GST allowance.** Ceilings exclude local taxes; the tool allows up to 12% before flagging, which can hide a small overcharge but avoids false alarms.
 - **Photos may contain personal data.** Cover names, phone numbers, addresses and bill numbers before uploading. Photos are sent to Nebius Token Factory to be read; only brand or ingredient text goes to Tavily; the app stores nothing.
 - **Interaction and brand-safety tables are small demo sets** to be replaced with a licensed clinical database before real use.
-- **Hindi and Kannada.** Fixed text (dose, safety notes, timetable, disclaimer, and the Kannada medicine table) is never model-written, but has had **only an LLM second-opinion review** (28 Oct 2026, two passes; they found and fixed real errors, including an unsafe "drink plenty of water" on a diuretic, see section 10.1); **no native speaker or clinician has reviewed it yet**, and the medicine table's medical content in particular needs a pharmacist or doctor. The Hindi AI text is labelled as AI and can contain mistakes. See `docs/language_review.md`.
+- **Hindi and Kannada.** Fixed text (dose, safety notes, timetable, disclaimer, and the Kannada medicine table) is never model-written, but has had **only an LLM second-opinion review** (two passes; they found and fixed real errors, including an unsafe "drink plenty of water" on a diuretic, see section 10.1); **no native speaker or clinician has reviewed it yet**, and the medicine table's medical content in particular needs a pharmacist or doctor. The Hindi AI text is labelled as AI and can contain mistakes. See `docs/language_review.md`.
 - **Known small gaps.** "With food" and "with milk" timings are not understood (only after food, before food and bedtime). A combination with two strengths on one line (for example `5mg/40`) shows only the first strength. A misread dose that is still *readable* (a wrong digit, not a missing one) is not caught.
 - **Unverified:** wording of the fixed Hindi and Kannada text, the Hindi AI text over many prescriptions, handwriting, a physical phone, and real-user outcomes.
 
 **Responsible-AI design in one paragraph.** The model never decides a price tier or a safety rule; every transcription is confirmed by the user; model output must be grounded in the source text; web evidence needs two independent sites and is labelled as context; non-English medical text is template-based or table-based wherever a model failed in testing; failures are reported as "we could not check this", not hidden; and the tool names the complaint route instead of acting on its own.
 
-## 16. Roadmap
+## Roadmap
 Not built, in order of impact. Ideas, not promises.
 1. **Device ceilings.** NPPA already caps some devices (coronary stents, knee implants). Loading them would turn "not covered" into a real comparison for the biggest consumable mark-ups.
 2. **New limits from the Supreme Court proceedings.** If trade-margin caps beyond cancer drugs follow, load them as another versioned list. The 30% cap on 137 non-scheduled cancer drugs takes effect on 9 November 2026 [2].
 3. **A complaint draft** for Pharma Sahi Daam / Pharma Jan Samadhan, pre-filled with the line, the limit and the amount.
 4. **More languages** (Tamil, Telugu, Marathi, Bengali) using the same fixed-table approach, after native-speaker review.
 5. **Handwriting and package bills** (a single hospital package price with no itemisation).
-6. **Deploy on Nebius Serverless Endpoints**, and use Serverless Jobs for batch re-checks when a price list is revised.
+6. **Serve the models from dedicated endpoints**, and use batch jobs for batch re-checks when a price list is revised.
 7. **A physical-phone and real-user study**, including pharmacists, to tune wording.
 
-## 17. Feedback on Nebius Token Factory and NVIDIA models
-As used here, honestly:
-- **What worked.** The OpenAI-compatible API and `models.list()` made integration fast, and the exact model IDs are visible and confirmable. One endpoint for vision, a small fast model and two large models let us choose per task with data.
-- **Naming.** Model IDs are inconsistent in form (`nvidia/Nemotron-3_5-Lightning` with an underscore, `nvidia/Nemotron-3.5-Super-VL` with a dot, `nvidia/nemotron-3-super-120b-a12b` in lower case). That is easy to get wrong in code; a documented naming rule or aliases would help.
-- **Images.** Real phone photos are about 4 MB. We downscale to 1800 px and fix EXIF rotation before upload; guidance on recommended image sizes for the vision model would help.
-- **Vision accuracy.** Nemotron Super VL transcribed printed bills exactly on the two bills tried, but occasionally dropped a digit in a long dose pattern (`0---1---0` became `0---0`) and confused `STAT` with `SOS`. Grounding checks and user confirmation are essential for medical text.
-- **Languages.** The fast default model (Lightning) answered Hindi and Kannada requests **in English**, with no error. Nemotron Super 120B wrote clean Hindi but, for Kannada, mixed in Bengali and Arabic letters. Nemotron Ultra 550B wrote clean Hindi and fluent-looking Kannada, but on a real prescription three of four Kannada side-effect lines were nonsense in valid script, so free-form Kannada medical text could not be shipped. **Per-model language benchmarks, or a documented list of supported languages and quality, would have saved us a day.** A refusal or a "I am not confident in this language" signal from the model would be the most useful safety feature for medical text.
-- **Latency.** Ultra's Kannada took up to about 20 s in one check against 1.7 to 5 s for Hindi, which matters for an interactive app.
+## Licence and acknowledgements
+MIT (see `LICENSE`). Data attributions are in `data/NOTICE.md`. Thanks to the owner of the real redacted bills and prescriptions used for validation, and to the teams behind NPPA's public notifications, the PMBJP product list and the open Indian medicine dataset.
 
-## 18. Prior work, licence, acknowledgements
-**Prior work and the submission period.** None. Everything in this repository was built for this hackathon: the *prescription briefing* (reader, safety rules, scheduler, explainer, fixed Hindi and Kannada text) and the *bill check* (`bill_app.py`: photo reading, the brand table, per-form pricing for tablets, liquids, injections, IV fluids and consumables, the MRP check, reconciliation with the wrong-variant warning, the NPPA data pipeline, the Tavily evidence steps, and the visual layer).
 
-**Licence.** MIT (see `LICENSE`). Data attributions are in `data/NOTICE.md`.
-
-**Thanks** to the owner of the real redacted bills and prescriptions used for validation, and to the teams behind NPPA's public notifications, the PMBJP product list and the open Indian medicine dataset.
-
-## 19. Sources
+## Sources
 Accessed 28 October 2026 unless noted. Figures in the news reports are as reported; court outcomes are pending where stated.
 
-1. Nebius x NVIDIA Global AI Hackathon, page and official rules. https://nebiusglobalaihackathon.devpost.com/ and /rules
 2. The Hindu, "SC says 'economic policy' cannot take precedence over lives as Centre backs 'calibrated' drug-price controls", 27 Oct 2026. https://www.thehindu.com/news/national/sc-says-economic-policy-cannot-take-precedence-over-lives-as-centre-backs-calibrated-drug-price-controls/article71631892.ece
 3. ThePrint, "'Not through this dacoity': SC questions Rs 1.3 lakh hospital charge for Rs 11,000 cancer injection", 27 Oct 2026. https://theprint.in/health/not-through-this-dacoity-sc-questions-rs-1-3-lakh-hospital-charge-for-rs-11000-cancer-vaccine/3083192/
 4. The Hindu, "Supreme Court wants cap on trade margin for all essential medicines and medical products", 12 Oct 2026 (updated 17 Oct). https://www.thehindu.com/sci-tech/health/supreme-court-wants-cap-on-trade-margin-for-all-essential-medicines-and-medical-products/article71575807.ece
