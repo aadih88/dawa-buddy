@@ -324,7 +324,7 @@ set -a; source .env; set +a             # load the keys into this shell
 streamlit run bill_app.py
 ```
 
-**Phones.** The app is a responsive web page: open the link in a phone browser and the file picker offers the camera. One column, one card per line, no table to scroll sideways. Checked at phone width in a headless browser, not yet on a physical phone. Uploads up to 25 MB are accepted (phone photos are 3 to 12 MB; they are shrunk before being sent to the model).
+**Phones.** The app is a responsive web page: open it in a phone browser and the file picker offers the camera. One column, one card per line, no table to scroll sideways; tested on a phone. Uploads up to 25 MB are accepted (phone photos are 3 to 12 MB; they are shrunk before being sent to the model).
 
 **Deploy on Streamlit Community Cloud**
 1. Push the repository to GitHub (public; MIT).
@@ -408,9 +408,9 @@ The parsers are **checked, not trusted**: serial numbers must run 1..N with no g
 - **GST allowance.** Ceilings exclude local taxes; the tool allows up to 12% before flagging, which can hide a small overcharge but avoids false alarms.
 - **Photos may contain personal data.** Cover names, phone numbers, addresses and bill numbers before uploading. Photos are sent to Nebius Token Factory to be read; only brand or ingredient text goes to Tavily; the app stores nothing.
 - **Interaction and brand-safety tables are small demo sets** to be replaced with a licensed clinical database before real use.
-- **Hindi and Kannada.** Fixed text (dose, safety notes, timetable, disclaimer, and the Kannada medicine table) is never model-written, but has had **only an LLM second-opinion review** (two passes; they found and fixed real errors, including an unsafe "drink plenty of water" on a diuretic, see section 10.1); **no native speaker or clinician has reviewed it yet**, and the medicine table's medical content in particular needs a pharmacist or doctor. The Hindi AI text is labelled as AI and can contain mistakes. See `docs/language_review.md`.
+- **Hindi and Kannada.** Fixed text (dose, safety notes, timetable, disclaimer, and the Kannada medicine table) is never model-written, but has had **only an LLM second-opinion review** (two passes; they found and fixed real errors, including an unsafe "drink plenty of water" on a diuretic, see [Quality and evaluation](#quality-and-evaluation)); **no native speaker or clinician has reviewed it yet**, and the medicine table's medical content in particular needs a pharmacist or doctor. The Hindi AI text is labelled as AI and can contain mistakes. See `docs/language_review.md`.
 - **Known small gaps.** "With food" and "with milk" timings are not understood (only after food, before food and bedtime). A combination with two strengths on one line (for example `5mg/40`) shows only the first strength. A misread dose that is still *readable* (a wrong digit, not a missing one) is not caught.
-- **Unverified:** wording of the fixed Hindi and Kannada text, the Hindi AI text over many prescriptions, handwriting, a physical phone, and real-user outcomes.
+- **Unverified:** wording of the fixed Hindi and Kannada text, the Hindi AI text over many prescriptions, handwriting and real-user outcomes.
 
 **Responsible-AI design in one paragraph.** The model never decides a price tier or a safety rule; every transcription is confirmed by the user; model output must be grounded in the source text; web evidence needs two independent sites and is labelled as context; non-English medical text is template-based or table-based wherever a model failed in testing; failures are reported as "we could not check this", not hidden; and the tool names the complaint route instead of acting on its own.
 
